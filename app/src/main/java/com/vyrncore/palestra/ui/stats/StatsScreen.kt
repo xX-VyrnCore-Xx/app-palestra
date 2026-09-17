@@ -32,7 +32,7 @@ import com.vyrncore.palestra.ui.components.SimpleLineChart
 @Composable
 fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
-    val (volumeByMuscleGroup, weeklyVolume) by viewModel.advancedStats.collectAsState()
+    val (volumeByMuscleGroup, weeklyVolume) = viewModel.advancedStats.collectAsState().value
 
     Scaffold(topBar = { TopAppBar(title = { Text("Statistiche") }) }) { padding ->
         Column(
