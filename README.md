@@ -74,6 +74,10 @@ Per far sì che l'APK compilato in CI si connetta davvero a Supabase, imposta qu
 
 Senza questi secret l'APK viene comunque generato (utile per testare solo la UI), ma senza credenziali valide per il backend.
 
+## Pubblicazione su Google Play Store
+
+Vedi `docs/play_store_release.md` per la guida completa: build firmata (Android App Bundle) via `.github/workflows/build-release-aab.yml`, testi della scheda (`docs/play_store_listing.md`) e bozza dell'informativa privacy (`docs/privacy_policy.md`).
+
 ## Prossimi passi suggeriti
 
 - Notifiche push per nuove schede assegnate (Supabase Realtime + FCM)

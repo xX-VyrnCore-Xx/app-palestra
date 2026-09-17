@@ -1,7 +1,6 @@
 package com.vyrncore.palestra.ui.workout
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vyrncore.palestra.ui.components.EmptyState
 
 @Composable
 fun WorkoutPlansScreen(
@@ -42,12 +42,11 @@ fun WorkoutPlansScreen(
         topBar = { TopAppBar(title = { Text("Le tue schede") }) },
     ) { padding ->
         if (plans.isEmpty()) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Text("Nessuna scheda assegnata ancora. Il tuo PT te ne assegnerà una a breve.")
-            }
+            EmptyState(
+                icon = Icons.Filled.FitnessCenter,
+                message = "Nessuna scheda assegnata ancora. Il tuo PT te ne assegnerà una a breve.",
+                modifier = Modifier.padding(padding),
+            )
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
                 items(plans, key = { it.id }) { plan ->
