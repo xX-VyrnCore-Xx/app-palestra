@@ -1,0 +1,127 @@
+package com.vyrncore.palestra.ui.pt
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+
+@Composable
+fun PlanEditorScreen(
+    onSaved: () -> Unit,
+    viewModel: PlanEditorViewModel = hiltViewModel(),
+) {
+    val catalog by viewModel.exerciseCatalog.collectAsState()
+    val draft by viewModel.draftExercises.collectAsState()
+    var planName by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+
+    Scaffold(topBar = { TopAppBar(title = { Text("Nuova scheda") }) }) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+            OutlinedTextField(
+                value = planName,
+                onValueChange = { planName = it },
+                label = { Text("Nome scheda") },
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Row(modifier = Modifier.padding(top = 12.dp)) {
+                Button(onClick = { expanded = true }) {
+                    Icon(Icons.Filled.Add, contentDescription = null)
+                    Text("Aggiungi esercizio", modifier = Modifier.padding(start = 4.dp))
+                }
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    catalog.forEach { exercise ->
+                        DropdownMenuItem(
+                            text = { Text(exercise.name) },
+                            onClick = {
+                                viewModel.addExercise(exercise.id, exercise.name)
+                                expanded = false
+                            },
+                        )
+                    }
+                }
+            }
+
+            LazyColumn(modifier = Modifier.weight(1f).padding(top = 8.dp)) {
+                items(draft, key = { it.exerciseId }) { exercise ->
+                    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row {
+                                Text(
+                                    exercise.exerciseName,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                IconButton(onClick = { viewModel.removeExercise(exercise.exerciseId) }) {
+                                    Icon(Icons.Filled.Delete, contentDescription = "Rimuovi")
+                                }
+                            }
+                            Row(modifier = Modifier.padding(top = 4.dp)) {
+                                OutlinedTextField(
+                                    value = exercise.targetSets.toString(),
+                                    onValueChange = {
+                                        viewModel.updateExercise(
+                                            exercise.exerciseId,
+                                            it.toIntOrNull() ?: exercise.targetSets,
+                                            exercise.targetReps,
+                                            exercise.restSeconds,
+                                        )
+                                    },
+                                    label = { Text("Serie") },
+                                    modifier = Modifier.weight(1f),
+                                )
+                                OutlinedTextField(
+                                    value = exercise.targetReps.toString(),
+                                    onValueChange = {
+                                        viewModel.updateExercise(
+                                            exercise.exerciseId,
+                                            exercise.targetSets,
+                                            it.toIntOrNull() ?: exercise.targetReps,
+                                            exercise.restSeconds,
+                                        )
+                                    },
+                                    label = { Text("Ripetizioni") },
+                                    modifier = Modifier.weight(1f).padding(start = 8.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Button(
+                onClick = { viewModel.savePlan(planName, description = null, onSaved = onSaved) },
+                enabled = planName.isNotBlank() && draft.isNotEmpty(),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            ) {
+                Text("Assegna scheda")
+            }
+        }
+    }
+}
