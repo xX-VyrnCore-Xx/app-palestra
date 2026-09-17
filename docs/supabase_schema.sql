@@ -7,6 +7,8 @@ create table if not exists public.profiles (
     full_name text not null,
     role text not null check (role in ('PT', 'ALLIEVO')),
     pt_id uuid references public.profiles (id) on delete set null,
+    -- Infortuni/limitazioni fisiche impostate dal PT, mai visibili/scrivibili da altri PT.
+    injuries text,
     created_at timestamptz not null default now()
 );
 
@@ -124,6 +126,9 @@ create policy "profiles_self_upsert" on public.profiles
     for insert with check (auth.uid() = id);
 create policy "profiles_self_update" on public.profiles
     for update using (auth.uid() = id);
+-- a PT can also update their own clients' rows (used to record injuries/limitations).
+create policy "profiles_pt_update_client" on public.profiles
+    for update using (auth.uid() = pt_id);
 
 -- exercises: readable by everyone signed in; writable by the creator.
 create policy "exercises_select" on public.exercises

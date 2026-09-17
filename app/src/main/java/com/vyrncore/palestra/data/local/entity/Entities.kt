@@ -15,6 +15,8 @@ data class UserProfileEntity(
     val fullName: String,
     val role: UserRole,
     val ptId: String? = null,
+    /** Infortuni/limitazioni fisiche riportate: solo il PT le imposta, visibili solo a lui. */
+    val injuries: String? = null,
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 

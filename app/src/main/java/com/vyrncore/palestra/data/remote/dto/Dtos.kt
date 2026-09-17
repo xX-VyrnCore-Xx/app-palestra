@@ -10,6 +10,7 @@ data class UserProfileDto(
     @SerialName("full_name") val fullName: String,
     val role: String,
     @SerialName("pt_id") val ptId: String? = null,
+    val injuries: String? = null,
 )
 
 @Serializable

@@ -10,6 +10,7 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import com.vyrncore.palestra.data.remote.dto.UserProfileDto
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -57,6 +58,7 @@ class AuthRepository @Inject constructor(
                     fullName = dto.fullName,
                     role = UserRole.valueOf(dto.role),
                     ptId = dto.ptId,
+                    injuries = dto.injuries,
                     syncStatus = SyncStatus.SYNCED,
                 )
             )
@@ -70,4 +72,12 @@ class AuthRepository @Inject constructor(
     fun observeProfile(userId: String): Flow<UserProfileEntity?> = userProfileDao.observeById(userId)
 
     fun observeClients(ptId: String): Flow<List<UserProfileEntity>> = userProfileDao.observeClientsOfPt(ptId)
+
+    /** PT-only: records injuries/limitations for a client so they surface wherever the PT builds a plan. */
+    suspend fun updateInjuries(clientId: String, injuries: String?) {
+        val current = userProfileDao.observeById(clientId).firstOrNull() ?: return
+        userProfileDao.upsert(
+            current.copy(injuries = injuries?.takeIf { it.isNotBlank() }, syncStatus = SyncStatus.PENDING_UPDATE)
+        )
+    }
 }
