@@ -1,5 +1,10 @@
 package com.vyrncore.palestra.ui.chat
 
+import android.content.Intent
+import android.net.Uri
+import android.util.Patterns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,7 +19,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,8 +41,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.clickable
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vyrncore.palestra.data.local.entity.ChatAttachmentType
+import com.vyrncore.palestra.data.local.entity.ChatMessageEntity
 import com.vyrncore.palestra.ui.components.EmptyState
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -53,6 +69,10 @@ fun ChatThreadScreen(
     var draft by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.ITALY) }
+
+    val attachmentPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri -> uri?.let { viewModel.sendAttachment(it) } }
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
@@ -76,6 +96,9 @@ fun ChatThreadScreen(
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                IconButton(onClick = { attachmentPicker.launch(arrayOf("*/*")) }) {
+                    Icon(Icons.Filled.AttachFile, contentDescription = "Allega file")
+                }
                 OutlinedTextField(
                     value = draft,
                     onValueChange = { draft = it },
@@ -118,11 +141,7 @@ fun ChatThreadScreen(
                                 .widthIn(max = 280.dp),
                         ) {
                             Column {
-                                Text(
-                                    message.content,
-                                    color = if (isMine) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                )
+                                MessageContent(message = message, isMine = isMine)
                                 Text(
                                     timeFormat.format(Date(message.createdAtEpochMs)),
                                     style = MaterialTheme.typography.labelSmall,
@@ -136,4 +155,78 @@ fun ChatThreadScreen(
             }
         }
     }
+}
+
+@Composable
+private fun MessageContent(message: ChatMessageEntity, isMine: Boolean) {
+    val context = LocalContext.current
+    val textColor = if (isMine) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+
+    if (message.attachmentUrl != null) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .clickable {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(message.attachmentUrl)))
+                },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                if (message.attachmentType == ChatAttachmentType.IMAGE) Icons.Filled.Image else Icons.Filled.Description,
+                contentDescription = null,
+                tint = textColor,
+            )
+            Text(
+                message.attachmentName ?: message.content,
+                color = textColor,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+        return
+    }
+
+    val urlMatcher = remember { Patterns.WEB_URL }
+    val matcher = remember(message.content) { urlMatcher.matcher(message.content) }
+    val hasLink = remember(message.content) { matcher.find() }
+
+    if (!hasLink) {
+        Text(
+            message.content,
+            color = textColor,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+        )
+        return
+    }
+
+    matcher.reset()
+    val annotated = remember(message.content) { linkify(message.content, matcher, textColor) }
+    Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+        Text(
+            annotated,
+            modifier = Modifier.clickable {
+                val freshMatcher = Patterns.WEB_URL.matcher(message.content)
+                if (freshMatcher.find()) {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(freshMatcher.group())))
+                }
+            },
+        )
+    }
+}
+
+/** Renders [content] with any URL matched by [matcher] underlined, so a link visually stands out. */
+private fun linkify(
+    content: String,
+    matcher: java.util.regex.Matcher,
+    textColor: androidx.compose.ui.graphics.Color,
+): AnnotatedString = androidx.compose.ui.text.buildAnnotatedString {
+    var lastEnd = 0
+    while (matcher.find()) {
+        withStyle(SpanStyle(color = textColor)) { append(content.substring(lastEnd, matcher.start())) }
+        withStyle(SpanStyle(color = textColor, textDecoration = TextDecoration.Underline)) {
+            append(content.substring(matcher.start(), matcher.end()))
+        }
+        lastEnd = matcher.end()
+    }
+    withStyle(SpanStyle(color = textColor)) { append(content.substring(lastEnd)) }
 }

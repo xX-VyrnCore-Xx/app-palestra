@@ -41,6 +41,8 @@ data class WorkoutPlanEntity(
     val createdByPtId: String,
     val assignedToUserId: String,
     val createdAtEpochMs: Long,
+    val category: String? = null,
+    val estimatedMinutes: Int? = null,
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 
@@ -122,6 +124,8 @@ data class BodyMetricEntity(
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 
+enum class ChatAttachmentType { IMAGE, FILE }
+
 @Entity(tableName = "chat_messages", indices = [Index("senderId"), Index("recipientId")])
 data class ChatMessageEntity(
     @PrimaryKey val id: String,
@@ -130,6 +134,9 @@ data class ChatMessageEntity(
     val content: String,
     val createdAtEpochMs: Long,
     val readAtEpochMs: Long? = null,
+    val attachmentUrl: String? = null,
+    val attachmentName: String? = null,
+    val attachmentType: ChatAttachmentType? = null,
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 

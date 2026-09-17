@@ -3,6 +3,7 @@ package com.vyrncore.palestra.data.repository
 import com.vyrncore.palestra.data.local.SyncStatus
 import com.vyrncore.palestra.data.local.dao.ChatMessageDao
 import com.vyrncore.palestra.data.local.dao.UserProfileDao
+import com.vyrncore.palestra.data.local.entity.ChatAttachmentType
 import com.vyrncore.palestra.data.local.entity.ChatMessageEntity
 import com.vyrncore.palestra.data.notification.NotificationHelper
 import com.vyrncore.palestra.data.remote.dto.ChatMessageDto
@@ -16,6 +17,7 @@ import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.decodeRecord
 import io.github.jan.supabase.realtime.postgresChangeFlow
+import io.github.jan.supabase.storage.Storage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -36,10 +38,15 @@ import javax.inject.Singleton
 class ChatRepository @Inject constructor(
     private val realtime: Realtime,
     private val postgrest: Postgrest,
+    private val storage: Storage,
     private val chatMessageDao: ChatMessageDao,
     private val userProfileDao: UserProfileDao,
     private val notificationHelper: NotificationHelper,
 ) {
+    private companion object {
+        const val ATTACHMENTS_BUCKET = "chat-attachments"
+    }
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var channel: RealtimeChannel? = null
     private var listeningUserId: String? = null
@@ -96,6 +103,35 @@ class ChatRepository @Inject constructor(
             content = content,
             createdAtEpochMs = System.currentTimeMillis(),
             readAtEpochMs = null,
+            syncStatus = SyncStatus.PENDING_CREATE,
+        )
+        chatMessageDao.upsert(entity)
+        runCatching { postgrest.from("messages").upsert(entity.toDto()) }
+            .onSuccess { chatMessageDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED)) }
+    }
+
+    /** Uploads [bytes] to the chat-attachments bucket and sends it as a message with an attachment. */
+    suspend fun sendAttachment(
+        senderId: String,
+        recipientId: String,
+        fileName: String,
+        bytes: ByteArray,
+        type: ChatAttachmentType,
+    ) {
+        val path = "$senderId/${UUID.randomUUID()}-$fileName"
+        storage.from(ATTACHMENTS_BUCKET).upload(path, bytes)
+        val url = storage.from(ATTACHMENTS_BUCKET).publicUrl(path)
+
+        val entity = ChatMessageEntity(
+            id = UUID.randomUUID().toString(),
+            senderId = senderId,
+            recipientId = recipientId,
+            content = if (type == ChatAttachmentType.IMAGE) "📷 Immagine" else "📎 $fileName",
+            createdAtEpochMs = System.currentTimeMillis(),
+            readAtEpochMs = null,
+            attachmentUrl = url,
+            attachmentName = fileName,
+            attachmentType = type,
             syncStatus = SyncStatus.PENDING_CREATE,
         )
         chatMessageDao.upsert(entity)

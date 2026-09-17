@@ -1,11 +1,17 @@
 package com.vyrncore.palestra.ui.chat
 
+import android.content.ContentResolver
+import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vyrncore.palestra.data.local.entity.ChatAttachmentType
 import com.vyrncore.palestra.data.local.entity.ChatMessageEntity
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.ChatRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +20,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /**
@@ -26,6 +33,7 @@ import javax.inject.Inject
 class ChatThreadViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val authRepository: AuthRepository,
+    @ApplicationContext private val context: android.content.Context,
 ) : ViewModel() {
 
     val userId: String = authRepository.currentUserId.orEmpty()
@@ -51,6 +59,30 @@ class ChatThreadViewModel @Inject constructor(
         val peer = peerId.value ?: return
         if (content.isBlank()) return
         viewModelScope.launch { chatRepository.sendMessage(userId, peer, content) }
+    }
+
+    fun sendAttachment(uri: Uri) {
+        val peer = peerId.value ?: return
+        viewModelScope.launch {
+            val resolver = context.contentResolver
+            val mimeType = resolver.getType(uri).orEmpty()
+            val fileName = queryFileName(resolver, uri) ?: "file"
+            val bytes = withContext(Dispatchers.IO) {
+                resolver.openInputStream(uri)?.use { it.readBytes() }
+            } ?: return@launch
+            val type = if (mimeType.startsWith("image/")) ChatAttachmentType.IMAGE else ChatAttachmentType.FILE
+            chatRepository.sendAttachment(userId, peer, fileName, bytes, type)
+        }
+    }
+
+    private fun queryFileName(resolver: ContentResolver, uri: Uri): String? {
+        resolver.query(uri, null, null, null, null)?.use { cursor ->
+            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (nameIndex >= 0 && cursor.moveToFirst()) {
+                return cursor.getString(nameIndex)
+            }
+        }
+        return null
     }
 
     override fun onCleared() {

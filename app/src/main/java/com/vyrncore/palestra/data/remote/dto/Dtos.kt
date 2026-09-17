@@ -31,6 +31,8 @@ data class WorkoutPlanDto(
     @SerialName("created_by_pt_id") val createdByPtId: String,
     @SerialName("assigned_to_user_id") val assignedToUserId: String,
     @SerialName("created_at") val createdAt: String,
+    val category: String? = null,
+    @SerialName("estimated_minutes") val estimatedMinutes: Int? = null,
 )
 
 @Serializable
@@ -90,6 +92,9 @@ data class ChatMessageDto(
     val content: String,
     @SerialName("created_at") val createdAt: String,
     @SerialName("read_at") val readAt: String? = null,
+    @SerialName("attachment_url") val attachmentUrl: String? = null,
+    @SerialName("attachment_name") val attachmentName: String? = null,
+    @SerialName("attachment_type") val attachmentType: String? = null,
 )
 
 @Serializable

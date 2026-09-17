@@ -22,10 +22,12 @@ App Android nativa per il brand di palestre **Vibe Fitness**, pensata per due ru
 - Tracciamento dati corporei (peso, massa grassa, misure) con grafico dell'andamento peso
 - Il PT vede, per ogni allievo, allenamenti svolti, ultimo allenamento e andamento peso
 - Notifica di promemoria giornaliera se l'allievo non si allena da 2+ giorni (disattivabile dal Profilo)
-- Chat in tempo reale tra Allievo e PT (Supabase Realtime), con notifica quando arriva un messaggio e app aperta/in background attivo
-- Calendario allenamenti: vista mensile con i giorni in cui è stato svolto un allenamento
+- Chat in tempo reale tra Allievo e PT (Supabase Realtime), con invio di link (riconosciuti e cliccabili) e allegati (file/immagini via Supabase Storage), e notifica quando arriva un messaggio e app aperta/in background attivo
+- Calendario allenamenti: vista mensile con indicatore del giorno corrente, riepilogo allenamenti del mese e legenda
 - Note private del PT su ogni allievo (obiettivi, infortuni, osservazioni), visibili solo al PT
 - Statistiche avanzate: volume di allenamento per gruppo muscolare e andamento del volume settimanale, oltre al grafico di progressione per esercizio
+- Gamification: livelli/XP con titolo (Novizio → Leggenda), obiettivo settimanale, e tre serie di traguardi (streak, numero allenamenti, kg totali sollevati)
+- Schede di allenamento con categoria (Full Body, Push, Pull, Gambe, Cardio, Mobilità), durata stimata e numero di esercizi mostrati in lista
 - Profilo con tema chiaro/scuro/di sistema (persistito) e logout
 - Catalogo di 24 esercizi comuni precaricato al primo avvio (offline e su Supabase)
 - Sincronizzazione bidirezionale: push dei dati registrati offline + pull di schede/progressi assegnati da un altro dispositivo (es. il PT assegna una scheda, l'allievo la riceve al sync successivo)

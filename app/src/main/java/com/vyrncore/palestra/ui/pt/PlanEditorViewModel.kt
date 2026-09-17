@@ -25,6 +25,9 @@ data class DraftPlanExercise(
     val restSeconds: Int = 90,
 )
 
+/** Common plan categories offered in the editor; a PT can still leave this unset. */
+val PLAN_CATEGORIES = listOf("Full Body", "Push", "Pull", "Gambe", "Cardio", "Mobilità")
+
 @HiltViewModel
 class PlanEditorViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
@@ -56,15 +59,21 @@ class PlanEditorViewModel @Inject constructor(
         }
     }
 
-    fun savePlan(name: String, description: String?, onSaved: () -> Unit) {
+    fun savePlan(name: String, description: String?, category: String?, onSaved: () -> Unit) {
         val ptId = authRepository.currentUserId.orEmpty()
+        val exercises = _draftExercises.value
+        // Rough estimate: ~1.5 min per set (work + rest), so a PT sees a sensible default
+        // without having to type a duration by hand.
+        val estimatedMinutes = exercises.sumOf { it.targetSets } * 3 / 2
         viewModelScope.launch {
             workoutRepository.createPlan(
                 name = name,
                 description = description,
                 createdByPtId = ptId,
                 assignedToUserId = clientId,
-                exercises = _draftExercises.value.map {
+                category = category,
+                estimatedMinutes = estimatedMinutes.takeIf { it > 0 },
+                exercises = exercises.map {
                     PlanExerciseEntity(
                         id = "",
                         planId = "",

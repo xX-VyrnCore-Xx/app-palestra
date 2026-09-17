@@ -3,6 +3,7 @@ package com.vyrncore.palestra.di
 import android.content.Context
 import androidx.room.Room
 import com.vyrncore.palestra.data.local.AppDatabase
+import com.vyrncore.palestra.data.local.MIGRATION_3_4
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,6 +19,7 @@ object DatabaseModule {
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.DATABASE_NAME)
+            .addMigrations(MIGRATION_3_4)
             .fallbackToDestructiveMigration()
             .build()
 

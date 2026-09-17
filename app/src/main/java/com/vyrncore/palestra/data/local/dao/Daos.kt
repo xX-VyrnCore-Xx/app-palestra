@@ -84,6 +84,9 @@ interface PlanExerciseDao {
     @Query("SELECT * FROM plan_exercises WHERE planId = :planId ORDER BY orderIndex ASC")
     fun observeForPlan(planId: String): Flow<List<PlanExerciseEntity>>
 
+    @Query("SELECT COUNT(*) FROM plan_exercises WHERE planId = :planId")
+    fun observeExerciseCount(planId: String): Flow<Int>
+
     @Query("SELECT * FROM plan_exercises WHERE syncStatus != 'SYNCED'")
     suspend fun getPendingSync(): List<PlanExerciseEntity>
 
