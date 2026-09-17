@@ -1,7 +1,6 @@
 package com.vyrncore.palestra.ui.pt
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vyrncore.palestra.ui.components.EmptyState
 import com.vyrncore.palestra.ui.components.GradientHeader
 
 @Composable
@@ -62,12 +63,7 @@ fun PtDashboardScreen(
             )
 
             if (clients.isEmpty()) {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(24.dp),
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text("Nessun allievo collegato ancora.", style = MaterialTheme.typography.bodyMedium)
-                }
+                EmptyState(icon = Icons.Filled.People, message = "Nessun allievo collegato ancora.")
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(clients, key = { it.id }) { client ->

@@ -9,8 +9,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
@@ -39,7 +37,7 @@ fun PlanEditorScreen(
     val catalog by viewModel.exerciseCatalog.collectAsState()
     val draft by viewModel.draftExercises.collectAsState()
     var planName by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) }
+    var showPicker by remember { mutableStateOf(false) }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Nuova scheda") }) }) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
@@ -50,22 +48,9 @@ fun PlanEditorScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Row(modifier = Modifier.padding(top = 12.dp)) {
-                Button(onClick = { expanded = true }) {
-                    Icon(Icons.Filled.Add, contentDescription = null)
-                    Text("Aggiungi esercizio", modifier = Modifier.padding(start = 4.dp))
-                }
-                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    catalog.forEach { exercise ->
-                        DropdownMenuItem(
-                            text = { Text(exercise.name) },
-                            onClick = {
-                                viewModel.addExercise(exercise.id, exercise.name)
-                                expanded = false
-                            },
-                        )
-                    }
-                }
+            Button(onClick = { showPicker = true }, modifier = Modifier.padding(top = 12.dp)) {
+                Icon(Icons.Filled.Add, contentDescription = null)
+                Text("Aggiungi esercizio", modifier = Modifier.padding(start = 4.dp))
             }
 
             LazyColumn(modifier = Modifier.weight(1f).padding(top = 8.dp)) {
@@ -123,5 +108,16 @@ fun PlanEditorScreen(
                 Text("Assegna scheda")
             }
         }
+    }
+
+    if (showPicker) {
+        ExercisePickerDialog(
+            catalog = catalog,
+            onDismiss = { showPicker = false },
+            onSelect = { exercise ->
+                viewModel.addExercise(exercise.id, exercise.name)
+                showPicker = false
+            },
+        )
     }
 }

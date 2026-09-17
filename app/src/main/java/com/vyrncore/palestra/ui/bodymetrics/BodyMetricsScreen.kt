@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vyrncore.palestra.ui.components.EmptyState
 import com.vyrncore.palestra.ui.components.SimpleLineChart
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -55,6 +56,14 @@ fun BodyMetricsScreen(viewModel: BodyMetricsViewModel = hiltViewModel()) {
             }
         },
     ) { padding ->
+        if (metrics.isEmpty()) {
+            EmptyState(
+                icon = Icons.Filled.MonitorWeight,
+                message = "Nessuna misurazione registrata ancora. Tocca + per aggiungerne una.",
+                modifier = Modifier.padding(padding),
+            )
+            return@Scaffold
+        }
         LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
             val weightTrend = metrics.mapNotNull { it.weightKg }.asReversed()
             if (weightTrend.size >= 2) {

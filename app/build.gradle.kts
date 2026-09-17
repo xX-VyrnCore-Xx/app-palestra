@@ -13,19 +13,20 @@ android {
     namespace = "com.vyrncore.palestra"
     compileSdk = 34
 
+    val localProperties = Properties().apply {
+        val file = rootProject.file("local.properties")
+        if (file.exists()) load(file.inputStream())
+    }
+
     defaultConfig {
         applicationId = "com.vyrncore.palestra"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        val localProperties = Properties().apply {
-            val file = rootProject.file("local.properties")
-            if (file.exists()) load(file.inputStream())
-        }
         buildConfigField(
             "String",
             "SUPABASE_URL",
@@ -38,10 +39,38 @@ android {
         )
     }
 
+    // Release signing: reads from env vars (CI) or local.properties (local release builds).
+    // Falls back to null (unsigned) when nothing is configured, so debug builds and CI runs
+    // without release secrets still work — see docs/play_store_release.md for setup.
+    fun releaseConfigValue(envName: String, propertyName: String): String? =
+        System.getenv(envName)?.takeIf { it.isNotBlank() }
+            ?: localProperties.getProperty(propertyName)?.takeIf { it.isNotBlank() }
+
+    val releaseStorePath = releaseConfigValue("RELEASE_STORE_FILE", "RELEASE_STORE_FILE")
+    val releaseStorePassword = releaseConfigValue("RELEASE_STORE_PASSWORD", "RELEASE_STORE_PASSWORD")
+    val releaseKeyAlias = releaseConfigValue("RELEASE_KEY_ALIAS", "RELEASE_KEY_ALIAS")
+    val releaseKeyPassword = releaseConfigValue("RELEASE_KEY_PASSWORD", "RELEASE_KEY_PASSWORD")
+    val hasReleaseSigningConfig = listOf(releaseStorePath, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { !it.isNullOrBlank() }
+
+    signingConfigs {
+        if (hasReleaseSigningConfig) {
+            create("release") {
+                storeFile = file(releaseStorePath!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (hasReleaseSigningConfig) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 

@@ -42,6 +42,7 @@ class PlanEditorViewModel @Inject constructor(
     val draftExercises: StateFlow<List<DraftPlanExercise>> = _draftExercises.asStateFlow()
 
     fun addExercise(exerciseId: String, exerciseName: String) {
+        if (_draftExercises.value.any { it.exerciseId == exerciseId }) return
         _draftExercises.value = _draftExercises.value + DraftPlanExercise(exerciseId, exerciseName)
     }
 
