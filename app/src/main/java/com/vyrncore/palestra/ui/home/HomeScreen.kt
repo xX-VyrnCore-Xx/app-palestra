@@ -1,5 +1,8 @@
 package com.vyrncore.palestra.ui.home
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -13,10 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -30,7 +35,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.ui.components.GradientHeader
@@ -65,24 +72,29 @@ fun HomeScreen(
                 },
             )
 
-            Row(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            LevelCard(
+                level = uiState.level,
+                xpIntoLevel = uiState.xpIntoLevel,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
+            )
+
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                 MetricCard(
                     icon = Icons.Filled.LocalFireDepartment,
                     value = "${uiState.streakDays}",
                     label = "GIORNI DI STREAK",
                     modifier = Modifier.weight(1f),
                 )
-                MetricCard(
-                    icon = Icons.Filled.LocalFireDepartment,
-                    value = "${uiState.workoutsThisWeek}",
-                    label = "ALLENAMENTI SETTIMANA",
+                WeeklyGoalCard(
+                    completed = uiState.workoutsThisWeek,
+                    goal = WEEKLY_GOAL,
                     modifier = Modifier.weight(1f).padding(start = 12.dp),
                 )
             }
 
             if (uiState.nextPlanId != null) {
                 Card(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
                     shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 ) {
@@ -124,34 +136,164 @@ fun HomeScreen(
                 }
             }
 
-            if (uiState.longestStreakDays > 0) {
+            if (uiState.unlockedBadges.isNotEmpty() || BADGE_MILESTONES.isNotEmpty()) {
+                BadgeSection(
+                    title = "TRAGUARDI DI COSTANZA",
+                    icon = Icons.Filled.EmojiEvents,
+                    milestones = BADGE_MILESTONES,
+                    unlocked = uiState.unlockedBadges,
+                    suffix = "gg",
+                )
+            }
+
+            BadgeSection(
+                title = "TRAGUARDI DI ALLENAMENTO",
+                icon = Icons.Filled.Star,
+                milestones = WORKOUT_COUNT_MILESTONES,
+                unlocked = uiState.unlockedWorkoutCountBadges,
+                suffix = "",
+                modifier = Modifier.padding(bottom = 16.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun LevelCard(level: Int, xpIntoLevel: Int, modifier: Modifier = Modifier) {
+    val progress by animateFloatAsState(
+        targetValue = xpIntoLevel / 100f,
+        animationSpec = tween(600),
+        label = "xpProgress",
+    )
+    Card(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Livello $level", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "TRAGUARDI",
+                    "$xpIntoLevel / 100 XP",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp),
                 )
-                Row(
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp)
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+            ) {
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                ) {
-                    BADGE_MILESTONES.forEach { milestone ->
-                        BadgeCircle(
-                            days = milestone,
-                            unlocked = uiState.unlockedBadges.contains(milestone),
-                            modifier = Modifier.padding(end = 12.dp),
-                        )
-                    }
-                }
+                        .fillMaxWidth(progress.coerceIn(0f, 1f))
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(MaterialTheme.colorScheme.tertiary),
+                )
             }
         }
     }
 }
 
 @Composable
-private fun BadgeCircle(days: Int, unlocked: Boolean, modifier: Modifier = Modifier) {
+private fun WeeklyGoalCard(completed: Int, goal: Int, modifier: Modifier = Modifier) {
+    val progress by animateFloatAsState(
+        targetValue = (completed.toFloat() / goal).coerceIn(0f, 1f),
+        animationSpec = tween(600),
+        label = "weeklyGoalProgress",
+    )
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(48.dp)) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val strokeWidth = 6.dp.toPx()
+                    drawArc(
+                        color = Color.White.copy(alpha = 0.35f),
+                        startAngle = -90f,
+                        sweepAngle = 360f,
+                        useCenter = false,
+                        style = Stroke(width = strokeWidth),
+                    )
+                    drawArc(
+                        color = Color.White,
+                        startAngle = -90f,
+                        sweepAngle = 360f * progress,
+                        useCenter = false,
+                        style = Stroke(width = strokeWidth),
+                    )
+                }
+                Text(
+                    "$completed/$goal",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+            Text(
+                "OBIETTIVO SETTIMANALE",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun BadgeSection(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    milestones: List<Int>,
+    unlocked: List<Int>,
+    suffix: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        Text(
+            title,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+        ) {
+            milestones.forEach { milestone ->
+                BadgeCircle(
+                    icon = icon,
+                    label = "$milestone$suffix",
+                    unlocked = unlocked.contains(milestone),
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BadgeCircle(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    unlocked: Boolean,
+    modifier: Modifier = Modifier,
+) {
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
@@ -163,13 +305,13 @@ private fun BadgeCircle(days: Int, unlocked: Boolean, modifier: Modifier = Modif
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                Icons.Filled.EmojiEvents,
+                icon,
                 contentDescription = null,
                 tint = if (unlocked) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
             )
         }
         Text(
-            "$days gg",
+            label,
             style = MaterialTheme.typography.labelMedium,
             color = if (unlocked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             modifier = Modifier.padding(top = 4.dp),

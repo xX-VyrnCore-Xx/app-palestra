@@ -4,13 +4,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Forum
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.ShowChart
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -27,24 +25,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.vyrncore.palestra.ui.calendar.CalendarScreen
 import com.vyrncore.palestra.ui.chat.ChatThreadScreen
 import com.vyrncore.palestra.ui.components.EmptyState
-import com.vyrncore.palestra.ui.history.HistoryScreen
 import com.vyrncore.palestra.ui.home.HomeScreen
 import com.vyrncore.palestra.ui.profile.ProfileScreen
-import com.vyrncore.palestra.ui.stats.StatsScreen
+import com.vyrncore.palestra.ui.progress.ProgressScreen
 import com.vyrncore.palestra.ui.workout.WorkoutPlansScreen
 
 private data class AllievoTab(val label: String, val icon: ImageVector)
 
+// Cronologia, Calendario and Statistiche live inside the "Progressi" tab (see ProgressScreen)
+// so the nav doesn't have to carry a slot for each of them separately.
 private val tabs = listOf(
     AllievoTab("Home", Icons.Filled.Home),
     AllievoTab("Schede", Icons.Filled.FitnessCenter),
-    AllievoTab("Cronologia", Icons.Filled.History),
-    AllievoTab("Calendario", Icons.Filled.CalendarMonth),
+    AllievoTab("Progressi", Icons.Filled.TrendingUp),
     AllievoTab("Chat", Icons.Filled.Forum),
-    AllievoTab("Statistiche", Icons.Filled.ShowChart),
     AllievoTab("Profilo", Icons.Filled.Person),
 )
 
@@ -85,9 +81,8 @@ fun AllievoDashboardScreen(
             when (selectedTab) {
                 0 -> HomeScreen(onStartSession = onOpenSession)
                 1 -> WorkoutPlansScreen(onOpenSession = onOpenSession)
-                2 -> HistoryScreen()
-                3 -> CalendarScreen(onOpenSession = onOpenSession)
-                4 -> {
+                2 -> ProgressScreen(onOpenSession = onOpenSession)
+                3 -> {
                     val peer = ptId
                     if (peer != null) {
                         ChatThreadScreen(peerId = peer)
@@ -99,7 +94,6 @@ fun AllievoDashboardScreen(
                         )
                     }
                 }
-                5 -> StatsScreen()
                 else -> ProfileScreen(onOpenBodyMetrics = onOpenBodyMetrics, onSignedOut = onSignedOut)
             }
         }
