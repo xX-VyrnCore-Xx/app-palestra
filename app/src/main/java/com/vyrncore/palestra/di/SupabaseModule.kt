@@ -8,6 +8,8 @@ import dagger.hilt.components.SingletonComponent
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.functions.Functions
+import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.realtime.Realtime
@@ -35,4 +37,7 @@ object SupabaseModule {
 
     @Provides
     fun provideStorage(client: SupabaseClient): Storage = client.storage
+
+    @Provides
+    fun provideFunctions(client: SupabaseClient): Functions = client.functions
 }
