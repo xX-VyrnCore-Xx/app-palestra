@@ -8,19 +8,36 @@ import com.vyrncore.palestra.data.local.dao.SetEntryDao
 import com.vyrncore.palestra.data.local.dao.UserProfileDao
 import com.vyrncore.palestra.data.local.dao.WorkoutPlanDao
 import com.vyrncore.palestra.data.local.dao.WorkoutSessionDao
+import com.vyrncore.palestra.data.local.entity.UserRole
+import com.vyrncore.palestra.data.remote.dto.BodyMetricDto
+import com.vyrncore.palestra.data.remote.dto.ExerciseDto
+import com.vyrncore.palestra.data.remote.dto.PlanExerciseDto
+import com.vyrncore.palestra.data.remote.dto.SetEntryDto
+import com.vyrncore.palestra.data.remote.dto.UserProfileDto
+import com.vyrncore.palestra.data.remote.dto.WorkoutPlanDto
+import com.vyrncore.palestra.data.remote.dto.WorkoutSessionDto
 import com.vyrncore.palestra.data.remote.toDto
+import com.vyrncore.palestra.data.remote.toEntity
+import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Pushes every locally pending row (created/updated offline, e.g. mid-workout with no signal)
- * to Supabase. Runs from [com.vyrncore.palestra.data.sync.SyncWorker] whenever connectivity
- * returns; each push is a plain upsert, so re-running a partially failed sync is always safe.
+ * Keeps the local Room database and Supabase in sync in both directions:
+ * - [pushLocalChanges] sends every locally pending row (created/updated offline, e.g. mid-workout
+ *   with no signal) up to Supabase. Each push is a plain upsert, so re-running a partially failed
+ *   sync is always safe.
+ * - [pullRemoteChanges] fetches what the signed-in user (and, for a PT, their clients) can see
+ *   remotely and upserts it locally. Without this, a plan a PT assigns from their own phone would
+ *   never reach the client's device.
+ *
+ * [SyncWorker] runs both whenever connectivity returns.
  */
 @Singleton
 class SyncManager @Inject constructor(
+    private val auth: Auth,
     private val postgrest: Postgrest,
     private val userProfileDao: UserProfileDao,
     private val exerciseDao: ExerciseDao,
@@ -31,6 +48,11 @@ class SyncManager @Inject constructor(
     private val bodyMetricDao: BodyMetricDao,
 ) {
     suspend fun syncAll() {
+        pushLocalChanges()
+        auth.currentUserOrNull()?.id?.let { pullRemoteChanges(it) }
+    }
+
+    private suspend fun pushLocalChanges() {
         userProfileDao.getPendingSync().forEach { entity ->
             postgrest.from("profiles").upsert(entity.toDto())
             userProfileDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED))
@@ -59,5 +81,64 @@ class SyncManager @Inject constructor(
             postgrest.from("body_metrics").upsert(entity.toDto())
             bodyMetricDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED))
         }
+    }
+
+    private suspend fun pullRemoteChanges(userId: String) {
+        val ownProfile = runCatching {
+            postgrest.from("profiles").select { filter { eq("id", userId) } }.decodeSingle<UserProfileDto>()
+        }.getOrNull() ?: return
+        userProfileDao.upsert(ownProfile.toEntity())
+
+        val clients = if (ownProfile.role == UserRole.PT.name) {
+            runCatching {
+                postgrest.from("profiles").select { filter { eq("pt_id", userId) } }.decodeList<UserProfileDto>()
+            }.getOrDefault(emptyList())
+        } else {
+            emptyList()
+        }
+        clients.forEach { userProfileDao.upsert(it.toEntity()) }
+        val relevantUserIds = listOf(userId) + clients.map { it.id }
+
+        runCatching {
+            postgrest.from("exercises").select().decodeList<ExerciseDto>()
+        }.getOrDefault(emptyList()).forEach { exerciseDao.upsert(it.toEntity()) }
+
+        val plansAssigned = runCatching {
+            postgrest.from("workout_plans").select { filter { isIn("assigned_to_user_id", relevantUserIds) } }
+                .decodeList<WorkoutPlanDto>()
+        }.getOrDefault(emptyList())
+        val plansCreated = runCatching {
+            postgrest.from("workout_plans").select { filter { eq("created_by_pt_id", userId) } }
+                .decodeList<WorkoutPlanDto>()
+        }.getOrDefault(emptyList())
+        val plans = (plansAssigned + plansCreated).distinctBy { it.id }
+        plans.forEach { workoutPlanDao.upsert(it.toEntity()) }
+
+        val planIds = plans.map { it.id }
+        if (planIds.isNotEmpty()) {
+            runCatching {
+                postgrest.from("plan_exercises").select { filter { isIn("plan_id", planIds) } }
+                    .decodeList<PlanExerciseDto>()
+            }.getOrDefault(emptyList()).forEach { planExerciseDao.upsert(it.toEntity()) }
+        }
+
+        val sessions = runCatching {
+            postgrest.from("workout_sessions").select { filter { isIn("user_id", relevantUserIds) } }
+                .decodeList<WorkoutSessionDto>()
+        }.getOrDefault(emptyList())
+        sessions.forEach { workoutSessionDao.upsert(it.toEntity()) }
+
+        val sessionIds = sessions.map { it.id }
+        if (sessionIds.isNotEmpty()) {
+            runCatching {
+                postgrest.from("set_entries").select { filter { isIn("session_id", sessionIds) } }
+                    .decodeList<SetEntryDto>()
+            }.getOrDefault(emptyList()).forEach { setEntryDao.upsert(it.toEntity()) }
+        }
+
+        runCatching {
+            postgrest.from("body_metrics").select { filter { isIn("user_id", relevantUserIds) } }
+                .decodeList<BodyMetricDto>()
+        }.getOrDefault(emptyList()).forEach { bodyMetricDao.upsert(it.toEntity()) }
     }
 }

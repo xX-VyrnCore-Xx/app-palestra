@@ -1,5 +1,9 @@
 package com.vyrncore.palestra.ui.navigation
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -8,7 +12,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,7 +21,9 @@ import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.ui.RootViewModel
 import com.vyrncore.palestra.ui.auth.LoginScreen
 import com.vyrncore.palestra.ui.auth.RegisterScreen
+import com.vyrncore.palestra.ui.bodymetrics.BodyMetricsScreen
 import com.vyrncore.palestra.ui.dashboard.AllievoDashboardScreen
+import com.vyrncore.palestra.ui.profile.ProfileScreen
 import com.vyrncore.palestra.ui.pt.PlanEditorScreen
 import com.vyrncore.palestra.ui.pt.PtClientDetailScreen
 import com.vyrncore.palestra.ui.pt.PtDashboardScreen
@@ -26,14 +31,20 @@ import com.vyrncore.palestra.ui.timer.RestTimerScreen
 import com.vyrncore.palestra.ui.workout.ActiveWorkoutScreen
 
 @Composable
-fun PalestraNavGraph() {
+fun PalestraNavGraph(rootViewModel: RootViewModel) {
     val navController = rememberNavController()
-    val rootViewModel: RootViewModel = hiltViewModel()
     val role by rootViewModel.role.collectAsState()
 
     val startDestination = if (rootViewModel.startUserId != null) "home" else Routes.LOGIN
 
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(
+        navController = navController,
+        startDestination = startDestination,
+        enterTransition = { fadeIn(animationSpec = androidx.compose.animation.core.tween(200)) + slideInHorizontally(initialOffsetX = { it / 6 }) },
+        exitTransition = { fadeOut(animationSpec = androidx.compose.animation.core.tween(150)) },
+        popEnterTransition = { fadeIn(animationSpec = androidx.compose.animation.core.tween(200)) },
+        popExitTransition = { fadeOut(animationSpec = androidx.compose.animation.core.tween(150)) + slideOutHorizontally(targetOffsetX = { it / 6 }) },
+    ) {
         composable(Routes.LOGIN) {
             LoginScreen(
                 onLoggedIn = { userId ->
@@ -55,16 +66,30 @@ fun PalestraNavGraph() {
             when (role) {
                 UserRole.PT -> PtDashboardScreen(
                     onOpenClient = { clientId -> navController.navigate(Routes.ptClientDetail(clientId)) },
+                    onOpenProfile = { navController.navigate(Routes.PROFILE) },
                 )
                 UserRole.ALLIEVO -> AllievoDashboardScreen(
                     onOpenSession = { sessionId, planId ->
                         navController.navigate(Routes.activeWorkout(sessionId, planId))
+                    },
+                    onOpenBodyMetrics = { navController.navigate(Routes.BODY_METRICS) },
+                    onSignedOut = {
+                        navController.navigate(Routes.LOGIN) { popUpTo(0) }
                     },
                 )
                 null -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             }
+        }
+        composable(Routes.BODY_METRICS) {
+            BodyMetricsScreen()
+        }
+        composable(Routes.PROFILE) {
+            ProfileScreen(
+                onOpenBodyMetrics = { navController.navigate(Routes.BODY_METRICS) },
+                onSignedOut = { navController.navigate(Routes.LOGIN) { popUpTo(0) } },
+            )
         }
         composable(
             Routes.ACTIVE_WORKOUT,

@@ -1,8 +1,10 @@
 package com.vyrncore.palestra.data.repository
 
+import com.vyrncore.palestra.data.local.ExerciseCatalogSeed
 import com.vyrncore.palestra.data.local.SyncStatus
 import com.vyrncore.palestra.data.local.dao.ExerciseDao
 import com.vyrncore.palestra.data.local.dao.PlanExerciseDao
+import com.vyrncore.palestra.data.local.dao.SessionSummary
 import com.vyrncore.palestra.data.local.dao.SetEntryDao
 import com.vyrncore.palestra.data.local.dao.WorkoutPlanDao
 import com.vyrncore.palestra.data.local.dao.WorkoutSessionDao
@@ -27,6 +29,12 @@ class WorkoutRepository @Inject constructor(
 ) {
     // Exercise catalog
     fun observeExercises(): Flow<List<ExerciseEntity>> = exerciseDao.observeAll()
+
+    suspend fun seedCatalogIfNeeded() {
+        if (exerciseDao.count() == 0) {
+            exerciseDao.upsertAll(ExerciseCatalogSeed.exercises)
+        }
+    }
 
     suspend fun addCustomExercise(name: String, muscleGroup: String, createdByUserId: String) {
         exerciseDao.upsert(
@@ -84,6 +92,8 @@ class WorkoutRepository @Inject constructor(
     fun observeSession(sessionId: String): Flow<WorkoutSessionEntity?> = workoutSessionDao.observeById(sessionId)
 
     fun observeSessionsForUser(userId: String): Flow<List<WorkoutSessionEntity>> = workoutSessionDao.observeForUser(userId)
+
+    fun observeSessionSummaries(userId: String): Flow<List<SessionSummary>> = workoutSessionDao.observeSessionSummaries(userId)
 
     fun observeSetsForSession(sessionId: String): Flow<List<SetEntryEntity>> = setEntryDao.observeForSession(sessionId)
 

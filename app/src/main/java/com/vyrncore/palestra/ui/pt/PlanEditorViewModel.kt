@@ -7,6 +7,7 @@ import com.vyrncore.palestra.data.local.SyncStatus
 import com.vyrncore.palestra.data.local.entity.PlanExerciseEntity
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.WorkoutRepository
+import com.vyrncore.palestra.data.sync.SyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -28,6 +29,7 @@ data class DraftPlanExercise(
 class PlanEditorViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val authRepository: AuthRepository,
+    private val syncScheduler: SyncScheduler,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -74,6 +76,7 @@ class PlanEditorViewModel @Inject constructor(
                     )
                 },
             )
+            syncScheduler.syncNow()
             onSaved()
         }
     }

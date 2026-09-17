@@ -75,6 +75,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.1")
 
     implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.animation:animation")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
@@ -90,6 +91,12 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
+
+    // Preferences (theme setting)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Splash screen
+    implementation("androidx.core:core-splashscreen:1.0.1")
 
     // WorkManager (background sync)
     implementation("androidx.work:work-runtime-ktx:2.9.1")

@@ -15,10 +15,14 @@ App Android nativa per la gestione di allenamenti in palestra, pensata per due r
 - Autenticazione con due ruoli (PT / Allievo)
 - Il PT crea schede di allenamento e le assegna ai propri allievi
 - L'allievo segue la scheda, registra serie/ripetizioni/peso per ogni esercizio
+- Home con streak di allenamenti consecutivi, allenamenti della settimana e CTA per la prossima scheda
+- Cronologia allenamenti (data, durata, serie, volume totale)
 - Timer di recupero tra le serie
 - Statistiche di progressione (record personali, grafico del carico nel tempo)
 - Tracciamento dati corporei (peso, massa grassa, misure)
-- Sincronizzazione offline-first: tutto ciò che viene registrato in palestra senza rete viene inviato al cloud appena disponibile
+- Profilo con tema chiaro/scuro/di sistema (persistito) e logout
+- Catalogo di 24 esercizi comuni precaricato al primo avvio (offline e su Supabase)
+- Sincronizzazione bidirezionale: push dei dati registrati offline + pull di schede/progressi assegnati da un altro dispositivo (es. il PT assegna una scheda, l'allievo la riceve al sync successivo)
 
 ## Architettura
 
@@ -32,7 +36,9 @@ di/            Moduli Hilt (Database, Supabase)
 ui/            Schermate Compose organizzate per feature (auth, workout, timer, stats, bodymetrics, pt, dashboard)
 ```
 
-Ogni riga locale ha uno `syncStatus` (`SYNCED`, `PENDING_CREATE`, `PENDING_UPDATE`, `PENDING_DELETE`). Le scritture (log di una serie, nuova misurazione, ecc.) avvengono sempre e solo su Room; `SyncWorker` gira periodicamente e quando c'è rete per svuotare la coda verso Supabase.
+Ogni riga locale ha uno `syncStatus` (`SYNCED`, `PENDING_CREATE`, `PENDING_UPDATE`, `PENDING_DELETE`). Le scritture (log di una serie, nuova misurazione, ecc.) avvengono sempre e solo su Room; `SyncWorker` gira periodicamente, al login e dopo ogni assegnazione scheda, e quando c'è rete: prima spinge (`push`) le righe pendenti su Supabase, poi tira giù (`pull`) schede/sessioni/metriche rilevanti per l'utente loggato (e, se PT, per i suoi allievi) — è questo pull a far arrivare su un dispositivo una scheda assegnata da un altro.
+
+Le entità Room hanno indici e foreign key sulle relazioni possedute nello stesso flusso locale (scheda→esercizi, sessione→serie), per integrità referenziale e query più veloci; le relazioni cross-utente (PT/allievo) restano senza FK stretta perché arrivano via sync e non sempre nello stesso ordine.
 
 ## Setup
 
@@ -55,6 +61,16 @@ Per usare un **tuo** progetto Supabase invece: crea un progetto su [supabase.com
 | `workout_sessions` | Una sessione di allenamento svolta da un allievo |
 | `set_entries` | Singola serie registrata (reps, peso, RPE) |
 | `body_metrics` | Storico peso corporeo e misure |
+
+## Build dell'APK
+
+Una GitHub Actions (`.github/workflows/build-apk.yml`) compila un APK debug ad ogni push su `main` che tocca il codice Android, e lo carica come artifact scaricabile dalla pagina dell'esecuzione (tab **Actions** del repository). Può anche essere lanciata a mano con **Run workflow**.
+
+Per far sì che l'APK compilato in CI si connetta davvero a Supabase, imposta questi due **repository secret** (Settings → Secrets and variables → Actions):
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+
+Senza questi secret l'APK viene comunque generato (utile per testare solo la UI), ma senza credenziali valide per il backend.
 
 ## Prossimi passi suggeriti
 

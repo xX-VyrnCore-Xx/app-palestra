@@ -9,6 +9,7 @@ object Routes {
     const val ACTIVE_WORKOUT = "active_workout/{sessionId}/{planId}"
     const val STATS = "stats"
     const val BODY_METRICS = "body_metrics"
+    const val PROFILE = "profile"
     const val PT_CLIENT_DETAIL = "pt_client/{clientId}"
     const val PLAN_EDITOR = "plan_editor/{clientId}"
     const val REST_TIMER = "rest_timer/{seconds}"

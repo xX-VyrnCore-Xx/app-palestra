@@ -154,3 +154,34 @@ create policy "body_metrics_select" on public.body_metrics
     );
 create policy "body_metrics_write" on public.body_metrics
     for insert with check (auth.uid() = user_id);
+
+-- Built-in exercise catalog ---------------------------------------------------
+-- Same fixed IDs as ExerciseCatalogSeed.kt, so a device that seeds its local
+-- Room catalog and later syncs never creates duplicates (push is an upsert by id).
+
+insert into public.exercises (id, name, muscle_group, equipment, is_custom) values
+    ('a10c9b1e-1111-4a11-8000-000000000001', 'Panca piana', 'Petto', 'Bilanciere', false),
+    ('a10c9b1e-1111-4a11-8000-000000000002', 'Panca inclinata', 'Petto', 'Bilanciere', false),
+    ('a10c9b1e-1111-4a11-8000-000000000003', 'Croci ai cavi', 'Petto', 'Cavi', false),
+    ('a10c9b1e-1111-4a11-8000-000000000004', 'Piegamenti', 'Petto', null, false),
+    ('a10c9b1e-1111-4a11-8000-000000000005', 'Trazioni alla lat machine', 'Dorso', 'Lat machine', false),
+    ('a10c9b1e-1111-4a11-8000-000000000006', 'Rematore con bilanciere', 'Dorso', 'Bilanciere', false),
+    ('a10c9b1e-1111-4a11-8000-000000000007', 'Trazioni alla sbarra', 'Dorso', 'Sbarra', false),
+    ('a10c9b1e-1111-4a11-8000-000000000008', 'Stacco da terra', 'Dorso', 'Bilanciere', false),
+    ('a10c9b1e-1111-4a11-8000-000000000009', 'Squat', 'Gambe', 'Bilanciere', false),
+    ('a10c9b1e-1111-4a11-8000-00000000000a', 'Leg press', 'Gambe', 'Macchina', false),
+    ('a10c9b1e-1111-4a11-8000-00000000000b', 'Affondi', 'Gambe', 'Manubri', false),
+    ('a10c9b1e-1111-4a11-8000-00000000000c', 'Leg curl', 'Gambe', 'Macchina', false),
+    ('a10c9b1e-1111-4a11-8000-00000000000d', 'Leg extension', 'Gambe', 'Macchina', false),
+    ('a10c9b1e-1111-4a11-8000-00000000000e', 'Polpacci in piedi', 'Gambe', 'Macchina', false),
+    ('a10c9b1e-1111-4a11-8000-00000000000f', 'Military press', 'Spalle', 'Bilanciere', false),
+    ('a10c9b1e-1111-4a11-8000-000000000010', 'Alzate laterali', 'Spalle', 'Manubri', false),
+    ('a10c9b1e-1111-4a11-8000-000000000011', 'Alzate posteriori', 'Spalle', 'Manubri', false),
+    ('a10c9b1e-1111-4a11-8000-000000000012', 'Curl bicipiti', 'Braccia', 'Manubri', false),
+    ('a10c9b1e-1111-4a11-8000-000000000013', 'Curl a martello', 'Braccia', 'Manubri', false),
+    ('a10c9b1e-1111-4a11-8000-000000000014', 'Push down ai cavi', 'Braccia', 'Cavi', false),
+    ('a10c9b1e-1111-4a11-8000-000000000015', 'French press', 'Braccia', 'Bilanciere', false),
+    ('a10c9b1e-1111-4a11-8000-000000000016', 'Plank', 'Core', null, false),
+    ('a10c9b1e-1111-4a11-8000-000000000017', 'Crunch', 'Core', null, false),
+    ('a10c9b1e-1111-4a11-8000-000000000018', 'Russian twist', 'Core', 'Disco', false)
+on conflict (id) do nothing;
