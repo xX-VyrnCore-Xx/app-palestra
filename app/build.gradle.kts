@@ -112,8 +112,8 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.51.1")
-    ksp("com.google.dagger:hilt-android-compiler:2.51.1")
+    implementation("com.google.dagger:hilt-android:2.60.1")
+    ksp("com.google.dagger:hilt-android-compiler:2.60.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
     // Room (offline-first local database)
