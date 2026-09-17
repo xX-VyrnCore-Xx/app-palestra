@@ -13,47 +13,95 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vyrncore.palestra.ui.chat.ChatListScreen
 import com.vyrncore.palestra.ui.components.EmptyState
 import com.vyrncore.palestra.ui.components.GradientHeader
+import com.vyrncore.palestra.ui.profile.ProfileScreen
+
+private data class PtTab(val label: String, val icon: ImageVector)
+
+private val tabs = listOf(
+    PtTab("Allievi", Icons.Filled.People),
+    PtTab("Chat", Icons.Filled.Forum),
+    PtTab("Profilo", Icons.Filled.Person),
+)
 
 @Composable
 fun PtDashboardScreen(
     onOpenClient: (clientId: String) -> Unit,
-    onOpenProfile: () -> Unit,
+    onOpenChat: (clientId: String) -> Unit,
+    onSignedOut: () -> Unit,
     viewModel: PtDashboardViewModel = hiltViewModel(),
+) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val unreadCount by viewModel.unreadCount.collectAsState()
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                tabs.forEachIndexed { index, tab ->
+                    NavigationBarItem(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        icon = {
+                            if (tab.label == "Chat" && unreadCount > 0) {
+                                BadgedBox(badge = { Badge { Text("$unreadCount") } }) {
+                                    Icon(tab.icon, contentDescription = tab.label)
+                                }
+                            } else {
+                                Icon(tab.icon, contentDescription = tab.label)
+                            }
+                        },
+                        label = { Text(tab.label) },
+                    )
+                }
+            }
+        },
+    ) { padding ->
+        Box(modifier = Modifier.padding(padding)) {
+            when (selectedTab) {
+                0 -> PtClientListScreen(onOpenClient = onOpenClient, viewModel = viewModel)
+                1 -> ChatListScreen(onOpenChat = onOpenChat)
+                else -> ProfileScreen(onOpenBodyMetrics = {}, onSignedOut = onSignedOut)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PtClientListScreen(
+    onOpenClient: (clientId: String) -> Unit,
+    viewModel: PtDashboardViewModel,
 ) {
     val clients by viewModel.clients.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("I tuoi allievi") },
-                actions = {
-                    IconButton(onClick = onOpenProfile) {
-                        Icon(Icons.Filled.Person, contentDescription = "Profilo")
-                    }
-                },
-            )
-        },
-    ) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text("I tuoi allievi") }) }) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             GradientHeader(
                 title = "${clients.size} allievi",

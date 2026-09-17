@@ -81,3 +81,23 @@ data class BodyMetricDto(
     @SerialName("thigh_cm") val thighCm: Double? = null,
     val notes: String? = null,
 )
+
+@Serializable
+data class ChatMessageDto(
+    val id: String,
+    @SerialName("sender_id") val senderId: String,
+    @SerialName("recipient_id") val recipientId: String,
+    val content: String,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("read_at") val readAt: String? = null,
+)
+
+@Serializable
+data class PtNoteDto(
+    val id: String,
+    @SerialName("pt_id") val ptId: String,
+    @SerialName("client_id") val clientId: String,
+    val content: String,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+)

@@ -2,6 +2,9 @@ package com.vyrncore.palestra.ui.stats
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vyrncore.palestra.data.local.dao.MuscleGroupVolume
+import com.vyrncore.palestra.data.local.dao.WeeklyVolume
+import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -25,9 +29,17 @@ data class StatsUiState(
 @HiltViewModel
 class StatsViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
+    authRepository: AuthRepository,
 ) : ViewModel() {
 
+    private val userId = authRepository.currentUserId.orEmpty()
     private val selectedExerciseId = MutableStateFlow<String?>(null)
+
+    val advancedStats: StateFlow<Pair<List<MuscleGroupVolume>, List<WeeklyVolume>>> = combine(
+        workoutRepository.observeVolumeByMuscleGroup(userId),
+        workoutRepository.observeWeeklyVolume(userId),
+    ) { byMuscle, weekly -> byMuscle to weekly }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList<MuscleGroupVolume>() to emptyList())
 
     val uiState: StateFlow<StatsUiState> = combine(
         workoutRepository.observeExercises(),
@@ -37,9 +49,9 @@ class StatsViewModel @Inject constructor(
             val historyFlow = if (selectedId != null) {
                 workoutRepository.observeHistoryForExercise(selectedId)
             } else {
-                kotlinx.coroutines.flow.flowOf(emptyList())
+                flowOf(emptyList())
             }
-            historyFlow.combine(kotlinx.coroutines.flow.flowOf(exercises)) { sets, exs ->
+            historyFlow.combine(flowOf(exercises)) { sets, exs ->
                 val points = sets
                     .groupBy { it.completedAtEpochMs / 86_400_000L } // bucket by day
                     .map { (_, daySets) ->

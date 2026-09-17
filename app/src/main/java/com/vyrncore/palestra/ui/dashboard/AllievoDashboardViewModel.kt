@@ -1,4 +1,4 @@
-package com.vyrncore.palestra.ui.pt
+package com.vyrncore.palestra.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -6,20 +6,21 @@ import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.ChatRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
-class PtDashboardViewModel @Inject constructor(
-    private val authRepository: AuthRepository,
+class AllievoDashboardViewModel @Inject constructor(
+    authRepository: AuthRepository,
     chatRepository: ChatRepository,
 ) : ViewModel() {
 
-    val ptId: String get() = authRepository.currentUserId.orEmpty()
+    private val userId = authRepository.currentUserId.orEmpty()
 
-    val clients = authRepository.observeClients(ptId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val ptId = authRepository.observeProfile(userId).map { it?.ptId }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val unreadCount = chatRepository.observeUnreadCount(ptId)
+    val unreadCount = chatRepository.observeUnreadCount(userId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 }

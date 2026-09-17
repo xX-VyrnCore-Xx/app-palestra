@@ -3,9 +3,11 @@ package com.vyrncore.palestra.data.repository
 import com.vyrncore.palestra.data.local.ExerciseCatalogSeed
 import com.vyrncore.palestra.data.local.SyncStatus
 import com.vyrncore.palestra.data.local.dao.ExerciseDao
+import com.vyrncore.palestra.data.local.dao.MuscleGroupVolume
 import com.vyrncore.palestra.data.local.dao.PlanExerciseDao
 import com.vyrncore.palestra.data.local.dao.SessionSummary
 import com.vyrncore.palestra.data.local.dao.SetEntryDao
+import com.vyrncore.palestra.data.local.dao.WeeklyVolume
 import com.vyrncore.palestra.data.local.dao.WorkoutPlanDao
 import com.vyrncore.palestra.data.local.dao.WorkoutSessionDao
 import com.vyrncore.palestra.data.local.entity.ExerciseEntity
@@ -99,6 +101,12 @@ class WorkoutRepository @Inject constructor(
 
     fun observeHistoryForExercise(exerciseId: String): Flow<List<SetEntryEntity>> =
         setEntryDao.observeHistoryForExercise(exerciseId)
+
+    fun observeVolumeByMuscleGroup(userId: String): Flow<List<MuscleGroupVolume>> =
+        setEntryDao.observeVolumeByMuscleGroup(userId)
+
+    fun observeWeeklyVolume(userId: String): Flow<List<WeeklyVolume>> =
+        setEntryDao.observeWeeklyVolume(userId)
 
     suspend fun startSession(userId: String, planId: String?): String {
         val sessionId = UUID.randomUUID().toString()

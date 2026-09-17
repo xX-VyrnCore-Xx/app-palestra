@@ -9,8 +9,10 @@ import androidx.room.Update
 import androidx.room.Upsert
 import com.vyrncore.palestra.data.local.SyncStatus
 import com.vyrncore.palestra.data.local.entity.BodyMetricEntity
+import com.vyrncore.palestra.data.local.entity.ChatMessageEntity
 import com.vyrncore.palestra.data.local.entity.ExerciseEntity
 import com.vyrncore.palestra.data.local.entity.PlanExerciseEntity
+import com.vyrncore.palestra.data.local.entity.PtNoteEntity
 import com.vyrncore.palestra.data.local.entity.SetEntryEntity
 import com.vyrncore.palestra.data.local.entity.UserProfileEntity
 import com.vyrncore.palestra.data.local.entity.WorkoutPlanEntity
@@ -140,7 +142,36 @@ interface SetEntryDao {
 
     @Query("SELECT * FROM set_entries WHERE syncStatus != 'SYNCED'")
     suspend fun getPendingSync(): List<SetEntryEntity>
+
+    @Query(
+        """
+        SELECT e.muscleGroup AS muscleGroup, COALESCE(SUM(se.weightKg * se.reps), 0) AS totalVolumeKg
+        FROM set_entries se
+        JOIN workout_sessions ws ON ws.id = se.sessionId
+        JOIN exercises e ON e.id = se.exerciseId
+        WHERE ws.userId = :userId
+        GROUP BY e.muscleGroup
+        ORDER BY totalVolumeKg DESC
+        """,
+    )
+    fun observeVolumeByMuscleGroup(userId: String): Flow<List<MuscleGroupVolume>>
+
+    @Query(
+        """
+        SELECT (se.completedAtEpochMs / 604800000) AS weekBucket, COALESCE(SUM(se.weightKg * se.reps), 0) AS totalVolumeKg
+        FROM set_entries se
+        JOIN workout_sessions ws ON ws.id = se.sessionId
+        WHERE ws.userId = :userId
+        GROUP BY weekBucket
+        ORDER BY weekBucket ASC
+        """,
+    )
+    fun observeWeeklyVolume(userId: String): Flow<List<WeeklyVolume>>
 }
+
+data class MuscleGroupVolume(val muscleGroup: String, val totalVolumeKg: Double)
+
+data class WeeklyVolume(val weekBucket: Long, val totalVolumeKg: Double)
 
 @Dao
 interface BodyMetricDao {
@@ -152,4 +183,52 @@ interface BodyMetricDao {
 
     @Query("SELECT * FROM body_metrics WHERE syncStatus != 'SYNCED'")
     suspend fun getPendingSync(): List<BodyMetricEntity>
+}
+
+@Dao
+interface ChatMessageDao {
+    @Upsert
+    suspend fun upsert(message: ChatMessageEntity)
+
+    @Query(
+        """
+        SELECT * FROM chat_messages
+        WHERE (senderId = :userId AND recipientId = :otherUserId) OR (senderId = :otherUserId AND recipientId = :userId)
+        ORDER BY createdAtEpochMs ASC
+        """,
+    )
+    fun observeConversation(userId: String, otherUserId: String): Flow<List<ChatMessageEntity>>
+
+    @Query(
+        """
+        SELECT * FROM chat_messages
+        WHERE (senderId = :userId AND recipientId = :otherUserId) OR (senderId = :otherUserId AND recipientId = :userId)
+        ORDER BY createdAtEpochMs DESC LIMIT 1
+        """,
+    )
+    fun observeLastMessage(userId: String, otherUserId: String): Flow<ChatMessageEntity?>
+
+    @Query("SELECT COUNT(*) FROM chat_messages WHERE recipientId = :userId AND readAtEpochMs IS NULL")
+    fun observeUnreadCount(userId: String): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM chat_messages WHERE recipientId = :userId AND senderId = :otherUserId AND readAtEpochMs IS NULL")
+    fun observeUnreadCountFromSender(userId: String, otherUserId: String): Flow<Int>
+
+    @Query("UPDATE chat_messages SET readAtEpochMs = :now WHERE recipientId = :userId AND senderId = :otherUserId AND readAtEpochMs IS NULL")
+    suspend fun markRead(userId: String, otherUserId: String, now: Long)
+
+    @Query("SELECT * FROM chat_messages WHERE syncStatus != 'SYNCED'")
+    suspend fun getPendingSync(): List<ChatMessageEntity>
+}
+
+@Dao
+interface PtNoteDao {
+    @Upsert
+    suspend fun upsert(note: PtNoteEntity)
+
+    @Query("SELECT * FROM pt_notes WHERE ptId = :ptId AND clientId = :clientId LIMIT 1")
+    fun observeForClient(ptId: String, clientId: String): Flow<PtNoteEntity?>
+
+    @Query("SELECT * FROM pt_notes WHERE syncStatus != 'SYNCED'")
+    suspend fun getPendingSync(): List<PtNoteEntity>
 }
