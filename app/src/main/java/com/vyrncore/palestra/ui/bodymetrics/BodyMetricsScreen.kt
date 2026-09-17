@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vyrncore.palestra.ui.components.SimpleLineChart
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -55,6 +56,25 @@ fun BodyMetricsScreen(viewModel: BodyMetricsViewModel = hiltViewModel()) {
         },
     ) { padding ->
         LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
+            val weightTrend = metrics.mapNotNull { it.weightKg }.asReversed()
+            if (weightTrend.size >= 2) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("Andamento peso", style = MaterialTheme.typography.titleSmall)
+                            SimpleLineChart(
+                                values = weightTrend,
+                                modifier = Modifier.padding(top = 8.dp),
+                                lineColor = MaterialTheme.colorScheme.secondary,
+                            )
+                        }
+                    }
+                }
+            }
             items(metrics, key = { it.id }) { metric ->
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),

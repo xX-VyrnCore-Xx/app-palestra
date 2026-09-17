@@ -1,6 +1,6 @@
-# Palestra
+# Vibe Fitness
 
-App Android nativa per la gestione di allenamenti in palestra, pensata per due ruoli: **Allievo** (traccia allenamenti, progressi, dati corporei) e **Personal Trainer** (assegna schede e monitora i propri allievi).
+App Android nativa per il brand di palestre **Vibe Fitness**, pensata per due ruoli: **Allievo** (traccia allenamenti, progressi, dati corporei) e **Personal Trainer** (assegna schede e monitora i propri allievi).
 
 ## Stack tecnico
 
@@ -15,11 +15,13 @@ App Android nativa per la gestione di allenamenti in palestra, pensata per due r
 - Autenticazione con due ruoli (PT / Allievo)
 - Il PT crea schede di allenamento e le assegna ai propri allievi
 - L'allievo segue la scheda, registra serie/ripetizioni/peso per ogni esercizio
-- Home con streak di allenamenti consecutivi, allenamenti della settimana e CTA per la prossima scheda
+- Home con streak di allenamenti consecutivi, allenamenti della settimana, traguardi/badge (3/7/14/30/60/100 giorni) e CTA per la prossima scheda
 - Cronologia allenamenti (data, durata, serie, volume totale)
 - Timer di recupero tra le serie
 - Statistiche di progressione (record personali, grafico del carico nel tempo)
-- Tracciamento dati corporei (peso, massa grassa, misure)
+- Tracciamento dati corporei (peso, massa grassa, misure) con grafico dell'andamento peso
+- Il PT vede, per ogni allievo, allenamenti svolti, ultimo allenamento e andamento peso
+- Notifica di promemoria giornaliera se l'allievo non si allena da 2+ giorni (disattivabile dal Profilo)
 - Profilo con tema chiaro/scuro/di sistema (persistito) e logout
 - Catalogo di 24 esercizi comuni precaricato al primo avvio (offline e su Supabase)
 - Sincronizzazione bidirezionale: push dei dati registrati offline + pull di schede/progressi assegnati da un altro dispositivo (es. il PT assegna una scheda, l'allievo la riceve al sync successivo)

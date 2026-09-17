@@ -52,7 +52,7 @@ fun RegisterScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        GradientHeader(title = "Crea account", subtitle = "Inizia il tuo percorso in palestra")
+        GradientHeader(title = "Unisciti al Vibe", subtitle = "Crea il tuo account e inizia il tuo percorso")
 
         Surface(
             modifier = Modifier.fillMaxWidth().padding(24.dp),
