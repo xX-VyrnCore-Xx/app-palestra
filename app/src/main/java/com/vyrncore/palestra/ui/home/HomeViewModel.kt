@@ -18,12 +18,28 @@ import javax.inject.Inject
  * longest streak ever reached, not the current one, so a rest day never takes a badge away. */
 val BADGE_MILESTONES = listOf(3, 7, 14, 30, 60, 100)
 
+/** Total completed workouts that unlock a separate milestone badge, independent of streaks. */
+val WORKOUT_COUNT_MILESTONES = listOf(5, 10, 25, 50, 100, 250)
+
+/** How many workouts count as a "full" week for the weekly goal ring. */
+const val WEEKLY_GOAL = 3
+
+/** XP awarded per completed workout and per badge unlocked; levels are 100 XP apart. */
+private const val XP_PER_SESSION = 30
+private const val XP_PER_BADGE = 20
+private const val XP_PER_LEVEL = 100
+
 data class HomeUiState(
     val fullName: String = "",
     val streakDays: Int = 0,
     val longestStreakDays: Int = 0,
     val workoutsThisWeek: Int = 0,
+    val totalWorkouts: Int = 0,
     val unlockedBadges: List<Int> = emptyList(),
+    val unlockedWorkoutCountBadges: List<Int> = emptyList(),
+    val xp: Int = 0,
+    val level: Int = 1,
+    val xpIntoLevel: Int = 0,
     val nextPlanId: String? = null,
     val nextPlanName: String? = null,
 )
@@ -64,6 +80,11 @@ class HomeViewModel @Inject constructor(
 
         val weekAgo = LocalDate.now(zone).minusDays(7)
         val workoutsThisWeek = doneDates.count { it.isAfter(weekAgo) }
+        val totalWorkouts = sessions.count { it.endedAtEpochMs != null }
+
+        val unlockedBadges = BADGE_MILESTONES.filter { longestStreak >= it }
+        val unlockedWorkoutCountBadges = WORKOUT_COUNT_MILESTONES.filter { totalWorkouts >= it }
+        val xp = totalWorkouts * XP_PER_SESSION + (unlockedBadges.size + unlockedWorkoutCountBadges.size) * XP_PER_BADGE
 
         val nextPlan = plans.firstOrNull()
         HomeUiState(
@@ -71,7 +92,12 @@ class HomeViewModel @Inject constructor(
             streakDays = streak,
             longestStreakDays = longestStreak,
             workoutsThisWeek = workoutsThisWeek,
-            unlockedBadges = BADGE_MILESTONES.filter { longestStreak >= it },
+            totalWorkouts = totalWorkouts,
+            unlockedBadges = unlockedBadges,
+            unlockedWorkoutCountBadges = unlockedWorkoutCountBadges,
+            xp = xp,
+            level = 1 + xp / XP_PER_LEVEL,
+            xpIntoLevel = xp % XP_PER_LEVEL,
             nextPlanId = nextPlan?.id,
             nextPlanName = nextPlan?.name,
         )

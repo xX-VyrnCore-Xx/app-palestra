@@ -117,9 +117,9 @@ dependencies {
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
     // Room (offline-first local database)
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-runtime:2.8.4")
+    implementation("androidx.room:room-ktx:2.8.4")
+    ksp("androidx.room:room-compiler:2.8.4")
 
     // Preferences (theme setting)
     implementation("androidx.datastore:datastore-preferences:1.1.1")
@@ -129,8 +129,8 @@ dependencies {
 
     // WorkManager (background sync)
     implementation("androidx.work:work-runtime-ktx:2.9.1")
-    implementation("androidx.hilt:hilt-work:1.2.0")
-    ksp("androidx.hilt:hilt-compiler:1.2.0")
+    implementation("androidx.hilt:hilt-work:1.3.0")
+    ksp("androidx.hilt:hilt-compiler:1.3.0")
 
     // Supabase (Auth, Postgrest, Realtime) + Ktor engine
     val supabaseVersion = "3.1.4"

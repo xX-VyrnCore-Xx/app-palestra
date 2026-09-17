@@ -65,15 +65,19 @@ fun WorkoutPlansScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(48.dp)
+                                    .size(52.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                    .background(
+                                        androidx.compose.ui.graphics.Brush.linearGradient(
+                                            listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary),
+                                        ),
+                                    ),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     Icons.Filled.FitnessCenter,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    tint = androidx.compose.ui.graphics.Color.White,
                                 )
                             }
                             Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
