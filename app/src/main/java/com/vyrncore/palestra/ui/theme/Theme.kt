@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import com.vyrncore.palestra.data.repository.ThemeMode
 
 private val DarkColors = darkColorScheme(
     primary = Violet50,
@@ -48,9 +49,14 @@ private val LightColors = lightColorScheme(
 
 @Composable
 fun PalestraTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
     content: @Composable () -> Unit,
 ) {
+    val darkTheme = when (themeMode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
     MaterialTheme(
         colorScheme = if (darkTheme) DarkColors else LightColors,
         typography = PalestraTypography,

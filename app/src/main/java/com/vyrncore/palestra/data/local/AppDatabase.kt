@@ -28,7 +28,7 @@ import com.vyrncore.palestra.data.local.entity.WorkoutSessionEntity
         SetEntryEntity::class,
         BodyMetricEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

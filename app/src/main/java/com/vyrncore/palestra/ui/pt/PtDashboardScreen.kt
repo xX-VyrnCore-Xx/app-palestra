@@ -13,8 +13,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -32,11 +36,23 @@ import com.vyrncore.palestra.ui.components.GradientHeader
 @Composable
 fun PtDashboardScreen(
     onOpenClient: (clientId: String) -> Unit,
+    onOpenProfile: () -> Unit,
     viewModel: PtDashboardViewModel = hiltViewModel(),
 ) {
     val clients by viewModel.clients.collectAsState()
 
-    Scaffold(topBar = { TopAppBar(title = { Text("I tuoi allievi") }) }) { padding ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("I tuoi allievi") },
+                actions = {
+                    IconButton(onClick = onOpenProfile) {
+                        Icon(Icons.Filled.Person, contentDescription = "Profilo")
+                    }
+                },
+            )
+        },
+    ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             GradientHeader(
                 title = "${clients.size} allievi",

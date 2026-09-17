@@ -45,6 +45,9 @@ interface ExerciseDao {
 
     @Query("SELECT * FROM exercises WHERE syncStatus != 'SYNCED'")
     suspend fun getPendingSync(): List<ExerciseEntity>
+
+    @Query("SELECT COUNT(*) FROM exercises")
+    suspend fun count(): Int
 }
 
 @Dao
@@ -99,7 +102,30 @@ interface WorkoutSessionDao {
 
     @Query("SELECT * FROM workout_sessions WHERE syncStatus != 'SYNCED'")
     suspend fun getPendingSync(): List<WorkoutSessionEntity>
+
+    @Query(
+        """
+        SELECT ws.id AS sessionId, ws.planId AS planId, ws.startedAtEpochMs AS startedAtEpochMs,
+               ws.endedAtEpochMs AS endedAtEpochMs, COUNT(se.id) AS setCount,
+               COALESCE(SUM(se.weightKg * se.reps), 0) AS totalVolumeKg
+        FROM workout_sessions ws
+        LEFT JOIN set_entries se ON se.sessionId = ws.id
+        WHERE ws.userId = :userId
+        GROUP BY ws.id
+        ORDER BY ws.startedAtEpochMs DESC
+        """,
+    )
+    fun observeSessionSummaries(userId: String): Flow<List<SessionSummary>>
 }
+
+data class SessionSummary(
+    val sessionId: String,
+    val planId: String?,
+    val startedAtEpochMs: Long,
+    val endedAtEpochMs: Long?,
+    val setCount: Int,
+    val totalVolumeKg: Double,
+)
 
 @Dao
 interface SetEntryDao {

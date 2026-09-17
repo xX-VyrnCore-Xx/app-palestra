@@ -1,6 +1,8 @@
 package com.vyrncore.palestra.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.vyrncore.palestra.data.local.SyncStatus
 
@@ -28,7 +30,10 @@ data class ExerciseEntity(
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 
-@Entity(tableName = "workout_plans")
+@Entity(
+    tableName = "workout_plans",
+    indices = [Index("createdByPtId"), Index("assignedToUserId")],
+)
 data class WorkoutPlanEntity(
     @PrimaryKey val id: String,
     val name: String,
@@ -39,7 +44,18 @@ data class WorkoutPlanEntity(
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 
-@Entity(tableName = "plan_exercises")
+@Entity(
+    tableName = "plan_exercises",
+    indices = [Index("planId"), Index("exerciseId")],
+    foreignKeys = [
+        ForeignKey(
+            entity = WorkoutPlanEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["planId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
 data class PlanExerciseEntity(
     @PrimaryKey val id: String,
     val planId: String,
@@ -52,7 +68,10 @@ data class PlanExerciseEntity(
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 
-@Entity(tableName = "workout_sessions")
+@Entity(
+    tableName = "workout_sessions",
+    indices = [Index("userId"), Index("planId")],
+)
 data class WorkoutSessionEntity(
     @PrimaryKey val id: String,
     val planId: String? = null,
@@ -63,7 +82,18 @@ data class WorkoutSessionEntity(
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 
-@Entity(tableName = "set_entries")
+@Entity(
+    tableName = "set_entries",
+    indices = [Index("sessionId"), Index("exerciseId")],
+    foreignKeys = [
+        ForeignKey(
+            entity = WorkoutSessionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["sessionId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
 data class SetEntryEntity(
     @PrimaryKey val id: String,
     val sessionId: String,
@@ -76,7 +106,7 @@ data class SetEntryEntity(
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 
-@Entity(tableName = "body_metrics")
+@Entity(tableName = "body_metrics", indices = [Index("userId")])
 data class BodyMetricEntity(
     @PrimaryKey val id: String,
     val userId: String,

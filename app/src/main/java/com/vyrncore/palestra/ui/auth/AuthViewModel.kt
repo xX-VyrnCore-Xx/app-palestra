@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.data.repository.AuthRepository
+import com.vyrncore.palestra.data.sync.SyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,7 @@ data class AuthUiState(
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val syncScheduler: SyncScheduler,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState(loggedInUserId = authRepository.currentUserId))
@@ -30,6 +32,7 @@ class AuthViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             runCatching { authRepository.signIn(email, password) }
                 .onSuccess {
+                    syncScheduler.syncNow()
                     _uiState.value = AuthUiState(loggedInUserId = authRepository.currentUserId)
                 }
                 .onFailure { e ->
@@ -43,6 +46,7 @@ class AuthViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             runCatching { authRepository.signUp(email, password, fullName, role, ptId?.takeIf { it.isNotBlank() }) }
                 .onSuccess {
+                    syncScheduler.syncNow()
                     _uiState.value = AuthUiState(loggedInUserId = authRepository.currentUserId)
                 }
                 .onFailure { e ->
