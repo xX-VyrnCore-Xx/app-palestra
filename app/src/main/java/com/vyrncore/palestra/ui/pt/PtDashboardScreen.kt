@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.People
@@ -40,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vyrncore.palestra.ui.ai.AiAssistantScreen
 import com.vyrncore.palestra.ui.chat.ChatListScreen
 import com.vyrncore.palestra.ui.components.EmptyState
 import com.vyrncore.palestra.ui.components.GradientHeader
@@ -50,6 +52,7 @@ private data class PtTab(val label: String, val icon: ImageVector)
 private val tabs = listOf(
     PtTab("Allievi", Icons.Filled.People),
     PtTab("Chat", Icons.Filled.Forum),
+    PtTab("Assistente", Icons.Filled.AutoAwesome),
     PtTab("Profilo", Icons.Filled.Person),
 )
 
@@ -89,6 +92,7 @@ fun PtDashboardScreen(
             when (selectedTab) {
                 0 -> PtClientListScreen(onOpenClient = onOpenClient, viewModel = viewModel)
                 1 -> ChatListScreen(onOpenChat = onOpenChat)
+                2 -> AiAssistantScreen(onBack = {})
                 else -> ProfileScreen(onOpenBodyMetrics = {}, onSignedOut = onSignedOut)
             }
         }

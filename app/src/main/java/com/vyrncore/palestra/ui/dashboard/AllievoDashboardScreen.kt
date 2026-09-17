@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Home
@@ -25,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vyrncore.palestra.ui.ai.AiAssistantScreen
 import com.vyrncore.palestra.ui.chat.ChatThreadScreen
 import com.vyrncore.palestra.ui.components.EmptyState
 import com.vyrncore.palestra.ui.home.HomeScreen
@@ -41,6 +43,7 @@ private val tabs = listOf(
     AllievoTab("Schede", Icons.Filled.FitnessCenter),
     AllievoTab("Progressi", Icons.Filled.TrendingUp),
     AllievoTab("Chat", Icons.Filled.Forum),
+    AllievoTab("Assistente", Icons.Filled.AutoAwesome),
     AllievoTab("Profilo", Icons.Filled.Person),
 )
 
@@ -94,6 +97,7 @@ fun AllievoDashboardScreen(
                         )
                     }
                 }
+                4 -> AiAssistantScreen(onBack = {})
                 else -> ProfileScreen(onOpenBodyMetrics = onOpenBodyMetrics, onSignedOut = onSignedOut)
             }
         }

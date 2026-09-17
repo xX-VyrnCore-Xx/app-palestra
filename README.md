@@ -80,6 +80,20 @@ Per far sì che l'APK compilato in CI si connetta davvero a Supabase, imposta qu
 
 Senza questi secret l'APK viene comunque generato (utile per testare solo la UI), ma senza credenziali valide per il backend.
 
+## Assistente AI (NVIDIA NIM)
+
+Il PT e l'allievo hanno ciascuno un assistente AI privato (tab "Assistente"), con prompt di sistema
+diversi scelti automaticamente in base al ruolo. La chiamata a NVIDIA NIM avviene solo lato server,
+tramite l'Edge Function Supabase `ai-chat` (`supabase/functions/ai-chat`): la API key **non è mai**
+presente nel codice dell'app. La funzione applica anche un rate limit globale (40 richieste/minuto,
+limite dell'account NIM) condiviso tra tutti gli utenti.
+
+Per attivarla, imposta un secret sul progetto Supabase:
+```
+supabase secrets set NVIDIA_NIM_API_KEY=<la-tua-chiave> --project-ref qibthdzydlyvdknimfoj
+```
+Senza questo secret l'assistente risponde con un errore "non configurato", il resto dell'app funziona normalmente.
+
 ## Pubblicazione su Google Play Store
 
 Vedi `docs/play_store_release.md` per la guida completa: build firmata (Android App Bundle) via `.github/workflows/build-release-aab.yml`, testi della scheda (`docs/play_store_listing.md`) e bozza dell'informativa privacy (`docs/privacy_policy.md`).
