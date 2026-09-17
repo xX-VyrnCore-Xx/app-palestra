@@ -5,7 +5,6 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
-    id("org.jetbrains.kotlin.kapt")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
 }
@@ -93,10 +92,6 @@ android {
     }
 }
 
-kapt {
-    correctErrorTypes = true
-}
-
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
     implementation(composeBom)
@@ -116,12 +111,14 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
-    // Hilt DI — processed via kapt, not KSP: Hilt's aggregating step has known
-    // multi-round issues with KSP2 (see docs for the "unexpected jvm signature V" /
-    // "Expected @AndroidEntryPoint to have a value" failures this used to hit).
-    // Room below stays on KSP; kapt and KSP can coexist in the same module.
-    implementation("com.google.dagger:hilt-android:2.52")
-    kapt("com.google.dagger:hilt-android-compiler:2.52")
+    // Hilt DI, processed via KSP. Hilt 2.52's KSP2 aggregating processor had known
+    // multi-round bugs ("unexpected jvm signature V" / "Expected @AndroidEntryPoint to have
+    // a value") that kapt couldn't reliably substitute for either (kapt's own stub generator
+    // has an unresolved Kotlin-2.1.x metadata-reading crash). 2.58 fixed the Kotlin
+    // 2.x/KSP2 metadata handling upstream and is the last release still on AGP 8.x
+    // (2.59+ requires AGP 9).
+    implementation("com.google.dagger:hilt-android:2.58")
+    ksp("com.google.dagger:hilt-android-compiler:2.58")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
     // Room (offline-first local database)
