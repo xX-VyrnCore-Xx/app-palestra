@@ -135,10 +135,11 @@ dependencies {
     // Splash screen
     implementation("androidx.core:core-splashscreen:1.0.1")
 
-    // WorkManager (background sync)
+    // WorkManager (background sync). Workers are built via a manual WorkerFactory
+    // (data/work/AppWorkerFactory.kt), not androidx.hilt-work's @HiltWorker codegen — see
+    // ReminderWorker.kt for why (a kapt/K2 metadata-reading incompatibility on CoroutineWorker
+    // subclasses with @AssistedInject constructors).
     implementation("androidx.work:work-runtime-ktx:2.9.1")
-    implementation("androidx.hilt:hilt-work:1.2.0")
-    kapt("androidx.hilt:hilt-compiler:1.2.0")
 
     // Supabase (Auth, Postgrest, Realtime) + Ktor engine
     val supabaseVersion = "3.1.4"
