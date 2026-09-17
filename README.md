@@ -36,10 +36,13 @@ Ogni riga locale ha uno `syncStatus` (`SYNCED`, `PENDING_CREATE`, `PENDING_UPDAT
 
 ## Setup
 
-1. Crea un progetto su [supabase.com](https://supabase.com) ed esegui `docs/supabase_schema.sql` nello SQL editor per creare tabelle e Row Level Security.
-2. Copia `local.properties.example` in `local.properties` e inserisci `sdk.dir`, `SUPABASE_URL` e `SUPABASE_ANON_KEY` del tuo progetto.
-3. Apri il progetto in Android Studio (Iguana o successivo) e lascia sincronizzare Gradle.
-4. Esegui l'app su un emulatore/dispositivo con API 26+.
+Un progetto Supabase dedicato (`app-palestra`, org VyrnCore IT) è già stato creato e lo schema di `docs/supabase_schema.sql` (tabelle + Row Level Security) è già stato applicato. Per motivi di sicurezza URL e anon key **non sono committati** nel repository: vanno impostati localmente.
+
+1. Copia `local.properties.example` in `local.properties` e imposta `sdk.dir`, `SUPABASE_URL` e `SUPABASE_ANON_KEY` (chiedi le credenziali del progetto `app-palestra` al proprietario, oppure creane uno tuo come descritto sotto).
+2. Apri il progetto in Android Studio (Iguana o successivo) e lascia sincronizzare Gradle.
+3. Esegui l'app su un emulatore/dispositivo con API 26+.
+
+Per usare un **tuo** progetto Supabase invece: crea un progetto su [supabase.com](https://supabase.com), esegui `docs/supabase_schema.sql` nello SQL editor, poi imposta `SUPABASE_URL`/`SUPABASE_ANON_KEY` in `local.properties`.
 
 ## Modello dati (Supabase / Room)
 

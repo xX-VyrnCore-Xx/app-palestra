@@ -1,51 +1,60 @@
 package com.vyrncore.palestra.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-
-private val PalestraOrange = Color(0xFFFF5722)
-private val PalestraOrangeDark = Color(0xFFBF360C)
-private val PalestraDark = Color(0xFF121212)
-
-private val LightColors = lightColorScheme(
-    primary = PalestraOrange,
-    secondary = PalestraOrangeDark,
-    background = Color(0xFFFAFAFA),
-)
 
 private val DarkColors = darkColorScheme(
-    primary = PalestraOrange,
-    secondary = PalestraOrangeDark,
-    background = PalestraDark,
+    primary = Violet50,
+    onPrimary = Neutral10,
+    primaryContainer = Indigo40,
+    onPrimaryContainer = Indigo90,
+    secondary = Lime50,
+    onSecondary = Indigo10,
+    secondaryContainer = Indigo30,
+    onSecondaryContainer = Lime80,
+    tertiary = Coral50,
+    background = Indigo10,
+    onBackground = Neutral90,
+    surface = Indigo20,
+    onSurface = Neutral90,
+    surfaceVariant = Indigo30,
+    onSurfaceVariant = Indigo80,
+    outline = Indigo40,
+    error = Coral50,
+)
+
+private val LightColors = lightColorScheme(
+    primary = Violet40,
+    onPrimary = Neutral99,
+    primaryContainer = Indigo95,
+    onPrimaryContainer = Indigo20,
+    secondary = Lime40,
+    onSecondary = Indigo10,
+    secondaryContainer = Lime80,
+    onSecondaryContainer = Indigo10,
+    tertiary = Coral50,
+    background = Neutral95,
+    onBackground = Neutral10,
+    surface = Neutral99,
+    onSurface = Neutral10,
+    surfaceVariant = Indigo95,
+    onSurfaceVariant = Indigo30,
+    outline = Indigo80,
+    error = Coral50,
 )
 
 @Composable
 fun PalestraTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColors
-        else -> LightColors
-    }
-
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = if (darkTheme) DarkColors else LightColors,
         typography = PalestraTypography,
+        shapes = PalestraShapes,
         content = content,
     )
 }
