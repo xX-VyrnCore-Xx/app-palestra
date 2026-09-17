@@ -129,8 +129,8 @@ dependencies {
 
     // WorkManager (background sync)
     implementation("androidx.work:work-runtime-ktx:2.9.1")
-    implementation("androidx.hilt:hilt-work:1.3.0")
-    ksp("androidx.hilt:hilt-compiler:1.3.0")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    ksp("androidx.hilt:hilt-compiler:1.2.0")
 
     // Supabase (Auth, Postgrest, Realtime) + Ktor engine
     val supabaseVersion = "3.1.4"
