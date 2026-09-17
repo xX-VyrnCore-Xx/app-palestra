@@ -121,3 +121,25 @@ data class BodyMetricEntity(
     val notes: String? = null,
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
+
+@Entity(tableName = "chat_messages", indices = [Index("senderId"), Index("recipientId")])
+data class ChatMessageEntity(
+    @PrimaryKey val id: String,
+    val senderId: String,
+    val recipientId: String,
+    val content: String,
+    val createdAtEpochMs: Long,
+    val readAtEpochMs: Long? = null,
+    val syncStatus: SyncStatus = SyncStatus.SYNCED,
+)
+
+@Entity(tableName = "pt_notes", indices = [Index("ptId"), Index("clientId")])
+data class PtNoteEntity(
+    @PrimaryKey val id: String,
+    val ptId: String,
+    val clientId: String,
+    val content: String,
+    val createdAtEpochMs: Long,
+    val updatedAtEpochMs: Long,
+    val syncStatus: SyncStatus = SyncStatus.SYNCED,
+)

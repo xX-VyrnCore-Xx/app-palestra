@@ -2,16 +2,20 @@ package com.vyrncore.palestra.data.sync
 
 import com.vyrncore.palestra.data.local.SyncStatus
 import com.vyrncore.palestra.data.local.dao.BodyMetricDao
+import com.vyrncore.palestra.data.local.dao.ChatMessageDao
 import com.vyrncore.palestra.data.local.dao.ExerciseDao
 import com.vyrncore.palestra.data.local.dao.PlanExerciseDao
+import com.vyrncore.palestra.data.local.dao.PtNoteDao
 import com.vyrncore.palestra.data.local.dao.SetEntryDao
 import com.vyrncore.palestra.data.local.dao.UserProfileDao
 import com.vyrncore.palestra.data.local.dao.WorkoutPlanDao
 import com.vyrncore.palestra.data.local.dao.WorkoutSessionDao
 import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.data.remote.dto.BodyMetricDto
+import com.vyrncore.palestra.data.remote.dto.ChatMessageDto
 import com.vyrncore.palestra.data.remote.dto.ExerciseDto
 import com.vyrncore.palestra.data.remote.dto.PlanExerciseDto
+import com.vyrncore.palestra.data.remote.dto.PtNoteDto
 import com.vyrncore.palestra.data.remote.dto.SetEntryDto
 import com.vyrncore.palestra.data.remote.dto.UserProfileDto
 import com.vyrncore.palestra.data.remote.dto.WorkoutPlanDto
@@ -46,6 +50,8 @@ class SyncManager @Inject constructor(
     private val workoutSessionDao: WorkoutSessionDao,
     private val setEntryDao: SetEntryDao,
     private val bodyMetricDao: BodyMetricDao,
+    private val chatMessageDao: ChatMessageDao,
+    private val ptNoteDao: PtNoteDao,
 ) {
     suspend fun syncAll() {
         pushLocalChanges()
@@ -80,6 +86,14 @@ class SyncManager @Inject constructor(
         bodyMetricDao.getPendingSync().forEach { entity ->
             postgrest.from("body_metrics").upsert(entity.toDto())
             bodyMetricDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED))
+        }
+        chatMessageDao.getPendingSync().forEach { entity ->
+            postgrest.from("messages").upsert(entity.toDto())
+            chatMessageDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED))
+        }
+        ptNoteDao.getPendingSync().forEach { entity ->
+            postgrest.from("pt_notes").upsert(entity.toDto())
+            ptNoteDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED))
         }
     }
 
@@ -140,5 +154,18 @@ class SyncManager @Inject constructor(
             postgrest.from("body_metrics").select { filter { isIn("user_id", relevantUserIds) } }
                 .decodeList<BodyMetricDto>()
         }.getOrDefault(emptyList()).forEach { bodyMetricDao.upsert(it.toEntity()) }
+
+        runCatching {
+            postgrest.from("messages").select {
+                filter { or { eq("sender_id", userId); eq("recipient_id", userId) } }
+            }.decodeList<ChatMessageDto>()
+        }.getOrDefault(emptyList()).forEach { chatMessageDao.upsert(it.toEntity()) }
+
+        if (ownProfile.role == UserRole.PT.name) {
+            runCatching {
+                postgrest.from("pt_notes").select { filter { eq("pt_id", userId) } }
+                    .decodeList<PtNoteDto>()
+            }.getOrDefault(emptyList()).forEach { ptNoteDao.upsert(it.toEntity()) }
+        }
     }
 }

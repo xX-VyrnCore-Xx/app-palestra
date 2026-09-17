@@ -20,19 +20,30 @@ class NotificationHelper @Inject constructor(
 ) {
     init {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                REMINDER_CHANNEL_ID,
-                "Promemoria allenamento",
-                NotificationManager.IMPORTANCE_DEFAULT,
+            val manager = context.getSystemService(NotificationManager::class.java)
+            manager?.createNotificationChannel(
+                NotificationChannel(
+                    REMINDER_CHANNEL_ID,
+                    "Promemoria allenamento",
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                )
             )
-            context.getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
+            manager?.createNotificationChannel(
+                NotificationChannel(
+                    CHAT_CHANNEL_ID,
+                    "Messaggi chat",
+                    NotificationManager.IMPORTANCE_HIGH,
+                )
+            )
         }
     }
 
-    fun showWorkoutReminder(title: String, message: String) {
-        val hasPermission = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+    private fun hasNotificationPermission(): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-        if (!hasPermission) return
+
+    fun showWorkoutReminder(title: String, message: String) {
+        if (!hasNotificationPermission()) return
 
         val notification = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
@@ -43,8 +54,22 @@ class NotificationHelper @Inject constructor(
         NotificationManagerCompat.from(context).notify(REMINDER_NOTIFICATION_ID, notification)
     }
 
+    fun showChatMessageNotification(conversationId: String, senderName: String, message: String) {
+        if (!hasNotificationPermission()) return
+
+        val notification = NotificationCompat.Builder(context, CHAT_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(senderName)
+            .setContentText(message)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+        NotificationManagerCompat.from(context).notify(conversationId.hashCode(), notification)
+    }
+
     private companion object {
         const val REMINDER_CHANNEL_ID = "workout_reminders"
         const val REMINDER_NOTIFICATION_ID = 1001
+        const val CHAT_CHANNEL_ID = "chat_messages"
     }
 }

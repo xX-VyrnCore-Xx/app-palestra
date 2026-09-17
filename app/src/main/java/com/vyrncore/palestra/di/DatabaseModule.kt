@@ -41,4 +41,10 @@ object DatabaseModule {
 
     @Provides
     fun provideBodyMetricDao(db: AppDatabase) = db.bodyMetricDao()
+
+    @Provides
+    fun provideChatMessageDao(db: AppDatabase) = db.chatMessageDao()
+
+    @Provides
+    fun providePtNoteDao(db: AppDatabase) = db.ptNoteDao()
 }

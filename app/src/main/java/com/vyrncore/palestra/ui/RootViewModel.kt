@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.data.repository.AuthRepository
+import com.vyrncore.palestra.data.repository.ChatRepository
 import com.vyrncore.palestra.data.repository.ThemeMode
 import com.vyrncore.palestra.data.repository.ThemeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,11 +22,16 @@ import javax.inject.Inject
 class RootViewModel @Inject constructor(
     authRepository: AuthRepository,
     private val themeRepository: ThemeRepository,
+    private val chatRepository: ChatRepository,
 ) : ViewModel() {
 
     val startUserId: String? = authRepository.currentUserId
 
     private val userId = MutableStateFlow(authRepository.currentUserId)
+
+    init {
+        startUserId?.let { chatRepository.startListening(it) }
+    }
 
     val role: StateFlow<UserRole?> = userId
         .flatMapLatest { id -> if (id != null) authRepository.observeProfile(id) else flowOf(null) }
@@ -37,6 +43,7 @@ class RootViewModel @Inject constructor(
 
     fun setLoggedInUser(id: String) {
         userId.value = id
+        chatRepository.startListening(id)
     }
 
     fun setThemeMode(mode: ThemeMode) {

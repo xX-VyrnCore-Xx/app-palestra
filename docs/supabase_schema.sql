@@ -74,6 +74,31 @@ create table if not exists public.body_metrics (
     notes text
 );
 
+-- Realtime chat between a PT and their allievo.
+create table if not exists public.messages (
+    id uuid primary key default gen_random_uuid(),
+    sender_id uuid not null references public.profiles (id),
+    recipient_id uuid not null references public.profiles (id),
+    content text not null,
+    created_at timestamptz not null default now(),
+    read_at timestamptz
+);
+
+create index if not exists messages_conversation_idx
+    on public.messages (least(sender_id, recipient_id), greatest(sender_id, recipient_id), created_at);
+
+-- Private PT notes about a client, visible only to the PT who wrote them.
+create table if not exists public.pt_notes (
+    id uuid primary key default gen_random_uuid(),
+    pt_id uuid not null references public.profiles (id),
+    client_id uuid not null references public.profiles (id),
+    content text not null default '',
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
+create unique index if not exists pt_notes_pt_client_idx on public.pt_notes (pt_id, client_id);
+
 -- Row Level Security --------------------------------------------------------
 
 alter table public.profiles enable row level security;
@@ -83,6 +108,8 @@ alter table public.plan_exercises enable row level security;
 alter table public.workout_sessions enable row level security;
 alter table public.set_entries enable row level security;
 alter table public.body_metrics enable row level security;
+alter table public.messages enable row level security;
+alter table public.pt_notes enable row level security;
 
 -- profiles: a user can read/update their own row; a PT can read their clients' rows.
 create policy "profiles_self_select" on public.profiles
@@ -154,6 +181,33 @@ create policy "body_metrics_select" on public.body_metrics
     );
 create policy "body_metrics_write" on public.body_metrics
     for insert with check (auth.uid() = user_id);
+
+-- messages: readable/writable only by the two participants; a message may only be sent
+-- between a PT and their own allievo (either direction). Enable this table for Realtime
+-- (Database -> Replication -> supabase_realtime) so the app receives live inserts.
+create policy "messages_select_own_conversations" on public.messages
+    for select using (auth.uid() = sender_id or auth.uid() = recipient_id);
+create policy "messages_insert_own_conversations" on public.messages
+    for insert with check (
+        auth.uid() = sender_id
+        and exists (
+            select 1 from public.profiles p
+            where p.id = sender_id
+              and (p.pt_id = recipient_id or exists (
+                  select 1 from public.profiles c where c.pt_id = sender_id and c.id = recipient_id
+              ))
+        )
+    );
+create policy "messages_update_own_read_at" on public.messages
+    for update using (auth.uid() = recipient_id) with check (auth.uid() = recipient_id);
+
+-- pt_notes: visible/writable only by the PT who owns the note.
+create policy "pt_notes_owner_select" on public.pt_notes
+    for select using (auth.uid() = pt_id);
+create policy "pt_notes_owner_insert" on public.pt_notes
+    for insert with check (auth.uid() = pt_id);
+create policy "pt_notes_owner_update" on public.pt_notes
+    for update using (auth.uid() = pt_id) with check (auth.uid() = pt_id);
 
 -- Built-in exercise catalog ---------------------------------------------------
 -- Same fixed IDs as ExerciseCatalogSeed.kt, so a device that seeds its local

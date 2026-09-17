@@ -22,6 +22,7 @@ import com.vyrncore.palestra.ui.RootViewModel
 import com.vyrncore.palestra.ui.auth.LoginScreen
 import com.vyrncore.palestra.ui.auth.RegisterScreen
 import com.vyrncore.palestra.ui.bodymetrics.BodyMetricsScreen
+import com.vyrncore.palestra.ui.chat.ChatThreadScreen
 import com.vyrncore.palestra.ui.dashboard.AllievoDashboardScreen
 import com.vyrncore.palestra.ui.profile.ProfileScreen
 import com.vyrncore.palestra.ui.pt.PlanEditorScreen
@@ -66,7 +67,8 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
             when (role) {
                 UserRole.PT -> PtDashboardScreen(
                     onOpenClient = { clientId -> navController.navigate(Routes.ptClientDetail(clientId)) },
-                    onOpenProfile = { navController.navigate(Routes.PROFILE) },
+                    onOpenChat = { clientId -> navController.navigate(Routes.chatThread(clientId)) },
+                    onSignedOut = { navController.navigate(Routes.LOGIN) { popUpTo(0) } },
                 )
                 UserRole.ALLIEVO -> AllievoDashboardScreen(
                     onOpenSession = { sessionId, planId ->
@@ -112,6 +114,7 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
         ) {
             PtClientDetailScreen(
                 onCreatePlan = { clientId -> navController.navigate(Routes.planEditor(clientId)) },
+                onOpenChat = { clientId -> navController.navigate(Routes.chatThread(clientId)) },
             )
         }
         composable(
@@ -119,6 +122,13 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
             arguments = listOf(navArgument("clientId") { type = NavType.StringType }),
         ) {
             PlanEditorScreen(onSaved = { navController.popBackStack() })
+        }
+        composable(
+            Routes.CHAT_THREAD,
+            arguments = listOf(navArgument("peerId") { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val peerId = checkNotNull(backStackEntry.arguments?.getString("peerId"))
+            ChatThreadScreen(peerId = peerId, onBack = { navController.popBackStack() })
         }
     }
 }
