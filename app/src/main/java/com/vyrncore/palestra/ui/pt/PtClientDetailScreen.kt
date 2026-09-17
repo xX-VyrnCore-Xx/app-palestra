@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -48,9 +49,11 @@ fun PtClientDetailScreen(
     val sessions by viewModel.sessions.collectAsState()
     val bodyMetrics by viewModel.bodyMetrics.collectAsState()
     val note by viewModel.note.collectAsState()
+    val injuries by viewModel.injuries.collectAsState()
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.ITALY) }
 
     var noteDraft by remember(note) { mutableStateOf(note?.content.orEmpty()) }
+    var injuriesDraft by remember(injuries) { mutableStateOf(injuries.orEmpty()) }
 
     val completedSessions = sessions.count { it.endedAtEpochMs != null }
     val lastActive = sessions.mapNotNull { it.endedAtEpochMs }.maxOrNull()
@@ -76,7 +79,55 @@ fun PtClientDetailScreen(
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()),
         ) {
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(
+                    containerColor = if (!injuries.isNullOrBlank()) {
+                        MaterialTheme.colorScheme.errorContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    },
+                ),
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row {
+                        Icon(
+                            Icons.Filled.HealthAndSafety,
+                            contentDescription = null,
+                            tint = if (!injuries.isNullOrBlank()) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            "Infortuni e limitazioni",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = if (!injuries.isNullOrBlank()) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                    }
+                    Text(
+                        "Controllalo prima di assegnare esercizi: mal di schiena, lesioni, rotture, limitazioni fisiche.",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                    OutlinedTextField(
+                        value = injuriesDraft,
+                        onValueChange = { injuriesDraft = it },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        placeholder = { Text("Es. ernia L4-L5, ginocchio destro operato…") },
+                        minLines = 2,
+                    )
+                    TextButton(
+                        onClick = { viewModel.saveInjuries(injuriesDraft) },
+                        enabled = injuriesDraft != injuries.orEmpty(),
+                        modifier = Modifier.padding(top = 4.dp),
+                    ) {
+                        Text("Salva")
+                    }
+                }
+            }
+
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
                 MetricCard(
                     icon = Icons.Filled.FitnessCenter,
                     value = "$completedSessions",

@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Badge
@@ -136,7 +137,17 @@ private fun PtClientListScreen(
                                     )
                                 }
                                 Column(modifier = Modifier.padding(start = 16.dp)) {
-                                    Text(client.fullName, style = MaterialTheme.typography.titleMedium)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(client.fullName, style = MaterialTheme.typography.titleMedium)
+                                        if (!client.injuries.isNullOrBlank()) {
+                                            Icon(
+                                                Icons.Filled.HealthAndSafety,
+                                                contentDescription = "Infortuni segnalati",
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.padding(start = 6.dp).size(18.dp),
+                                            )
+                                        }
+                                    }
                                     Text(
                                         client.email,
                                         style = MaterialTheme.typography.bodyMedium,

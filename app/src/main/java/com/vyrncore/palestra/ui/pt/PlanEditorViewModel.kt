@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -40,6 +41,10 @@ class PlanEditorViewModel @Inject constructor(
 
     val exerciseCatalog = workoutRepository.observeExercises()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Injuries/limitations the PT recorded for this client - shown as a warning while building the plan. */
+    val clientInjuries = authRepository.observeProfile(clientId).map { it?.injuries }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _draftExercises = MutableStateFlow<List<DraftPlanExercise>>(emptyList())
     val draftExercises: StateFlow<List<DraftPlanExercise>> = _draftExercises.asStateFlow()

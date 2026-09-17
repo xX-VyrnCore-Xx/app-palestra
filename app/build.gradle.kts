@@ -13,6 +13,12 @@ android {
     namespace = "com.vyrncore.palestra"
     compileSdk = 34
 
+    // Bump versionCode by 1 on every release; versionName follows semver (MAJOR.MINOR.PATCH).
+    val appVersionCode = 2
+    val appVersionName = "1.1.0"
+
+    base.archivesName.set("VibeFitness-$appVersionName")
+
     val localProperties = Properties().apply {
         val file = rootProject.file("local.properties")
         if (file.exists()) load(file.inputStream())
@@ -22,8 +28,8 @@ android {
         applicationId = "com.vyrncore.palestra"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

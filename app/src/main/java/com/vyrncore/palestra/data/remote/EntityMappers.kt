@@ -26,7 +26,7 @@ import java.time.Instant
 private fun Long.toIso(): String = Instant.ofEpochMilli(this).toString()
 private fun String.toEpochMs(): Long = Instant.parse(this).toEpochMilli()
 
-fun UserProfileEntity.toDto() = UserProfileDto(id, email, fullName, role.name, ptId)
+fun UserProfileEntity.toDto() = UserProfileDto(id, email, fullName, role.name, ptId, injuries)
 
 fun ExerciseEntity.toDto() = ExerciseDto(id, name, muscleGroup, equipment, notes, createdByUserId, isCustom)
 
@@ -50,7 +50,7 @@ fun BodyMetricEntity.toDto() = BodyMetricDto(
     id, userId, dateEpochMs.toIso(), weightKg, bodyFatPercent, chestCm, waistCm, hipsCm, armCm, thighCm, notes
 )
 
-fun UserProfileDto.toEntity() = UserProfileEntity(id, email, fullName, UserRole.valueOf(role), ptId, SyncStatus.SYNCED)
+fun UserProfileDto.toEntity() = UserProfileEntity(id, email, fullName, UserRole.valueOf(role), ptId, injuries, SyncStatus.SYNCED)
 
 fun ExerciseDto.toEntity() = ExerciseEntity(id, name, muscleGroup, equipment, notes, createdByUserId, isCustom, SyncStatus.SYNCED)
 
