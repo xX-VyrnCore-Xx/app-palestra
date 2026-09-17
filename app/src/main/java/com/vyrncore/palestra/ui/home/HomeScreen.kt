@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
@@ -74,6 +75,7 @@ fun HomeScreen(
 
             LevelCard(
                 level = uiState.level,
+                levelTitle = uiState.levelTitle,
                 xpIntoLevel = uiState.xpIntoLevel,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
             )
@@ -152,6 +154,14 @@ fun HomeScreen(
                 milestones = WORKOUT_COUNT_MILESTONES,
                 unlocked = uiState.unlockedWorkoutCountBadges,
                 suffix = "",
+            )
+
+            BadgeSection(
+                title = "TRAGUARDI DI VOLUME",
+                icon = Icons.Filled.FitnessCenter,
+                milestones = VOLUME_MILESTONES_KG,
+                unlocked = uiState.unlockedVolumeBadges,
+                suffix = " kg",
                 modifier = Modifier.padding(bottom = 16.dp),
             )
         }
@@ -159,7 +169,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun LevelCard(level: Int, xpIntoLevel: Int, modifier: Modifier = Modifier) {
+private fun LevelCard(level: Int, levelTitle: String, xpIntoLevel: Int, modifier: Modifier = Modifier) {
     val progress by animateFloatAsState(
         targetValue = xpIntoLevel / 100f,
         animationSpec = tween(600),
@@ -176,7 +186,7 @@ private fun LevelCard(level: Int, xpIntoLevel: Int, modifier: Modifier = Modifie
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Livello $level", style = MaterialTheme.typography.titleMedium)
+                Text("Livello $level · $levelTitle", style = MaterialTheme.typography.titleMedium)
                 Text(
                     "$xpIntoLevel / 100 XP",
                     style = MaterialTheme.typography.labelMedium,

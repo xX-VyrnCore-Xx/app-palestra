@@ -1,6 +1,7 @@
 package com.vyrncore.palestra.data.local
 
 import androidx.room.TypeConverter
+import com.vyrncore.palestra.data.local.entity.ChatAttachmentType
 import com.vyrncore.palestra.data.local.entity.UserRole
 
 class Converters {
@@ -15,4 +16,10 @@ class Converters {
 
     @TypeConverter
     fun toUserRole(value: String): UserRole = UserRole.valueOf(value)
+
+    @TypeConverter
+    fun fromChatAttachmentType(value: ChatAttachmentType?): String? = value?.name
+
+    @TypeConverter
+    fun toChatAttachmentType(value: String?): ChatAttachmentType? = value?.let { ChatAttachmentType.valueOf(it) }
 }

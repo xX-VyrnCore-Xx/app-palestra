@@ -29,6 +29,18 @@ private const val XP_PER_SESSION = 30
 private const val XP_PER_BADGE = 20
 private const val XP_PER_LEVEL = 100
 
+/** Total kg lifted (sum of weight*reps across every set) that unlock a badge. */
+val VOLUME_MILESTONES_KG = listOf(1_000, 5_000, 10_000, 25_000, 50_000, 100_000)
+
+/** Cosmetic title shown next to the level number, purely for flavor. */
+fun levelTitle(level: Int): String = when {
+    level < 3 -> "Novizio"
+    level < 6 -> "Allievo"
+    level < 11 -> "Atleta"
+    level < 21 -> "Veterano"
+    else -> "Leggenda"
+}
+
 data class HomeUiState(
     val fullName: String = "",
     val streakDays: Int = 0,
@@ -37,8 +49,11 @@ data class HomeUiState(
     val totalWorkouts: Int = 0,
     val unlockedBadges: List<Int> = emptyList(),
     val unlockedWorkoutCountBadges: List<Int> = emptyList(),
+    val unlockedVolumeBadges: List<Int> = emptyList(),
+    val totalVolumeKg: Double = 0.0,
     val xp: Int = 0,
     val level: Int = 1,
+    val levelTitle: String = "Novizio",
     val xpIntoLevel: Int = 0,
     val nextPlanId: String? = null,
     val nextPlanName: String? = null,
@@ -56,7 +71,8 @@ class HomeViewModel @Inject constructor(
         workoutRepository.observeSessionsForUser(userId),
         workoutRepository.observePlansForUser(userId),
         authRepository.observeProfile(userId),
-    ) { sessions, plans, profile ->
+        workoutRepository.observeVolumeByMuscleGroup(userId),
+    ) { sessions, plans, profile, volumeByMuscle ->
         val zone = ZoneId.systemDefault()
         val doneDates = sessions.mapNotNull { it.endedAtEpochMs }
             .map { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
@@ -82,9 +98,14 @@ class HomeViewModel @Inject constructor(
         val workoutsThisWeek = doneDates.count { it.isAfter(weekAgo) }
         val totalWorkouts = sessions.count { it.endedAtEpochMs != null }
 
+        val totalVolumeKg = volumeByMuscle.sumOf { it.totalVolumeKg }
+
         val unlockedBadges = BADGE_MILESTONES.filter { longestStreak >= it }
         val unlockedWorkoutCountBadges = WORKOUT_COUNT_MILESTONES.filter { totalWorkouts >= it }
-        val xp = totalWorkouts * XP_PER_SESSION + (unlockedBadges.size + unlockedWorkoutCountBadges.size) * XP_PER_BADGE
+        val unlockedVolumeBadges = VOLUME_MILESTONES_KG.filter { totalVolumeKg >= it }
+        val badgeCount = unlockedBadges.size + unlockedWorkoutCountBadges.size + unlockedVolumeBadges.size
+        val xp = totalWorkouts * XP_PER_SESSION + badgeCount * XP_PER_BADGE
+        val level = 1 + xp / XP_PER_LEVEL
 
         val nextPlan = plans.firstOrNull()
         HomeUiState(
@@ -95,8 +116,11 @@ class HomeViewModel @Inject constructor(
             totalWorkouts = totalWorkouts,
             unlockedBadges = unlockedBadges,
             unlockedWorkoutCountBadges = unlockedWorkoutCountBadges,
+            unlockedVolumeBadges = unlockedVolumeBadges,
+            totalVolumeKg = totalVolumeKg,
             xp = xp,
-            level = 1 + xp / XP_PER_LEVEL,
+            level = level,
+            levelTitle = levelTitle(level),
             xpIntoLevel = xp % XP_PER_LEVEL,
             nextPlanId = nextPlan?.id,
             nextPlanName = nextPlan?.name,

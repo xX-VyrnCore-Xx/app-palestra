@@ -58,12 +58,16 @@ class WorkoutRepository @Inject constructor(
 
     fun observePlanExercises(planId: String): Flow<List<PlanExerciseEntity>> = planExerciseDao.observeForPlan(planId)
 
+    fun observePlanExerciseCount(planId: String): Flow<Int> = planExerciseDao.observeExerciseCount(planId)
+
     suspend fun createPlan(
         name: String,
         description: String?,
         createdByPtId: String,
         assignedToUserId: String,
         exercises: List<PlanExerciseEntity>,
+        category: String? = null,
+        estimatedMinutes: Int? = null,
     ): String {
         val planId = UUID.randomUUID().toString()
         workoutPlanDao.upsert(
@@ -74,6 +78,8 @@ class WorkoutRepository @Inject constructor(
                 createdByPtId = createdByPtId,
                 assignedToUserId = assignedToUserId,
                 createdAtEpochMs = System.currentTimeMillis(),
+                category = category,
+                estimatedMinutes = estimatedMinutes,
                 syncStatus = SyncStatus.PENDING_CREATE,
             )
         )

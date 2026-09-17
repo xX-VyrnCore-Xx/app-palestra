@@ -1,5 +1,6 @@
 package com.vyrncore.palestra.ui.pt
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -7,8 +8,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
@@ -37,6 +40,7 @@ fun PlanEditorScreen(
     val catalog by viewModel.exerciseCatalog.collectAsState()
     val draft by viewModel.draftExercises.collectAsState()
     var planName by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf<String?>(null) }
     var showPicker by remember { mutableStateOf(false) }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Nuova scheda") }) }) { padding ->
@@ -47,6 +51,19 @@ fun PlanEditorScreen(
                 label = { Text("Nome scheda") },
                 modifier = Modifier.fillMaxWidth(),
             )
+
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 12.dp),
+            ) {
+                PLAN_CATEGORIES.forEach { category ->
+                    FilterChip(
+                        selected = selectedCategory == category,
+                        onClick = { selectedCategory = if (selectedCategory == category) null else category },
+                        label = { Text(category) },
+                        modifier = Modifier.padding(end = 8.dp),
+                    )
+                }
+            }
 
             Button(onClick = { showPicker = true }, modifier = Modifier.padding(top = 12.dp)) {
                 Icon(Icons.Filled.Add, contentDescription = null)
@@ -101,7 +118,7 @@ fun PlanEditorScreen(
             }
 
             Button(
-                onClick = { viewModel.savePlan(planName, description = null, onSaved = onSaved) },
+                onClick = { viewModel.savePlan(planName, description = null, category = selectedCategory, onSaved = onSaved) },
                 enabled = planName.isNotBlank() && draft.isNotEmpty(),
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             ) {

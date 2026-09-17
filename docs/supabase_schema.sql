@@ -26,7 +26,9 @@ create table if not exists public.workout_plans (
     description text,
     created_by_pt_id uuid not null references public.profiles (id) on delete cascade,
     assigned_to_user_id uuid not null references public.profiles (id) on delete cascade,
-    created_at timestamptz not null default now()
+    created_at timestamptz not null default now(),
+    category text,
+    estimated_minutes int
 );
 
 create table if not exists public.plan_exercises (
@@ -81,7 +83,11 @@ create table if not exists public.messages (
     recipient_id uuid not null references public.profiles (id),
     content text not null,
     created_at timestamptz not null default now(),
-    read_at timestamptz
+    read_at timestamptz,
+    -- Set together when a message carries a link/file/image instead of (or alongside) text.
+    attachment_url text,
+    attachment_name text,
+    attachment_type text
 );
 
 create index if not exists messages_conversation_idx
@@ -208,6 +214,19 @@ create policy "pt_notes_owner_insert" on public.pt_notes
     for insert with check (auth.uid() = pt_id);
 create policy "pt_notes_owner_update" on public.pt_notes
     for update using (auth.uid() = pt_id) with check (auth.uid() = pt_id);
+
+-- Chat attachments storage ---------------------------------------------------
+-- Public bucket (object names are random UUIDs, so effectively unguessable) keeps
+-- read access simple; write is restricted to signed-in users.
+
+insert into storage.buckets (id, name, public)
+values ('chat-attachments', 'chat-attachments', true)
+on conflict (id) do nothing;
+
+create policy "chat_attachments_insert" on storage.objects
+    for insert with check (bucket_id = 'chat-attachments' and auth.role() = 'authenticated');
+create policy "chat_attachments_select" on storage.objects
+    for select using (bucket_id = 'chat-attachments');
 
 -- Built-in exercise catalog ---------------------------------------------------
 -- Same fixed IDs as ExerciseCatalogSeed.kt, so a device that seeds its local

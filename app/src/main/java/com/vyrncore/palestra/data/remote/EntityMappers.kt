@@ -2,6 +2,7 @@ package com.vyrncore.palestra.data.remote
 
 import com.vyrncore.palestra.data.local.SyncStatus
 import com.vyrncore.palestra.data.local.entity.BodyMetricEntity
+import com.vyrncore.palestra.data.local.entity.ChatAttachmentType
 import com.vyrncore.palestra.data.local.entity.ChatMessageEntity
 import com.vyrncore.palestra.data.local.entity.ExerciseEntity
 import com.vyrncore.palestra.data.local.entity.PlanExerciseEntity
@@ -30,7 +31,7 @@ fun UserProfileEntity.toDto() = UserProfileDto(id, email, fullName, role.name, p
 fun ExerciseEntity.toDto() = ExerciseDto(id, name, muscleGroup, equipment, notes, createdByUserId, isCustom)
 
 fun WorkoutPlanEntity.toDto() = WorkoutPlanDto(
-    id, name, description, createdByPtId, assignedToUserId, createdAtEpochMs.toIso()
+    id, name, description, createdByPtId, assignedToUserId, createdAtEpochMs.toIso(), category, estimatedMinutes
 )
 
 fun PlanExerciseEntity.toDto() = PlanExerciseDto(
@@ -54,7 +55,7 @@ fun UserProfileDto.toEntity() = UserProfileEntity(id, email, fullName, UserRole.
 fun ExerciseDto.toEntity() = ExerciseEntity(id, name, muscleGroup, equipment, notes, createdByUserId, isCustom, SyncStatus.SYNCED)
 
 fun WorkoutPlanDto.toEntity() = WorkoutPlanEntity(
-    id, name, description, createdByPtId, assignedToUserId, createdAt.toEpochMs(), SyncStatus.SYNCED
+    id, name, description, createdByPtId, assignedToUserId, createdAt.toEpochMs(), category, estimatedMinutes, SyncStatus.SYNCED
 )
 
 fun PlanExerciseDto.toEntity() = PlanExerciseEntity(
@@ -74,11 +75,13 @@ fun BodyMetricDto.toEntity() = BodyMetricEntity(
 )
 
 fun ChatMessageEntity.toDto() = ChatMessageDto(
-    id, senderId, recipientId, content, createdAtEpochMs.toIso(), readAtEpochMs?.toIso()
+    id, senderId, recipientId, content, createdAtEpochMs.toIso(), readAtEpochMs?.toIso(),
+    attachmentUrl, attachmentName, attachmentType?.name
 )
 
 fun ChatMessageDto.toEntity() = ChatMessageEntity(
-    id, senderId, recipientId, content, createdAt.toEpochMs(), readAt?.toEpochMs(), SyncStatus.SYNCED
+    id, senderId, recipientId, content, createdAt.toEpochMs(), readAt?.toEpochMs(),
+    attachmentUrl, attachmentName, attachmentType?.let { ChatAttachmentType.valueOf(it) }, SyncStatus.SYNCED
 )
 
 fun PtNoteEntity.toDto() = PtNoteDto(id, ptId, clientId, content, createdAtEpochMs.toIso(), updatedAtEpochMs.toIso())

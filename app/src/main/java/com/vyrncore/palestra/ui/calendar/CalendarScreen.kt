@@ -1,6 +1,7 @@
 package com.vyrncore.palestra.ui.calendar
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,13 +54,17 @@ fun CalendarScreen(
     viewModel: CalendarViewModel = hiltViewModel(),
 ) {
     val sessions by viewModel.sessions.collectAsState()
-    var currentMonth by remember { mutableStateOf(YearMonth.now()) }
-    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    val today = remember { LocalDate.now() }
+    var currentMonth by remember { mutableStateOf(YearMonth.from(today)) }
+    var selectedDate by remember { mutableStateOf<LocalDate?>(today) }
 
     val sessionsByDate = remember(sessions) {
         sessions.groupBy {
             Instant.ofEpochMilli(it.startedAtEpochMs).atZone(ZoneId.systemDefault()).toLocalDate()
         }
+    }
+    val workoutsThisMonth = remember(sessionsByDate, currentMonth) {
+        sessionsByDate.keys.count { YearMonth.from(it) == currentMonth }
     }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Calendario") }) }) { padding ->
@@ -83,6 +88,13 @@ fun CalendarScreen(
                     Icon(Icons.Filled.ChevronRight, contentDescription = "Mese successivo")
                 }
             }
+
+            Text(
+                "$workoutsThisMonth allenamenti questo mese",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
 
             Spacer(Modifier.height(12.dp))
 
@@ -116,10 +128,18 @@ fun CalendarScreen(
                                 val date = currentMonth.atDay(dayNumber)
                                 val hasSession = sessionsByDate.containsKey(date)
                                 val isSelected = date == selectedDate
+                                val isToday = date == today
                                 Column(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .clip(CircleShape)
+                                        .then(
+                                            if (isToday && !isSelected) {
+                                                Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                            } else {
+                                                Modifier
+                                            },
+                                        )
                                         .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
                                         .clickable { selectedDate = date },
                                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -146,7 +166,29 @@ fun CalendarScreen(
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(12.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier.size(7.dp).clip(CircleShape).background(MaterialTheme.colorScheme.tertiary),
+                )
+                Text(
+                    " Allenamento svolto",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Box(
+                    modifier = Modifier.size(10.dp).clip(CircleShape).border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape),
+                )
+                Text(
+                    " Oggi",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
 
             selectedDate?.let { date ->
                 val daySessions = sessionsByDate[date].orEmpty()

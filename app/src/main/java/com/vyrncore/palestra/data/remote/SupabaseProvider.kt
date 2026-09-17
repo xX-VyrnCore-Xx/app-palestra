@@ -6,8 +6,9 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.storage.Storage
 
-/** Single Supabase client, configured with the Auth/Postgrest/Realtime plugins used across the app. */
+/** Single Supabase client, configured with the Auth/Postgrest/Realtime/Storage plugins used across the app. */
 object SupabaseProvider {
 
     val client: SupabaseClient by lazy {
@@ -18,6 +19,7 @@ object SupabaseProvider {
             install(Auth)
             install(Postgrest)
             install(Realtime)
+            install(Storage)
         }
     }
 }
