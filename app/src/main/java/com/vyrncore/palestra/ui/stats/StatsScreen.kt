@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.ui.components.MetricCard
+import com.vyrncore.palestra.ui.components.SimpleLineChart
 
 @Composable
 fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
@@ -65,7 +66,10 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
                     shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 ) {
-                    ProgressLineChart(points = uiState.history, modifier = Modifier.padding(16.dp))
+                    SimpleLineChart(
+                        values = uiState.history.map { it.maxWeightKg },
+                        modifier = Modifier.padding(16.dp),
+                    )
                 }
             }
         }

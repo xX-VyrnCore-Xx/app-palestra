@@ -23,8 +23,15 @@ class ProfileViewModel @Inject constructor(
     val themeMode = themeRepository.themeMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.SYSTEM)
 
+    val remindersEnabled = themeRepository.remindersEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { themeRepository.setThemeMode(mode) }
+    }
+
+    fun setRemindersEnabled(enabled: Boolean) {
+        viewModelScope.launch { themeRepository.setRemindersEnabled(enabled) }
     }
 
     fun signOut(onSignedOut: () -> Unit) {

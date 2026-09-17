@@ -2,19 +2,24 @@ package com.vyrncore.palestra.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Core brand palette: deep indigo grounds the app, electric lime is the single
-// high-energy accent used sparingly for progress, records and calls to action.
-val Indigo10 = Color(0xFF0B0B14)
-val Indigo20 = Color(0xFF14141F)
-val Indigo30 = Color(0xFF1D1D2C)
-val Indigo40 = Color(0xFF2A2A3D)
-val Indigo80 = Color(0xFFCBCBE8)
-val Indigo90 = Color(0xFFE8E7FF)
-val Indigo95 = Color(0xFFF5F4FF)
+// Vibe Fitness brand palette: an energetic magenta-to-violet gradient carries the identity,
+// a warm orange is the secondary accent, and lime stays as the "success / record" highlight.
+val Violet10 = Color(0xFF0F0620)
+val Violet20 = Color(0xFF190A33)
+val Violet30 = Color(0xFF241247)
+val Violet40 = Color(0xFF3D2B8C)
+val Violet80 = Color(0xFFD9CFFF)
+val Violet90 = Color(0xFFEDE7FF)
+val Violet95 = Color(0xFFF7F3FF)
 
-val Violet40 = Color(0xFF5B4FE8)
-val Violet50 = Color(0xFF6E62FF)
-val Violet80 = Color(0xFFC9C4FF)
+val Magenta40 = Color(0xFFD11F80)
+val Magenta50 = Color(0xFFEE3D98)
+val Magenta60 = Color(0xFFFF5FAE)
+val Magenta80 = Color(0xFFFFC2E3)
+
+val Orange40 = Color(0xFFE8672A)
+val Orange50 = Color(0xFFFF7A45)
+val Orange80 = Color(0xFFFFD3BC)
 
 val Lime40 = Color(0xFF9CE800)
 val Lime50 = Color(0xFFB6FF3D)
@@ -22,8 +27,8 @@ val Lime80 = Color(0xFFE4FFAD)
 
 val Coral50 = Color(0xFFFF5C6C)
 
-val Neutral10 = Color(0xFF111114)
-val Neutral20 = Color(0xFF1B1B20)
-val Neutral90 = Color(0xFFF1F0F4)
-val Neutral95 = Color(0xFFFAF9FC)
+val Neutral10 = Color(0xFF120B18)
+val Neutral20 = Color(0xFF1D141F)
+val Neutral90 = Color(0xFFF3EFF6)
+val Neutral95 = Color(0xFFFAF8FB)
 val Neutral99 = Color(0xFFFFFFFF)

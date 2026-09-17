@@ -17,6 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -39,6 +40,7 @@ fun ProfileScreen(
 ) {
     val profile by viewModel.profile.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
+    val remindersEnabled by viewModel.remindersEnabled.collectAsState()
 
     Scaffold(topBar = { TopAppBar(title = { Text("Profilo") }) }) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
@@ -101,9 +103,17 @@ fun ProfileScreen(
             }
 
             if (profile?.role == UserRole.ALLIEVO) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Promemoria allenamento", modifier = Modifier.weight(1f))
+                    Switch(checked = remindersEnabled, onCheckedChange = viewModel::setRemindersEnabled)
+                }
+
                 OutlinedButton(
                     onClick = onOpenBodyMetrics,
-                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                 ) {
                     Text("Dati corporei")
                 }

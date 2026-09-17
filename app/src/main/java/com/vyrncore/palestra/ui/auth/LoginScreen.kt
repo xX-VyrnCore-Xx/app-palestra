@@ -52,7 +52,7 @@ fun LoginScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        GradientHeader(title = "Palestra", subtitle = "Bentornato, continua ad allenarti")
+        GradientHeader(title = "Vibe Fitness", subtitle = "Bentornato, senti il ritmo e continua ad allenarti")
 
         Surface(
             modifier = Modifier
