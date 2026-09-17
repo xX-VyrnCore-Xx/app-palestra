@@ -1,24 +1,27 @@
 package com.vyrncore.palestra.data.notification
 
 import android.content.Context
-import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.ThemeRepository
 import com.vyrncore.palestra.data.repository.WorkoutRepository
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-/** Nudges an inactive Allievo once a day: "you haven't trained in N days" if it's been 2+. */
-@HiltWorker
-class ReminderWorker @AssistedInject constructor(
-    @Assisted context: Context,
-    @Assisted params: WorkerParameters,
+/**
+ * Nudges an inactive Allievo once a day: "you haven't trained in N days" if it's been 2+.
+ *
+ * Built via [com.vyrncore.palestra.data.work.AppWorkerFactory] with a plain constructor rather
+ * than @HiltWorker/@AssistedInject: kapt's stub generator can't read the Kotlin metadata K2
+ * emits for @AssistedInject constructors on CoroutineWorker subclasses (a known, unresolved
+ * Kotlin 2.1.x/Hilt kapt incompatibility), so this class carries no annotation-processed codegen.
+ */
+class ReminderWorker(
+    context: Context,
+    params: WorkerParameters,
     private val authRepository: AuthRepository,
     private val workoutRepository: WorkoutRepository,
     private val themeRepository: ThemeRepository,
