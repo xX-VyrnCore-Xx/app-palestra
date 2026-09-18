@@ -75,8 +75,14 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            if (hasReleaseSigningConfig) {
-                signingConfig = signingConfigs.getByName("release")
+            // A real release key is used when configured (Play Store uploads); otherwise fall
+            // back to the auto-generated debug key so CI can still produce an installable,
+            // optimized release APK for distribution via GitHub Releases without needing that
+            // secret set up first. Swap to the "release" signingConfig once RELEASE_STORE_* is set.
+            signingConfig = if (hasReleaseSigningConfig) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
             }
         }
     }

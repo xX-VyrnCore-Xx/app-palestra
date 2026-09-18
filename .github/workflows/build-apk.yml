@@ -43,14 +43,19 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon
+      - name: Build release APK
+        env:
+          RELEASE_STORE_FILE: ${{ secrets.RELEASE_STORE_FILE }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: palestra-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: palestra-release-apk
+          path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
 
       - name: Read app version
@@ -64,5 +69,5 @@ jobs:
         with:
           tag_name: v${{ steps.version.outputs.name }}-${{ github.run_number }}
           name: Vibe Fitness ${{ steps.version.outputs.name }} (build ${{ github.run_number }})
-          files: app/build/outputs/apk/debug/*.apk
+          files: app/build/outputs/apk/release/*.apk
           generate_release_notes: true
