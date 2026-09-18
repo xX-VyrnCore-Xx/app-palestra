@@ -261,6 +261,35 @@ alter publication supabase_realtime add table public.workout_plans;
 alter publication supabase_realtime add table public.plan_exercises;
 alter publication supabase_realtime add table public.body_metrics;
 
+-- Weekly ranking (PT and Allievo home screens) -------------------------------
+-- SECURITY DEFINER so an allievo can see how they compare to peers of the same PT without
+-- being granted broad RLS read access to other users' profiles/sessions - this function only
+-- ever returns a first name and a workout count, scoped to same-PT peers via auth.uid().
+create or replace function public.get_weekly_ranking()
+returns table(display_name text, workouts_this_week bigint)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    split_part(p.full_name, ' ', 1) as display_name,
+    count(ws.id) filter (
+      where ws.ended_at is not null and ws.ended_at > now() - interval '7 days'
+    ) as workouts_this_week
+  from public.profiles p
+  join public.profiles me on me.id = auth.uid()
+  left join public.workout_sessions ws on ws.user_id = p.id
+  where me.pt_id is not null and p.pt_id = me.pt_id
+  group by p.id, p.full_name
+  having count(ws.id) filter (
+    where ws.ended_at is not null and ws.ended_at > now() - interval '7 days'
+  ) > 0
+  order by workouts_this_week desc
+  limit 10;
+$$;
+
+grant execute on function public.get_weekly_ranking() to authenticated;
+
 -- Chat attachments storage ---------------------------------------------------
 -- Public bucket (object names are random UUIDs, so effectively unguessable) keeps
 -- read access simple; write is restricted to signed-in users.
