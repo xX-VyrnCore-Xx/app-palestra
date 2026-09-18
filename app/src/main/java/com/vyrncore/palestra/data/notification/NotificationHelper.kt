@@ -35,6 +35,13 @@ class NotificationHelper @Inject constructor(
                     NotificationManager.IMPORTANCE_HIGH,
                 )
             )
+            manager?.createNotificationChannel(
+                NotificationChannel(
+                    PLAN_CHANNEL_ID,
+                    "Aggiornamenti scheda",
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                )
+            )
         }
     }
 
@@ -67,9 +74,23 @@ class NotificationHelper @Inject constructor(
         NotificationManagerCompat.from(context).notify(conversationId.hashCode(), notification)
     }
 
+    fun showPlanUpdateNotification(title: String, message: String) {
+        if (!hasNotificationPermission()) return
+
+        val notification = NotificationCompat.Builder(context, PLAN_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(PLAN_NOTIFICATION_ID, notification)
+    }
+
     private companion object {
         const val REMINDER_CHANNEL_ID = "workout_reminders"
         const val REMINDER_NOTIFICATION_ID = 1001
         const val CHAT_CHANNEL_ID = "chat_messages"
+        const val PLAN_CHANNEL_ID = "plan_updates"
+        const val PLAN_NOTIFICATION_ID = 1002
     }
 }

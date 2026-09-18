@@ -9,6 +9,8 @@ create table if not exists public.profiles (
     pt_id uuid references public.profiles (id) on delete set null,
     -- Infortuni/limitazioni fisiche impostate dal PT, mai visibili/scrivibili da altri PT.
     injuries text,
+    -- Token FCM del dispositivo corrente, usato dalla Edge Function send-push per le notifiche.
+    fcm_token text,
     created_at timestamptz not null default now()
 );
 
