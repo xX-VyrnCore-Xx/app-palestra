@@ -1,6 +1,11 @@
 package com.vyrncore.palestra.ui.dashboard
 
-import androidx.compose.foundation.layout.Box
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -80,8 +85,16 @@ fun AllievoDashboardScreen(
             }
         },
     ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
-            when (selectedTab) {
+        AnimatedContent(
+            targetState = selectedTab,
+            modifier = Modifier.padding(padding),
+            transitionSpec = {
+                (fadeIn(tween(220)) + scaleIn(initialScale = 0.97f, animationSpec = tween(220))) togetherWith
+                    fadeOut(tween(140))
+            },
+            label = "allievoTabContent",
+        ) { tab ->
+            when (tab) {
                 0 -> HomeScreen(onStartSession = onOpenSession)
                 1 -> WorkoutPlansScreen(onOpenSession = onOpenSession)
                 2 -> ProgressScreen(onOpenSession = onOpenSession)

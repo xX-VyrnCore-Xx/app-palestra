@@ -49,7 +49,7 @@ fun ActiveWorkoutScreen(
     var dialogExercise by remember { mutableStateOf<ActiveExerciseUi?>(null) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Allenamento in corso") }) },
+        topBar = { TopAppBar(title = { Text("Missione in corso") }) },
         floatingActionButton = {
             FloatingActionButton(onClick = { onOpenRestTimer(90) }) {
                 Icon(Icons.Filled.Timer, contentDescription = "Timer di recupero")
@@ -68,7 +68,7 @@ fun ActiveWorkoutScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text("Progresso allenamento", style = MaterialTheme.typography.labelLarge)
+                    Text("Progresso missione", style = MaterialTheme.typography.labelLarge)
                     Text(
                         "$doneCount/${uiState.exercises.size} esercizi",
                         style = MaterialTheme.typography.labelLarge,
@@ -137,7 +137,7 @@ fun ActiveWorkoutScreen(
                 onClick = { viewModel.endWorkout(onFinished) },
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
             ) {
-                Text("Termina allenamento")
+                Text("Termina missione")
             }
         }
     }

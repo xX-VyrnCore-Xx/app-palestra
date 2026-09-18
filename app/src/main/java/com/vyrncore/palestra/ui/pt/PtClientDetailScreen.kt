@@ -73,7 +73,7 @@ fun PtClientDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Dettaglio allievo") },
+                title = { Text("Scheda recluta") },
                 actions = {
                     IconButton(onClick = { onOpenChat(viewModel.clientId) }) {
                         Icon(Icons.Filled.Forum, contentDescription = "Chat")

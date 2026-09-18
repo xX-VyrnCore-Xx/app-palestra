@@ -19,9 +19,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -80,15 +79,16 @@ fun HomeScreen(
             GradientHeader(
                 title = "$greeting${if (uiState.fullName.isNotBlank()) ", ${uiState.fullName.substringBefore(' ')}" else ""}",
                 subtitle = if (uiState.streakDays > 0) {
-                    "🔥 ${uiState.streakDays} giorni di fila, continua così!"
+                    "🎖️ ${uiState.streakDays} giorni di servizio consecutivi, avanti così!"
                 } else {
-                    "Pronto per il prossimo allenamento?"
+                    "Pronto per la prossima missione?"
                 },
             )
 
-            LevelCard(
+            RankCard(
                 level = uiState.level,
-                levelTitle = uiState.levelTitle,
+                rankTitle = uiState.levelTitle,
+                stars = rankStars(uiState.level),
                 xpIntoLevel = uiState.xpIntoLevel,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
             )
@@ -97,7 +97,7 @@ fun HomeScreen(
                 MetricCard(
                     icon = Icons.Filled.LocalFireDepartment,
                     value = "${uiState.streakDays}",
-                    label = "GIORNI DI STREAK",
+                    label = "GIORNI DI SERVIZIO",
                     modifier = Modifier.weight(1f),
                 )
                 WeeklyGoalCard(
@@ -123,7 +123,7 @@ fun HomeScreen(
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
-                            "PROSSIMO ALLENAMENTO",
+                            "PROSSIMA MISSIONE",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -141,7 +141,7 @@ fun HomeScreen(
                             modifier = Modifier.fillMaxWidth().height(52.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         ) {
-                            Text("INIZIA ORA", style = MaterialTheme.typography.labelLarge, color = Color.White)
+                            Text("PARTI IN MISSIONE", style = MaterialTheme.typography.labelLarge, color = Color.White)
                         }
                     }
                 }
@@ -152,7 +152,7 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        "Nessuna scheda assegnata ancora",
+                        "Nessuna missione assegnata ancora",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -161,8 +161,8 @@ fun HomeScreen(
 
             if (uiState.unlockedBadges.isNotEmpty() || BADGE_MILESTONES.isNotEmpty()) {
                 BadgeSection(
-                    title = "TRAGUARDI DI COSTANZA",
-                    icon = Icons.Filled.EmojiEvents,
+                    title = "MEDAGLIE DI SERVIZIO",
+                    icon = Icons.Filled.MilitaryTech,
                     milestones = BADGE_MILESTONES,
                     unlocked = uiState.unlockedBadges,
                     suffix = "gg",
@@ -170,16 +170,16 @@ fun HomeScreen(
             }
 
             BadgeSection(
-                title = "TRAGUARDI DI ALLENAMENTO",
-                icon = Icons.Filled.Star,
+                title = "DECORAZIONI OPERATIVE",
+                icon = Icons.Filled.MilitaryTech,
                 milestones = WORKOUT_COUNT_MILESTONES,
                 unlocked = uiState.unlockedWorkoutCountBadges,
                 suffix = "",
             )
 
             BadgeSection(
-                title = "TRAGUARDI DI VOLUME",
-                icon = Icons.Filled.FitnessCenter,
+                title = "MEDAGLIE DI POTENZA",
+                icon = Icons.Filled.MilitaryTech,
                 milestones = VOLUME_MILESTONES_KG,
                 unlocked = uiState.unlockedVolumeBadges,
                 suffix = " kg",
@@ -191,7 +191,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun LevelCard(level: Int, levelTitle: String, xpIntoLevel: Int, modifier: Modifier = Modifier) {
+private fun RankCard(level: Int, rankTitle: String, stars: Int, xpIntoLevel: Int, modifier: Modifier = Modifier) {
     val progress by animateFloatAsState(
         targetValue = xpIntoLevel / 100f,
         animationSpec = tween(600),
@@ -208,7 +208,21 @@ private fun LevelCard(level: Int, levelTitle: String, xpIntoLevel: Int, modifier
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Livello $level · $levelTitle", style = MaterialTheme.typography.titleMedium)
+                Column {
+                    Text("$rankTitle · Grado $level", style = MaterialTheme.typography.titleMedium)
+                    if (stars > 0) {
+                        Row(modifier = Modifier.padding(top = 2.dp)) {
+                            repeat(stars) {
+                                Icon(
+                                    Icons.Filled.Star,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier.size(14.dp),
+                                )
+                            }
+                        }
+                    }
+                }
                 Text(
                     "$xpIntoLevel / 100 XP",
                     style = MaterialTheme.typography.labelMedium,
@@ -363,12 +377,12 @@ private fun WeeklyRankingCard(ranking: List<WeeklyRankingEntry>, myName: String,
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    Icons.Filled.EmojiEvents,
+                    Icons.Filled.MilitaryTech,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
                 Text(
-                    "Classifica della settimana",
+                    "Classifica del plotone",
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
                     modifier = Modifier.padding(start = 8.dp),
