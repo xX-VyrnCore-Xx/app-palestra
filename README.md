@@ -73,7 +73,7 @@ Per usare un **tuo** progetto Supabase invece: crea un progetto su [supabase.com
 
 ## Build dell'APK
 
-Una GitHub Actions (`.github/workflows/build-apk.yml`) compila un APK debug ad ogni push su `main` che tocca il codice Android, e lo carica come artifact scaricabile dalla pagina dell'esecuzione (tab **Actions** del repository). Può anche essere lanciata a mano con **Run workflow**.
+Una GitHub Actions (`.github/workflows/build-apk.yml`) compila un APK ad ogni push su `main` che tocca il codice Android, e lo pubblica automaticamente come **Release** del repository (tab **Releases**) oltre che come artifact dell'esecuzione (tab **Actions**). Può anche essere lanciata a mano con **Run workflow**. Il file si chiama sempre `VibeFitness-<versione>.apk`, senza suffissi "debug"/"release".
 
 Per far sì che l'APK compilato in CI si connetta davvero a Supabase, imposta questi due **repository secret** (Settings → Secrets and variables → Actions):
 - `SUPABASE_URL`
