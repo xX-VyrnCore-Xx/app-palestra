@@ -12,6 +12,9 @@ on:
       - ".github/workflows/build-apk.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -49,3 +52,17 @@ jobs:
           name: palestra-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      - name: Read app version
+        id: version
+        run: |
+          VERSION=$(grep -oP '(?<=val appVersionName = ")[^"]+' app/build.gradle.kts)
+          echo "name=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.name }}-${{ github.run_number }}
+          name: Vibe Fitness ${{ steps.version.outputs.name }} (build ${{ github.run_number }})
+          files: app/build/outputs/apk/debug/*.apk
+          generate_release_notes: true

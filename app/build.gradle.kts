@@ -100,6 +100,15 @@ android {
     packaging {
         resources.excludes.add("/META-INF/{AL2.0,LGPL2.1}")
     }
+
+    // Every build (debug or release) is just "<app name>-<version>.apk" - no "-debug"/"-release"
+    // suffix. The version alone is enough to tell builds apart; the build type isn't user-facing.
+    applicationVariants.all {
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
+                "VibeFitness-$appVersionName.apk"
+        }
+    }
 }
 
 dependencies {
