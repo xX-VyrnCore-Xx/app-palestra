@@ -1,5 +1,6 @@
 package com.vyrncore.palestra.ui.chat
 
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,11 +27,29 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.ui.components.EmptyState
+import com.vyrncore.palestra.ui.theme.Lime50
+import com.vyrncore.palestra.ui.theme.Magenta60
+import com.vyrncore.palestra.ui.theme.Orange50
+import com.vyrncore.palestra.ui.theme.Violet40
+
+private val avatarGradients = listOf(
+    listOf(Magenta60, Violet40),
+    listOf(Orange50, Magenta60),
+    listOf(Violet40, Lime50),
+    listOf(Lime50, Orange50),
+)
+
+private fun gradientFor(seed: String): Brush {
+    val colors = avatarGradients[(seed.hashCode().mod(avatarGradients.size))]
+    return Brush.linearGradient(colors)
+}
 
 @Composable
 fun ChatListScreen(
@@ -50,20 +69,34 @@ fun ChatListScreen(
             LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
                 items(conversations, key = { it.peerId }) { conversation ->
                     Card(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .animateItem(placementSpec = tween(220)),
                         shape = MaterialTheme.shapes.medium,
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (conversation.unreadCount > 0) {
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            },
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = if (conversation.unreadCount > 0) 3.dp else 1.dp),
                         onClick = { onOpenChat(conversation.peerId) },
                     ) {
                         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                             Box(
-                                modifier = Modifier.size(44.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(gradientFor(conversation.peerId)),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
                                     conversation.peerName.firstOrNull()?.uppercase() ?: "?",
                                     style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
                                 )
                             }
                             Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
@@ -81,7 +114,9 @@ fun ChatListScreen(
                                 )
                             }
                             if (conversation.unreadCount > 0) {
-                                Badge { Text("${conversation.unreadCount}") }
+                                Badge(containerColor = MaterialTheme.colorScheme.primary) {
+                                    Text("${conversation.unreadCount}")
+                                }
                             }
                         }
                     }
