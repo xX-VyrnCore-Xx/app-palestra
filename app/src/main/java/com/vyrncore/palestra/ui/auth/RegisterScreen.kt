@@ -49,6 +49,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.data.local.entity.UserRole
+import com.vyrncore.palestra.ui.components.BackendConfigBanner
 import com.vyrncore.palestra.ui.components.GradientHeader
 
 @Composable
@@ -74,6 +75,8 @@ fun RegisterScreen(
             .verticalScroll(rememberScrollState()),
     ) {
         GradientHeader(title = "Unisciti al Vibe", subtitle = "Crea il tuo account e inizia il tuo percorso")
+
+        BackendConfigBanner(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
 
         var visible by remember { mutableStateOf(false) }
         LaunchedEffect(Unit) { visible = true }
@@ -175,16 +178,17 @@ fun RegisterScreen(
                         )
                     }
 
+                    val signUpEnabled = !uiState.isLoading && email.isNotBlank() && password.isNotBlank() && fullName.isNotBlank()
                     Button(
                         onClick = { viewModel.signUp(email, password, fullName, role, ptId) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)
                             .padding(top = 20.dp)
-                            .shadow(if (uiState.isLoading) 0.dp else 6.dp, RoundedCornerShape(16.dp), spotColor = MaterialTheme.colorScheme.primary),
+                            .shadow(if (signUpEnabled) 6.dp else 0.dp, RoundedCornerShape(16.dp), spotColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        enabled = !uiState.isLoading && email.isNotBlank() && password.isNotBlank() && fullName.isNotBlank(),
+                        enabled = signUpEnabled,
                     ) {
                         if (uiState.isLoading) {
                             CircularProgressIndicator(

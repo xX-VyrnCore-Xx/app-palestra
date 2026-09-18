@@ -2,6 +2,7 @@ package com.vyrncore.palestra.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vyrncore.palestra.BuildConfig
 import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.sync.SyncScheduler
@@ -36,7 +37,7 @@ class AuthViewModel @Inject constructor(
                     _uiState.value = AuthUiState(loggedInUserId = authRepository.currentUserId)
                 }
                 .onFailure { e ->
-                    _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.message)
+                    _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = friendlyError(e))
                 }
         }
     }
@@ -50,8 +51,27 @@ class AuthViewModel @Inject constructor(
                     _uiState.value = AuthUiState(loggedInUserId = authRepository.currentUserId)
                 }
                 .onFailure { e ->
-                    _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.message)
+                    _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = friendlyError(e))
                 }
+        }
+    }
+
+    /** Turns a raw exception (often a low-level Ktor/network message) into something an end
+     * user can actually act on, in Italian. */
+    private fun friendlyError(e: Throwable): String {
+        if (BuildConfig.SUPABASE_URL.isBlank()) {
+            return "Questa build non è collegata al backend (credenziali Supabase mancanti). Contatta chi ha generato questo APK."
+        }
+        val message = e.message.orEmpty()
+        return when {
+            message.contains("Failed to connect", ignoreCase = true) ||
+                message.contains("Unable to resolve host", ignoreCase = true) ||
+                message.contains("timeout", ignoreCase = true) ->
+                "Impossibile connettersi al server. Controlla la connessione internet e riprova."
+            message.contains("Invalid login credentials", ignoreCase = true) -> "Email o password non corretti."
+            message.contains("already registered", ignoreCase = true) || message.contains("already exists", ignoreCase = true) ->
+                "Esiste già un account con questa email."
+            else -> "Si è verificato un problema, riprova tra poco."
         }
     }
 }
