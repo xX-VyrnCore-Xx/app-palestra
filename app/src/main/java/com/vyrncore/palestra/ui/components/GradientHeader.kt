@@ -28,7 +28,7 @@ fun GradientHeader(
         modifier = modifier
             .fillMaxWidth()
             .background(
-                brush = Brush.linearGradient(listOf(Orange50, Magenta60, Violet10)),
+                brush = Brush.horizontalGradient(listOf(Orange50, Magenta60, Violet10)),
                 shape = shape,
             )
             .padding(horizontal = 24.dp, vertical = 32.dp),
