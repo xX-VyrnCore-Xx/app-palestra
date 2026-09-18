@@ -27,6 +27,7 @@ App Android nativa per il brand di palestre **Vibe Fitness**, pensata per due ru
 - Note private del PT su ogni allievo (obiettivi, infortuni, osservazioni), visibili solo al PT
 - Statistiche avanzate: volume di allenamento per gruppo muscolare e andamento del volume settimanale, oltre al grafico di progressione per esercizio
 - Gamification: livelli/XP con titolo (Novizio → Leggenda), obiettivo settimanale, e tre serie di traguardi (streak, numero allenamenti, kg totali sollevati)
+- Classifica settimanale motivazionale: allievo e PT vedono chi si è allenato di più negli ultimi 7 giorni tra gli allievi dello stesso PT (funzione Postgres server-side che restituisce solo nome e conteggio, nessun accesso incrociato ai dati altrui)
 - Schede di allenamento con categoria (Full Body, Push, Pull, Gambe, Cardio, Mobilità), durata stimata e numero di esercizi mostrati in lista
 - Profilo con tema chiaro/scuro/di sistema (persistito) e logout
 - Catalogo di 24 esercizi comuni precaricato al primo avvio (offline e su Supabase)

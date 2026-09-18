@@ -15,11 +15,20 @@ import com.vyrncore.palestra.data.local.entity.PlanExerciseEntity
 import com.vyrncore.palestra.data.local.entity.SetEntryEntity
 import com.vyrncore.palestra.data.local.entity.WorkoutPlanEntity
 import com.vyrncore.palestra.data.local.entity.WorkoutSessionEntity
+import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+
+@Serializable
+data class WeeklyRankingEntry(
+    @SerialName("display_name") val displayName: String,
+    @SerialName("workouts_this_week") val workoutsThisWeek: Int,
+)
 
 @Singleton
 class WorkoutRepository @Inject constructor(
@@ -28,7 +37,14 @@ class WorkoutRepository @Inject constructor(
     private val planExerciseDao: PlanExerciseDao,
     private val workoutSessionDao: WorkoutSessionDao,
     private val setEntryDao: SetEntryDao,
+    private val postgrest: Postgrest,
 ) {
+    /** Peers sharing the same PT, ranked by workouts completed in the last 7 days. Computed
+     * server-side (a SECURITY DEFINER function) so an allievo never gets broad read access to
+     * other users' rows - only first names and a count come back. */
+    suspend fun fetchWeeklyRanking(): List<WeeklyRankingEntry> =
+        runCatching { postgrest.rpc("get_weekly_ranking").decodeList<WeeklyRankingEntry>() }
+            .getOrDefault(emptyList())
     // Exercise catalog
     fun observeExercises(): Flow<List<ExerciseEntity>> = exerciseDao.observeAll()
 

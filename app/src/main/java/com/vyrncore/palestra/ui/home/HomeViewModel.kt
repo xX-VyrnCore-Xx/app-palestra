@@ -3,11 +3,15 @@ package com.vyrncore.palestra.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vyrncore.palestra.data.repository.AuthRepository
+import com.vyrncore.palestra.data.repository.WeeklyRankingEntry
 import com.vyrncore.palestra.data.repository.WorkoutRepository
 import com.vyrncore.palestra.data.sync.ConnectivityObserver
 import com.vyrncore.palestra.data.sync.SyncManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -74,8 +78,18 @@ class HomeViewModel @Inject constructor(
     val isOnline = connectivityObserver.isOnline
     val isSyncing = syncManager.isSyncing
 
+    private val _weeklyRanking = MutableStateFlow<List<WeeklyRankingEntry>>(emptyList())
+    val weeklyRanking: StateFlow<List<WeeklyRankingEntry>> = _weeklyRanking.asStateFlow()
+
+    init {
+        viewModelScope.launch { _weeklyRanking.value = workoutRepository.fetchWeeklyRanking() }
+    }
+
     fun refresh() {
-        viewModelScope.launch { runCatching { syncManager.syncAll() } }
+        viewModelScope.launch {
+            runCatching { syncManager.syncAll() }
+            _weeklyRanking.value = workoutRepository.fetchWeeklyRanking()
+        }
     }
 
     val uiState = combine(

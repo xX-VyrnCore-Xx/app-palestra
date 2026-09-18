@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vyrncore.palestra.data.repository.WeeklyRankingEntry
 import com.vyrncore.palestra.ui.components.ConnectionStatusBar
 import com.vyrncore.palestra.ui.components.GradientHeader
 import com.vyrncore.palestra.ui.components.MetricCard
@@ -57,6 +58,7 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val isOnline by viewModel.isOnline.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
+    val weeklyRanking by viewModel.weeklyRanking.collectAsState()
     val greeting = when (LocalTime.now().hour) {
         in 5..11 -> "Buongiorno"
         in 12..17 -> "Buon pomeriggio"
@@ -102,6 +104,14 @@ fun HomeScreen(
                     completed = uiState.workoutsThisWeek,
                     goal = WEEKLY_GOAL,
                     modifier = Modifier.weight(1f).padding(start = 12.dp),
+                )
+            }
+
+            if (weeklyRanking.isNotEmpty()) {
+                WeeklyRankingCard(
+                    ranking = weeklyRanking,
+                    myName = uiState.fullName.substringBefore(' '),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 )
             }
 
@@ -338,5 +348,63 @@ private fun BadgeCircle(
             color = if (unlocked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             modifier = Modifier.padding(top = 4.dp),
         )
+    }
+}
+
+/** Where you stand among the other allievi of the same PT this week — a light nudge, built from
+ * a server-side function that only ever returns first names + a count, never other users' data. */
+@Composable
+private fun WeeklyRankingCard(ranking: List<WeeklyRankingEntry>, myName: String, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.padding(top = 16.dp),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Filled.EmojiEvents,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+                Text(
+                    "Classifica della settimana",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+            ranking.take(5).forEachIndexed { index, entry ->
+                val isMe = entry.displayName.equals(myName, ignoreCase = true)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "${index + 1}.",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.padding(end = 8.dp),
+                    )
+                    Text(
+                        if (isMe) "${entry.displayName} (tu)" else entry.displayName,
+                        style = if (isMe) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Icon(
+                        Icons.Filled.LocalFireDepartment,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        " ${entry.workoutsThisWeek}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
+            }
+        }
     }
 }
