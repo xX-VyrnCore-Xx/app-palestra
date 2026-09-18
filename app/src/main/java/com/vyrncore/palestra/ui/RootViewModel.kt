@@ -7,6 +7,7 @@ import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.ChatRepository
 import com.vyrncore.palestra.data.repository.ThemeMode
 import com.vyrncore.palestra.data.repository.ThemeRepository
+import com.vyrncore.palestra.data.sync.RealtimeSyncManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,6 +24,7 @@ class RootViewModel @Inject constructor(
     authRepository: AuthRepository,
     private val themeRepository: ThemeRepository,
     private val chatRepository: ChatRepository,
+    private val realtimeSyncManager: RealtimeSyncManager,
 ) : ViewModel() {
 
     val startUserId: String? = authRepository.currentUserId
@@ -30,7 +32,10 @@ class RootViewModel @Inject constructor(
     private val userId = MutableStateFlow(authRepository.currentUserId)
 
     init {
-        startUserId?.let { chatRepository.startListening(it) }
+        startUserId?.let {
+            chatRepository.startListening(it)
+            realtimeSyncManager.startListening(it)
+        }
     }
 
     val role: StateFlow<UserRole?> = userId
@@ -44,6 +49,7 @@ class RootViewModel @Inject constructor(
     fun setLoggedInUser(id: String) {
         userId.value = id
         chatRepository.startListening(id)
+        realtimeSyncManager.startListening(id)
     }
 
     fun setThemeMode(mode: ThemeMode) {
