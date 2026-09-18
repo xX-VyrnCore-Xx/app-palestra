@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,15 +27,11 @@ import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -53,9 +50,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.ui.ai.AiAssistantScreen
 import com.vyrncore.palestra.ui.chat.ChatListScreen
+import com.vyrncore.palestra.ui.components.AnimatedNavBar
 import com.vyrncore.palestra.ui.components.ConnectionStatusBar
 import com.vyrncore.palestra.ui.components.EmptyState
 import com.vyrncore.palestra.ui.components.GradientHeader
+import com.vyrncore.palestra.ui.components.NavBarItem
+import com.vyrncore.palestra.ui.components.pressScale
 import com.vyrncore.palestra.ui.profile.ProfileScreen
 
 private data class PtTab(val label: String, val icon: ImageVector)
@@ -79,24 +79,17 @@ fun PtDashboardScreen(
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                tabs.forEachIndexed { index, tab ->
-                    NavigationBarItem(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        icon = {
-                            if (tab.label == "Chat" && unreadCount > 0) {
-                                BadgedBox(badge = { Badge { Text("$unreadCount") } }) {
-                                    Icon(tab.icon, contentDescription = tab.label)
-                                }
-                            } else {
-                                Icon(tab.icon, contentDescription = tab.label)
-                            }
-                        },
-                        label = { Text(tab.label) },
+            AnimatedNavBar(
+                items = tabs.map { tab ->
+                    NavBarItem(
+                        label = tab.label,
+                        icon = tab.icon,
+                        badgeCount = if (tab.label == "Chat") unreadCount else 0,
                     )
-                }
-            }
+                },
+                selectedIndex = selectedTab,
+                onSelect = { selectedTab = it },
+            )
         },
     ) { padding ->
         AnimatedContent(
@@ -153,10 +146,16 @@ private fun PtClientListScreen(
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(clients, key = { it.id }) { client ->
+                        val interactionSource = remember { MutableInteractionSource() }
                         Card(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .animateItem()
+                                .pressScale(interactionSource),
                             shape = MaterialTheme.shapes.medium,
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            interactionSource = interactionSource,
                             onClick = { onOpenClient(client.id) },
                         ) {
                             Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
