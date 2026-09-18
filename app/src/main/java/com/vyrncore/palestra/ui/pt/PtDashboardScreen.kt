@@ -22,6 +22,7 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -29,6 +30,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.ui.ai.AiAssistantScreen
 import com.vyrncore.palestra.ui.chat.ChatListScreen
+import com.vyrncore.palestra.ui.components.ConnectionStatusBar
 import com.vyrncore.palestra.ui.components.EmptyState
 import com.vyrncore.palestra.ui.components.GradientHeader
 import com.vyrncore.palestra.ui.profile.ProfileScreen
@@ -99,15 +102,24 @@ fun PtDashboardScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PtClientListScreen(
     onOpenClient: (clientId: String) -> Unit,
     viewModel: PtDashboardViewModel,
 ) {
     val clients by viewModel.clients.collectAsState()
+    val isOnline by viewModel.isOnline.collectAsState()
+    val isSyncing by viewModel.isSyncing.collectAsState()
 
     Scaffold(topBar = { TopAppBar(title = { Text("I tuoi allievi") }) }) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+      PullToRefreshBox(
+        isRefreshing = isSyncing,
+        onRefresh = { viewModel.refresh() },
+        modifier = Modifier.padding(padding),
+      ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            ConnectionStatusBar(isOnline = isOnline, isSyncing = isSyncing)
             GradientHeader(
                 title = "${clients.size} allievi",
                 subtitle = "ID PT: ${viewModel.ptId.take(8)}… — condividilo per collegare nuovi allievi",
@@ -164,5 +176,6 @@ private fun PtClientListScreen(
                 }
             }
         }
+      }
     }
 }

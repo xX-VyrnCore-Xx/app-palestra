@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.WorkoutRepository
+import com.vyrncore.palestra.data.sync.ConnectivityObserver
+import com.vyrncore.palestra.data.sync.SyncManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -63,9 +65,18 @@ data class HomeUiState(
 class HomeViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val authRepository: AuthRepository,
+    private val syncManager: SyncManager,
+    connectivityObserver: ConnectivityObserver,
 ) : ViewModel() {
 
     private val userId get() = authRepository.currentUserId.orEmpty()
+
+    val isOnline = connectivityObserver.isOnline
+    val isSyncing = syncManager.isSyncing
+
+    fun refresh() {
+        viewModelScope.launch { runCatching { syncManager.syncAll() } }
+    }
 
     val uiState = combine(
         workoutRepository.observeSessionsForUser(userId),

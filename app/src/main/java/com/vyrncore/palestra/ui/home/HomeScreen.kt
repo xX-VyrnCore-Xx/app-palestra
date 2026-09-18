@@ -27,10 +27,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,16 +43,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vyrncore.palestra.ui.components.ConnectionStatusBar
 import com.vyrncore.palestra.ui.components.GradientHeader
 import com.vyrncore.palestra.ui.components.MetricCard
 import java.time.LocalTime
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onStartSession: (sessionId: String, planId: String) -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val isOnline by viewModel.isOnline.collectAsState()
+    val isSyncing by viewModel.isSyncing.collectAsState()
     val greeting = when (LocalTime.now().hour) {
         in 5..11 -> "Buongiorno"
         in 12..17 -> "Buon pomeriggio"
@@ -58,12 +64,17 @@ fun HomeScreen(
     }
 
     Scaffold { padding ->
+      PullToRefreshBox(
+        isRefreshing = isSyncing,
+        onRefresh = { viewModel.refresh() },
+        modifier = Modifier.padding(padding),
+      ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .verticalScroll(rememberScrollState()),
         ) {
+            ConnectionStatusBar(isOnline = isOnline, isSyncing = isSyncing)
             GradientHeader(
                 title = "$greeting${if (uiState.fullName.isNotBlank()) ", ${uiState.fullName.substringBefore(' ')}" else ""}",
                 subtitle = if (uiState.streakDays > 0) {
@@ -165,6 +176,7 @@ fun HomeScreen(
                 modifier = Modifier.padding(bottom = 16.dp),
             )
         }
+      }
     }
 }
 

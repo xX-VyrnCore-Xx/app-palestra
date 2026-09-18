@@ -26,6 +26,9 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -64,9 +67,21 @@ class SyncManager @Inject constructor(
     private val chatMessageDao: ChatMessageDao,
     private val ptNoteDao: PtNoteDao,
 ) {
+    private val _isSyncing = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+
+    private val _lastSyncedAtEpochMs = MutableStateFlow<Long?>(null)
+    val lastSyncedAtEpochMs: StateFlow<Long?> = _lastSyncedAtEpochMs.asStateFlow()
+
     suspend fun syncAll() {
-        pushLocalChanges()
-        auth.currentUserOrNull()?.id?.let { pullRemoteChanges(it) }
+        _isSyncing.value = true
+        try {
+            pushLocalChanges()
+            auth.currentUserOrNull()?.id?.let { pullRemoteChanges(it) }
+            _lastSyncedAtEpochMs.value = System.currentTimeMillis()
+        } finally {
+            _isSyncing.value = false
+        }
     }
 
     private suspend fun pushLocalChanges() {
