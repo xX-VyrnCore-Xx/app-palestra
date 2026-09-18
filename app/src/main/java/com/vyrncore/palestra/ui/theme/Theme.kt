@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.data.repository.ThemeMode
 
 private val DarkColors = darkColorScheme(
@@ -53,9 +54,15 @@ private val LightColors = lightColorScheme(
     error = Coral50,
 )
 
+// PT gets a calmer, violet-led primary instead of the energetic magenta - a quiet visual cue
+// that reinforces "this is the professional side of the app" without changing layout or copy.
+private val PtDarkColors = DarkColors.copy(primary = Violet80, onPrimary = Violet10, primaryContainer = Violet40)
+private val PtLightColors = LightColors.copy(primary = Violet40, onPrimary = Neutral99, primaryContainer = Violet80)
+
 @Composable
 fun PalestraTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
+    role: UserRole? = null,
     content: @Composable () -> Unit,
 ) {
     val darkTheme = when (themeMode) {
@@ -63,8 +70,14 @@ fun PalestraTheme(
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
     }
+    val colorScheme = when {
+        role == UserRole.PT && darkTheme -> PtDarkColors
+        role == UserRole.PT -> PtLightColors
+        darkTheme -> DarkColors
+        else -> LightColors
+    }
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
+        colorScheme = colorScheme,
         typography = PalestraTypography,
         shapes = PalestraShapes,
         content = content,
