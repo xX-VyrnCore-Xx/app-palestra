@@ -29,12 +29,14 @@ import com.vyrncore.palestra.ui.pt.PlanEditorScreen
 import com.vyrncore.palestra.ui.pt.PtClientDetailScreen
 import com.vyrncore.palestra.ui.pt.PtDashboardScreen
 import com.vyrncore.palestra.ui.timer.RestTimerScreen
+import com.vyrncore.palestra.ui.welcome.WelcomeScreen
 import com.vyrncore.palestra.ui.workout.ActiveWorkoutScreen
 
 @Composable
 fun PalestraNavGraph(rootViewModel: RootViewModel) {
     val navController = rememberNavController()
     val role by rootViewModel.role.collectAsState()
+    val needsOnboarding by rootViewModel.needsOnboarding.collectAsState()
 
     val startDestination = if (rootViewModel.startUserId != null) "home" else Routes.LOGIN
 
@@ -70,15 +72,19 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
                     onOpenChat = { clientId -> navController.navigate(Routes.chatThread(clientId)) },
                     onSignedOut = { navController.navigate(Routes.LOGIN) { popUpTo(0) } },
                 )
-                UserRole.ALLIEVO -> AllievoDashboardScreen(
-                    onOpenSession = { sessionId, planId ->
-                        navController.navigate(Routes.activeWorkout(sessionId, planId))
-                    },
-                    onOpenBodyMetrics = { navController.navigate(Routes.BODY_METRICS) },
-                    onSignedOut = {
-                        navController.navigate(Routes.LOGIN) { popUpTo(0) }
-                    },
-                )
+                UserRole.ALLIEVO -> if (needsOnboarding) {
+                    WelcomeScreen(onFinished = { rootViewModel.markOnboardingComplete() })
+                } else {
+                    AllievoDashboardScreen(
+                        onOpenSession = { sessionId, planId ->
+                            navController.navigate(Routes.activeWorkout(sessionId, planId))
+                        },
+                        onOpenBodyMetrics = { navController.navigate(Routes.BODY_METRICS) },
+                        onSignedOut = {
+                            navController.navigate(Routes.LOGIN) { popUpTo(0) }
+                        },
+                    )
+                }
                 null -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }

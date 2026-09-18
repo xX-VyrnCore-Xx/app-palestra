@@ -14,6 +14,20 @@ create table if not exists public.profiles (
     created_at timestamptz not null default now()
 );
 
+-- Profilo privato dell'allievo (dolori/lesioni, alimentazione, stile di vita, obiettivi),
+-- compilato nella Welcome Page al primo accesso. Strettamente privato: la RLS sotto lo rende
+-- leggibile/scrivibile solo dal proprietario, mai dal PT, e l'app non lo passa mai
+-- all'assistente AI - nessun altro punto della codebase deve mai leggere questa tabella.
+create table if not exists public.allievo_private_profiles (
+    user_id uuid primary key references public.profiles (id) on delete cascade,
+    pain_injuries text,
+    nutrition text,
+    lifestyle text,
+    goals text,
+    completed_onboarding boolean not null default false,
+    updated_at timestamptz not null default now()
+);
+
 create table if not exists public.exercises (
     id uuid primary key default gen_random_uuid(),
     name text not null,
@@ -132,6 +146,7 @@ create table if not exists public.ai_rate_limit_events (
 -- Row Level Security --------------------------------------------------------
 
 alter table public.profiles enable row level security;
+alter table public.allievo_private_profiles enable row level security;
 alter table public.exercises enable row level security;
 alter table public.workout_plans enable row level security;
 alter table public.ai_messages enable row level security;
@@ -153,6 +168,10 @@ create policy "profiles_self_update" on public.profiles
 -- a PT can also update their own clients' rows (used to record injuries/limitations).
 create policy "profiles_pt_update_client" on public.profiles
     for update using (auth.uid() = pt_id);
+
+-- allievo_private_profiles: strictly owner-only - no PT exception, unlike profiles.injuries above.
+create policy "allievo_private_profiles_owner_only" on public.allievo_private_profiles
+    for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- exercises: readable by everyone signed in; writable by the creator.
 create policy "exercises_select" on public.exercises
