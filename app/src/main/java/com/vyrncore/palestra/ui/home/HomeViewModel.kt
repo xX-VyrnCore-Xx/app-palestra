@@ -38,13 +38,28 @@ private const val XP_PER_LEVEL = 100
 /** Total kg lifted (sum of weight*reps across every set) that unlock a badge. */
 val VOLUME_MILESTONES_KG = listOf(1_000, 5_000, 10_000, 25_000, 50_000, 100_000)
 
-/** Cosmetic title shown next to the level number, purely for flavor. */
+/** Military rank shown next to the level number — the app's gamification is framed as a career
+ * of service: each level climbed is a promotion, complete with an insignia (star count). */
 fun levelTitle(level: Int): String = when {
-    level < 3 -> "Novizio"
-    level < 6 -> "Allievo"
-    level < 11 -> "Atleta"
-    level < 21 -> "Veterano"
-    else -> "Leggenda"
+    level < 3 -> "Recluta"
+    level < 6 -> "Soldato"
+    level < 11 -> "Caporale"
+    level < 21 -> "Sergente"
+    level < 35 -> "Tenente"
+    level < 50 -> "Capitano"
+    level < 75 -> "Maggiore"
+    level < 100 -> "Colonnello"
+    else -> "Generale"
+}
+
+/** Number of stars on the rank insignia — climbs with rank, caps at a 5-star General. */
+fun rankStars(level: Int): Int = when {
+    level < 3 -> 0
+    level < 6 -> 1
+    level < 11 -> 2
+    level < 21 -> 3
+    level < 35 -> 4
+    else -> 5
 }
 
 data class HomeUiState(
@@ -59,7 +74,7 @@ data class HomeUiState(
     val totalVolumeKg: Double = 0.0,
     val xp: Int = 0,
     val level: Int = 1,
-    val levelTitle: String = "Novizio",
+    val levelTitle: String = "Recluta",
     val xpIntoLevel: Int = 0,
     val nextPlanId: String? = null,
     val nextPlanName: String? = null,

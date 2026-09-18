@@ -1,5 +1,11 @@
 package com.vyrncore.palestra.ui.pt
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,10 +20,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Badge
@@ -55,7 +61,7 @@ import com.vyrncore.palestra.ui.profile.ProfileScreen
 private data class PtTab(val label: String, val icon: ImageVector)
 
 private val tabs = listOf(
-    PtTab("Allievi", Icons.Filled.People),
+    PtTab("Plotone", Icons.Filled.People),
     PtTab("Chat", Icons.Filled.Forum),
     PtTab("Assistente", Icons.Filled.AutoAwesome),
     PtTab("Profilo", Icons.Filled.Person),
@@ -93,8 +99,16 @@ fun PtDashboardScreen(
             }
         },
     ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
-            when (selectedTab) {
+        AnimatedContent(
+            targetState = selectedTab,
+            modifier = Modifier.padding(padding),
+            transitionSpec = {
+                (fadeIn(tween(220)) + scaleIn(initialScale = 0.97f, animationSpec = tween(220))) togetherWith
+                    fadeOut(tween(140))
+            },
+            label = "ptTabContent",
+        ) { tab ->
+            when (tab) {
                 0 -> PtClientListScreen(onOpenClient = onOpenClient, viewModel = viewModel)
                 1 -> ChatListScreen(onOpenChat = onOpenChat)
                 2 -> AiAssistantScreen(onBack = {})
@@ -115,7 +129,7 @@ private fun PtClientListScreen(
     val isSyncing by viewModel.isSyncing.collectAsState()
     val weeklyRanking by viewModel.weeklyRanking.collectAsState()
 
-    Scaffold(topBar = { TopAppBar(title = { Text("I tuoi allievi") }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text("Il tuo plotone") }) }) { padding ->
       PullToRefreshBox(
         isRefreshing = isSyncing,
         onRefresh = { viewModel.refresh() },
@@ -124,8 +138,8 @@ private fun PtClientListScreen(
         Column(modifier = Modifier.fillMaxSize()) {
             ConnectionStatusBar(isOnline = isOnline, isSyncing = isSyncing)
             GradientHeader(
-                title = "${clients.size} allievi",
-                subtitle = "ID PT: ${viewModel.ptId.take(8)}… — condividilo per collegare nuovi allievi",
+                title = "${clients.size} reclute",
+                subtitle = "ID PT: ${viewModel.ptId.take(8)}… — condividilo per arruolare nuove reclute",
                 modifier = Modifier.padding(16.dp),
                 shape = RoundedCornerShape(24.dp),
             )
@@ -135,7 +149,7 @@ private fun PtClientListScreen(
             }
 
             if (clients.isEmpty()) {
-                EmptyState(icon = Icons.Filled.People, message = "Nessun allievo collegato ancora.")
+                EmptyState(icon = Icons.Filled.People, message = "Nessuna recluta arruolata ancora.")
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(clients, key = { it.id }) { client ->
@@ -203,12 +217,12 @@ private fun WeeklyRankingCard(ranking: List<ClientRanking>, modifier: Modifier =
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    Icons.Filled.EmojiEvents,
+                    Icons.Filled.MilitaryTech,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
                 Text(
-                    "Classifica della settimana",
+                    "Classifica del plotone",
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
                     modifier = Modifier.padding(start = 8.dp),
