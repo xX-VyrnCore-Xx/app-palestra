@@ -38,28 +38,47 @@ private const val XP_PER_LEVEL = 100
 /** Total kg lifted (sum of weight*reps across every set) that unlock a badge. */
 val VOLUME_MILESTONES_KG = listOf(1_000, 5_000, 10_000, 25_000, 50_000, 100_000)
 
-/** Military rank shown next to the level number — the app's gamification is framed as a career
- * of service: each level climbed is a promotion, complete with an insignia (star count). */
-fun levelTitle(level: Int): String = when {
-    level < 3 -> "Recluta"
-    level < 6 -> "Soldato"
-    level < 11 -> "Caporale"
-    level < 21 -> "Sergente"
-    level < 35 -> "Tenente"
-    level < 50 -> "Capitano"
-    level < 75 -> "Maggiore"
-    level < 100 -> "Colonnello"
-    else -> "Generale"
-}
+/** Real Italian Army rank hierarchy (Esercito Italiano), one promotion per level: truppa ->
+ * graduati -> sottufficiali -> ufficiali inferiori -> ufficiali superiori -> ufficiali generali.
+ * The app's gamification is framed as a career of service; each level climbed is a real promotion. */
+private val MILITARY_RANKS = listOf(
+    "Soldato", // 1
+    "Soldato Scelto", // 2
+    "Caporale", // 3
+    "Caporal Maggiore", // 4
+    "Caporal Maggiore Capo", // 5
+    "Caporal Maggiore Capo Scelto", // 6
+    "Sergente", // 7
+    "Sergente Maggiore", // 8
+    "Sergente Maggiore Capo", // 9
+    "Maresciallo", // 10
+    "Maresciallo Ordinario", // 11
+    "Maresciallo Capo", // 12
+    "Maresciallo Aiutante", // 13
+    "Primo Maresciallo", // 14
+    "Primo Maresciallo Luogotenente", // 15
+    "Sottotenente", // 16
+    "Tenente", // 17
+    "Capitano", // 18
+    "Maggiore", // 19
+    "Tenente Colonnello", // 20
+    "Colonnello", // 21
+    "Generale di Brigata", // 22
+    "Generale di Divisione", // 23
+    "Generale di Corpo d'Armata", // 24
+    "Generale", // 25+
+)
 
-/** Number of stars on the rank insignia — climbs with rank, caps at a 5-star General. */
+fun levelTitle(level: Int): String = MILITARY_RANKS.getOrElse(level - 1) { MILITARY_RANKS.last() }
+
+/** Number of stars on the rank insignia — climbs with rank tier, caps at 5 for the generals. */
 fun rankStars(level: Int): Int = when {
-    level < 3 -> 0
-    level < 6 -> 1
-    level < 11 -> 2
-    level < 21 -> 3
-    level < 35 -> 4
-    else -> 5
+    level < 3 -> 0 // Truppa
+    level < 7 -> 1 // Graduati
+    level < 16 -> 2 // Sottufficiali
+    level < 19 -> 3 // Ufficiali inferiori
+    level < 22 -> 4 // Ufficiali superiori
+    else -> 5 // Ufficiali generali
 }
 
 data class HomeUiState(
@@ -74,7 +93,7 @@ data class HomeUiState(
     val totalVolumeKg: Double = 0.0,
     val xp: Int = 0,
     val level: Int = 1,
-    val levelTitle: String = "Recluta",
+    val levelTitle: String = "Soldato",
     val xpIntoLevel: Int = 0,
     val nextPlanId: String? = null,
     val nextPlanName: String? = null,
