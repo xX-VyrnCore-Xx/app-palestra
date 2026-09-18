@@ -30,7 +30,7 @@ App Android nativa per il brand di palestre **Vibe Fitness**, pensata per due ru
 - Schede di allenamento con categoria (Full Body, Push, Pull, Gambe, Cardio, Mobilità), durata stimata e numero di esercizi mostrati in lista
 - Profilo con tema chiaro/scuro/di sistema (persistito) e logout
 - Catalogo di 24 esercizi comuni precaricato al primo avvio (offline e su Supabase)
-- Sincronizzazione bidirezionale: push dei dati registrati offline + pull di schede/progressi assegnati da un altro dispositivo (es. il PT assegna una scheda, l'allievo la riceve al sync successivo)
+- Sincronizzazione bidirezionale: push dei dati registrati offline + pull periodico di fallback; schede, esercizi assegnati e metriche corporee arrivano però **in tempo reale** via Supabase Realtime (come la chat), senza bisogno di riaprire l'app o aspettare il sync — nessuna nuova build richiesta per vedere dati aggiornati, solo per nuove funzionalità/modifiche al codice
 
 ## Architettura
 

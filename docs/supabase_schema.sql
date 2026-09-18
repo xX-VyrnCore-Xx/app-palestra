@@ -216,8 +216,7 @@ create policy "body_metrics_write" on public.body_metrics
     for insert with check (auth.uid() = user_id);
 
 -- messages: readable/writable only by the two participants; a message may only be sent
--- between a PT and their own allievo (either direction). Enable this table for Realtime
--- (Database -> Replication -> supabase_realtime) so the app receives live inserts.
+-- between a PT and their own allievo (either direction).
 create policy "messages_select_own_conversations" on public.messages
     for select using (auth.uid() = sender_id or auth.uid() = recipient_id);
 create policy "messages_insert_own_conversations" on public.messages
@@ -249,6 +248,16 @@ create policy "ai_messages_owner_select" on public.ai_messages
     for select using (auth.uid() = user_id);
 create policy "ai_messages_owner_insert" on public.ai_messages
     for insert with check (auth.uid() = user_id);
+
+-- Realtime -------------------------------------------------------------------
+-- Live updates (no rebuild/refresh needed): the app listens on these tables via Supabase
+-- Realtime, so a PT-assigned/edited plan or a new body-metric entry appears on the other
+-- device immediately instead of waiting for SyncManager's periodic pull. RLS above already
+-- governs which rows Realtime delivers to each connected user.
+alter publication supabase_realtime add table public.messages;
+alter publication supabase_realtime add table public.workout_plans;
+alter publication supabase_realtime add table public.plan_exercises;
+alter publication supabase_realtime add table public.body_metrics;
 
 -- Chat attachments storage ---------------------------------------------------
 -- Public bucket (object names are random UUIDs, so effectively unguessable) keeps
