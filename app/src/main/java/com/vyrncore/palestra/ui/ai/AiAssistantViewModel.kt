@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vyrncore.palestra.data.repository.AiAssistantRepository
 import com.vyrncore.palestra.data.repository.AiMessage
+import com.vyrncore.palestra.util.friendlyError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,7 +53,7 @@ class AiAssistantViewModel @Inject constructor(
                 .onFailure { e ->
                     _uiState.value = _uiState.value.copy(
                         isSending = false,
-                        error = e.message ?: "Errore di connessione con l'assistente AI",
+                        error = friendlyError(e),
                     )
                 }
         }
