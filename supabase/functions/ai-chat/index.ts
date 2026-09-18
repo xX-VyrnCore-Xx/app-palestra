@@ -7,7 +7,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const NIM_MODEL = "meta/llama-3.1-70b-instruct";
+const NIM_MODEL = "meta/llama-3.3-70b-instruct";
 const NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 const RATE_LIMIT_PER_MINUTE = 40;
 const MAX_HISTORY_MESSAGES = 20;
