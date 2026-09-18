@@ -5,12 +5,15 @@ import android.net.Uri
 import android.util.Patterns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -25,7 +28,6 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Forum
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,8 +52,10 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.vyrncore.palestra.data.local.entity.ChatAttachmentType
 import com.vyrncore.palestra.data.local.entity.ChatMessageEntity
 import com.vyrncore.palestra.ui.components.EmptyState
@@ -135,13 +139,19 @@ fun ChatThreadScreen(
             ) {
                 items(messages, key = { it.id }) { message ->
                     val isMine = message.senderId == viewModel.userId
-                    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .animateItem(placementSpec = tween(220)),
+                    ) {
                         Surface(
                             color = if (isMine) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                             shape = RoundedCornerShape(18.dp),
                             modifier = Modifier
                                 .align(if (isMine) Alignment.CenterEnd else Alignment.CenterStart)
-                                .widthIn(max = 280.dp),
+                                .widthIn(max = 280.dp)
+                                .animateContentSize(animationSpec = tween(180)),
                         ) {
                             Column {
                                 MessageContent(message = message, isMine = isMine)
@@ -178,6 +188,22 @@ private fun MessageContent(message: ChatMessageEntity, isMine: Boolean) {
     val textColor = if (isMine) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
 
     if (message.attachmentUrl != null) {
+        if (message.attachmentType == ChatAttachmentType.IMAGE) {
+            AsyncImage(
+                model = message.attachmentUrl,
+                contentDescription = message.attachmentName ?: "Immagine",
+                modifier = Modifier
+                    .padding(4.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .widthIn(max = 260.dp)
+                    .height(180.dp)
+                    .clickable {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(message.attachmentUrl)))
+                    },
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            )
+            return
+        }
         Row(
             modifier = Modifier
                 .padding(horizontal = 14.dp, vertical = 10.dp)
@@ -187,7 +213,7 @@ private fun MessageContent(message: ChatMessageEntity, isMine: Boolean) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                if (message.attachmentType == ChatAttachmentType.IMAGE) Icons.Filled.Image else Icons.Filled.Description,
+                Icons.Filled.Description,
                 contentDescription = null,
                 tint = textColor,
             )
