@@ -1,6 +1,10 @@
 package com.vyrncore.palestra.ui.progress
 
-import androidx.compose.foundation.layout.Box
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,7 +36,7 @@ fun ProgressScreen(onOpenSession: (sessionId: String, planId: String) -> Unit) {
     var selectedTab by remember { mutableIntStateOf(0) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Surface {
+        Surface(tonalElevation = 1.dp) {
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 progressTabs.forEachIndexed { index, label ->
                     SegmentedButton(
@@ -45,8 +49,13 @@ fun ProgressScreen(onOpenSession: (sessionId: String, planId: String) -> Unit) {
                 }
             }
         }
-        Box(modifier = Modifier.weight(1f)) {
-            when (selectedTab) {
+        AnimatedContent(
+            targetState = selectedTab,
+            modifier = Modifier.weight(1f),
+            transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(150)) },
+            label = "progressTabContent",
+        ) { tab ->
+            when (tab) {
                 0 -> HistoryScreen()
                 1 -> CalendarScreen(onOpenSession = onOpenSession)
                 else -> StatsScreen()

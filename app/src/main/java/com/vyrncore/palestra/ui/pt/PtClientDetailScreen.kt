@@ -1,11 +1,16 @@
 package com.vyrncore.palestra.ui.pt
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -25,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vyrncore.palestra.ui.components.GradientHeader
 import com.vyrncore.palestra.ui.components.MetricCard
 import com.vyrncore.palestra.ui.components.SimpleLineChart
 import java.text.SimpleDateFormat
@@ -50,6 +57,7 @@ fun PtClientDetailScreen(
     val bodyMetrics by viewModel.bodyMetrics.collectAsState()
     val note by viewModel.note.collectAsState()
     val injuries by viewModel.injuries.collectAsState()
+    val clientName by viewModel.clientName.collectAsState()
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.ITALY) }
 
     var noteDraft by remember(note) { mutableStateOf(note?.content.orEmpty()) }
@@ -58,6 +66,9 @@ fun PtClientDetailScreen(
     val completedSessions = sessions.count { it.endedAtEpochMs != null }
     val lastActive = sessions.mapNotNull { it.endedAtEpochMs }.maxOrNull()
     val weightTrend = bodyMetrics.mapNotNull { it.weightKg }.asReversed()
+
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
 
     Scaffold(
         topBar = {
@@ -77,8 +88,20 @@ fun PtClientDetailScreen(
         },
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()),
+            modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()),
         ) {
+          if (clientName.isNotBlank()) {
+            GradientHeader(
+                title = clientName,
+                subtitle = "$completedSessions allenamenti svolti",
+                shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp),
+            )
+          }
+          AnimatedVisibility(
+            visible = visible,
+            enter = fadeIn(tween(350)) + slideInVertically(tween(350)) { it / 8 },
+          ) {
+          Column(modifier = Modifier.padding(16.dp)) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium,
@@ -214,6 +237,8 @@ fun PtClientDetailScreen(
                     }
                 }
             }
+          }
+          }
         }
     }
 }

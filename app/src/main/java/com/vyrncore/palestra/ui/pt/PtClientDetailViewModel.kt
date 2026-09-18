@@ -41,6 +41,9 @@ class PtClientDetailViewModel @Inject constructor(
     val injuries = authRepository.observeProfile(clientId).map { it?.injuries }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    val clientName = authRepository.observeProfile(clientId).map { it?.fullName.orEmpty() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
     fun saveNote(content: String) {
         viewModelScope.launch { ptNotesRepository.saveNote(ptId, clientId, content) }
     }
