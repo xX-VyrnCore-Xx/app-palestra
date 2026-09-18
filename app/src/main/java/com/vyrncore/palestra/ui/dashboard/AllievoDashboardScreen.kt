@@ -15,13 +15,7 @@ import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -33,7 +27,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.ui.ai.AiAssistantScreen
 import com.vyrncore.palestra.ui.chat.ChatThreadScreen
+import com.vyrncore.palestra.ui.components.AnimatedNavBar
 import com.vyrncore.palestra.ui.components.EmptyState
+import com.vyrncore.palestra.ui.components.NavBarItem
 import com.vyrncore.palestra.ui.home.HomeScreen
 import com.vyrncore.palestra.ui.profile.ProfileScreen
 import com.vyrncore.palestra.ui.progress.ProgressScreen
@@ -65,24 +61,17 @@ fun AllievoDashboardScreen(
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                tabs.forEachIndexed { index, tab ->
-                    NavigationBarItem(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        icon = {
-                            if (tab.label == "Chat" && unreadCount > 0) {
-                                BadgedBox(badge = { Badge { Text("$unreadCount") } }) {
-                                    Icon(tab.icon, contentDescription = tab.label)
-                                }
-                            } else {
-                                Icon(tab.icon, contentDescription = tab.label)
-                            }
-                        },
-                        label = { Text(tab.label) },
+            AnimatedNavBar(
+                items = tabs.map { tab ->
+                    NavBarItem(
+                        label = tab.label,
+                        icon = tab.icon,
+                        badgeCount = if (tab.label == "Chat") unreadCount else 0,
                     )
-                }
-            }
+                },
+                selectedIndex = selectedTab,
+                onSelect = { selectedTab = it },
+            )
         },
     ) { padding ->
         AnimatedContent(
