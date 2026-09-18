@@ -23,10 +23,20 @@ import com.vyrncore.palestra.data.remote.dto.WorkoutSessionDto
 import com.vyrncore.palestra.data.remote.toDto
 import com.vyrncore.palestra.data.remote.toEntity
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
+import kotlinx.serialization.Serializable
 import javax.inject.Inject
 import javax.inject.Singleton
+
+@Serializable
+private data class SendPushRequest(
+    val recipientId: String,
+    val type: String,
+    val title: String,
+    val body: String,
+)
 
 /**
  * Keeps the local Room database and Supabase in sync in both directions:
@@ -43,6 +53,7 @@ import javax.inject.Singleton
 class SyncManager @Inject constructor(
     private val auth: Auth,
     private val postgrest: Postgrest,
+    private val functions: Functions,
     private val userProfileDao: UserProfileDao,
     private val exerciseDao: ExerciseDao,
     private val workoutPlanDao: WorkoutPlanDao,
@@ -70,6 +81,7 @@ class SyncManager @Inject constructor(
         workoutPlanDao.getPendingSync().forEach { entity ->
             postgrest.from("workout_plans").upsert(entity.toDto())
             workoutPlanDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED))
+            if (entity.syncStatus == SyncStatus.PENDING_CREATE) notifyPlanAssigned(entity.assignedToUserId, entity.name)
         }
         planExerciseDao.getPendingSync().forEach { entity ->
             postgrest.from("plan_exercises").upsert(entity.toDto())
@@ -94,6 +106,21 @@ class SyncManager @Inject constructor(
         ptNoteDao.getPendingSync().forEach { entity ->
             postgrest.from("pt_notes").upsert(entity.toDto())
             ptNoteDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED))
+        }
+    }
+
+    /** Best-effort server push so a newly assigned plan reaches the client even if the app isn't running. */
+    private suspend fun notifyPlanAssigned(assignedToUserId: String, planName: String) {
+        runCatching {
+            functions.invoke(
+                "send-push",
+                body = SendPushRequest(
+                    recipientId = assignedToUserId,
+                    type = "plan_update",
+                    title = "Nuova scheda assegnata",
+                    body = planName,
+                ),
+            )
         }
     }
 
