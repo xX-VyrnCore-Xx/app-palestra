@@ -2,6 +2,7 @@ package com.vyrncore.palestra.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.messaging.FirebaseMessaging
 import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.ChatRepository
@@ -21,7 +22,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RootViewModel @Inject constructor(
-    authRepository: AuthRepository,
+    private val authRepository: AuthRepository,
     private val themeRepository: ThemeRepository,
     private val chatRepository: ChatRepository,
     private val realtimeSyncManager: RealtimeSyncManager,
@@ -35,6 +36,14 @@ class RootViewModel @Inject constructor(
         startUserId?.let {
             chatRepository.startListening(it)
             realtimeSyncManager.startListening(it)
+            registerFcmToken(it)
+        }
+    }
+
+    /** Sends this device's push token to the backend, so it knows where to deliver notifications. */
+    private fun registerFcmToken(userId: String) {
+        FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+            viewModelScope.launch { authRepository.updateFcmToken(userId, token) }
         }
     }
 
@@ -50,6 +59,7 @@ class RootViewModel @Inject constructor(
         userId.value = id
         chatRepository.startListening(id)
         realtimeSyncManager.startListening(id)
+        registerFcmToken(id)
     }
 
     fun setThemeMode(mode: ThemeMode) {

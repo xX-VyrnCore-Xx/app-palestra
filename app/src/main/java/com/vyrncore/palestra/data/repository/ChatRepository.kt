@@ -9,6 +9,7 @@ import com.vyrncore.palestra.data.notification.NotificationHelper
 import com.vyrncore.palestra.data.remote.dto.ChatMessageDto
 import com.vyrncore.palestra.data.remote.toDto
 import com.vyrncore.palestra.data.remote.toEntity
+import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.realtime.PostgresAction
@@ -24,10 +25,19 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+
+@Serializable
+private data class SendPushRequest(
+    val recipientId: String,
+    val type: String,
+    val title: String,
+    val body: String,
+)
 
 /**
  * Realtime PT<->Allievo messaging. Sent/received messages are always mirrored into Room so the
@@ -39,6 +49,7 @@ class ChatRepository @Inject constructor(
     private val realtime: Realtime,
     private val postgrest: Postgrest,
     private val storage: Storage,
+    private val functions: Functions,
     private val chatMessageDao: ChatMessageDao,
     private val userProfileDao: UserProfileDao,
     private val notificationHelper: NotificationHelper,
@@ -107,7 +118,21 @@ class ChatRepository @Inject constructor(
         )
         chatMessageDao.upsert(entity)
         runCatching { postgrest.from("messages").upsert(entity.toDto()) }
-            .onSuccess { chatMessageDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED)) }
+            .onSuccess {
+                chatMessageDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED))
+                notifyPeerOfMessage(senderId, recipientId, content)
+            }
+    }
+
+    /** Best-effort server push so the peer is notified even if the app isn't running. */
+    private suspend fun notifyPeerOfMessage(senderId: String, recipientId: String, content: String) {
+        val senderName = userProfileDao.observeById(senderId).first()?.fullName ?: "Vibe Fitness"
+        runCatching {
+            functions.invoke(
+                "send-push",
+                body = SendPushRequest(recipientId = recipientId, type = "chat_message", title = senderName, body = content),
+            )
+        }
     }
 
     /** Uploads [bytes] to the chat-attachments bucket and sends it as a message with an attachment. */
@@ -136,7 +161,10 @@ class ChatRepository @Inject constructor(
         )
         chatMessageDao.upsert(entity)
         runCatching { postgrest.from("messages").upsert(entity.toDto()) }
-            .onSuccess { chatMessageDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED)) }
+            .onSuccess {
+                chatMessageDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED))
+                notifyPeerOfMessage(senderId, recipientId, entity.content)
+            }
     }
 
     suspend fun markConversationRead(userId: String, otherUserId: String) {

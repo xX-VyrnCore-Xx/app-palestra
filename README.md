@@ -94,6 +94,21 @@ supabase secrets set NVIDIA_NIM_API_KEY=<la-tua-chiave> --project-ref qibthdzydl
 ```
 Senza questo secret l'assistente risponde con un errore "non configurato", il resto dell'app funziona normalmente.
 
+## Notifiche push (Firebase Cloud Messaging)
+
+Oltre alla Realtime (attiva solo mentre l'app è aperta), un messaggio in chat innesca anche una
+push FCM verso il dispositivo del destinatario tramite l'Edge Function Supabase `send-push`
+(`supabase/functions/send-push`), così arriva anche ad app chiusa. Lato client, `FcmService`
+riceve il payload e mostra la notifica; il token del dispositivo viene salvato in automatico su
+`profiles.fcm_token` al login.
+
+Per attivarla, genera una chiave service account su Firebase (Project Settings → Service accounts
+→ Generate new private key) e impostala come secret sul progetto Supabase:
+```
+supabase secrets set FIREBASE_SERVICE_ACCOUNT_JSON='<contenuto del file json>' --project-ref qibthdzydlyvdknimfoj
+```
+Senza questo secret la funzione risponde con un no-op silenzioso: l'app funziona comunque, solo senza push.
+
 ## Pubblicazione su Google Play Store
 
 Vedi `docs/play_store_release.md` per la guida completa: build firmata (Android App Bundle) via `.github/workflows/build-release-aab.yml`, testi della scheda (`docs/play_store_listing.md`) e bozza dell'informativa privacy (`docs/privacy_policy.md`).

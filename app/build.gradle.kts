@@ -7,6 +7,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -158,6 +159,12 @@ dependencies {
 
     // Inline image thumbnails in chat attachments
     implementation("io.coil-kt:coil-compose:2.7.0")
+
+    // Firebase Cloud Messaging: server-triggered push (new chat message / plan assignment)
+    // delivered even when the app is killed - complements Supabase Realtime, which only
+    // updates data while the process is alive.
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")

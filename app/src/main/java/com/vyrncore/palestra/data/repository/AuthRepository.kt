@@ -80,4 +80,13 @@ class AuthRepository @Inject constructor(
             current.copy(injuries = injuries?.takeIf { it.isNotBlank() }, syncStatus = SyncStatus.PENDING_UPDATE)
         )
     }
+
+    /** Registers this device's FCM token so the backend can push notifications to it. */
+    suspend fun updateFcmToken(userId: String, token: String) {
+        runCatching {
+            postgrest.from("profiles").update(mapOf("fcm_token" to token)) {
+                filter { eq("id", userId) }
+            }
+        }
+    }
 }
