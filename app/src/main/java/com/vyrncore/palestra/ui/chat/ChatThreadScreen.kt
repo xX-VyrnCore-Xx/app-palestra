@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,6 +22,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Send
@@ -142,12 +145,24 @@ fun ChatThreadScreen(
                         ) {
                             Column {
                                 MessageContent(message = message, isMine = isMine)
-                                Text(
-                                    timeFormat.format(Date(message.createdAtEpochMs)),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = (if (isMine) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant).copy(alpha = 0.7f),
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 6.dp),
-                                )
+                                ) {
+                                    Text(
+                                        timeFormat.format(Date(message.createdAtEpochMs)),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = (if (isMine) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant).copy(alpha = 0.7f),
+                                    )
+                                    if (isMine) {
+                                        Icon(
+                                            if (message.readAtEpochMs != null) Icons.Filled.DoneAll else Icons.Filled.Done,
+                                            contentDescription = if (message.readAtEpochMs != null) "Letto" else "Inviato",
+                                            tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
+                                            modifier = Modifier.padding(start = 4.dp).size(14.dp),
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
