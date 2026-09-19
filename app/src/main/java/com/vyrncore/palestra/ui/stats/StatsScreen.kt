@@ -10,6 +10,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.TrendingDown
+import androidx.compose.material.icons.filled.TrendingFlat
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -99,6 +102,13 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
             }
 
             if (weeklyVolume.size >= 2) {
+                val (previous, current) = weeklyVolume.takeLast(2)
+                WeekOverWeekCard(
+                    previousVolumeKg = previous.totalVolumeKg,
+                    currentVolumeKg = current.totalVolumeKg,
+                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+                )
+
                 Text(
                     "Andamento volume settimanale",
                     style = MaterialTheme.typography.titleMedium,
@@ -115,6 +125,47 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
                         lineColor = MaterialTheme.colorScheme.secondary,
                     )
                 }
+            }
+        }
+    }
+}
+
+/** Volume this week vs the previous one, as a percentage delta - the "am I actually progressing"
+ * answer at a glance, instead of having to eyeball the line chart below it. */
+@Composable
+private fun WeekOverWeekCard(previousVolumeKg: Double, currentVolumeKg: Double, modifier: Modifier = Modifier) {
+    val percentChange = if (previousVolumeKg > 0) {
+        ((currentVolumeKg - previousVolumeKg) / previousVolumeKg) * 100
+    } else if (currentVolumeKg > 0) {
+        100.0
+    } else {
+        0.0
+    }
+    val (icon, tint) = when {
+        percentChange > 0.5 -> Icons.Filled.TrendingUp to MaterialTheme.colorScheme.tertiary
+        percentChange < -0.5 -> Icons.Filled.TrendingDown to MaterialTheme.colorScheme.error
+        else -> Icons.Filled.TrendingFlat to MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Card(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            androidx.compose.material3.Icon(icon, contentDescription = null, tint = tint)
+            Column(modifier = Modifier.padding(start = 12.dp)) {
+                Text(
+                    "${if (percentChange >= 0) "+" else ""}${"%.0f".format(percentChange)}% volume vs settimana scorsa",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(
+                    "${"%.0f".format(currentVolumeKg)} kg questa settimana · ${"%.0f".format(previousVolumeKg)} kg la scorsa",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
