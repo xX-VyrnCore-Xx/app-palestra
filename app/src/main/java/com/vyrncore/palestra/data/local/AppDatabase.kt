@@ -37,7 +37,7 @@ import com.vyrncore.palestra.data.local.entity.WorkoutSessionEntity
         PtNoteEntity::class,
         ProgramEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

@@ -25,6 +25,7 @@ data class DraftPlanExercise(
     val targetReps: Int = 10,
     val targetWeightKg: Double? = null,
     val restSeconds: Int = 90,
+    val notes: String? = null,
 )
 
 /** Common plan categories offered in the editor; a PT can still leave this unset. */
@@ -73,6 +74,12 @@ class PlanEditorViewModel @Inject constructor(
         }
     }
 
+    fun updateExerciseNote(exerciseId: String, notes: String) {
+        _draftExercises.value = _draftExercises.value.map {
+            if (it.exerciseId == exerciseId) it.copy(notes = notes.ifBlank { null }) else it
+        }
+    }
+
     fun savePlan(name: String, description: String?, category: String?, onSaved: () -> Unit) {
         val ptId = authRepository.currentUserId.orEmpty()
         val exercises = _draftExercises.value
@@ -96,6 +103,7 @@ class PlanEditorViewModel @Inject constructor(
                         targetSets = it.targetSets,
                         targetReps = it.targetReps,
                         restSeconds = it.restSeconds,
+                        notes = it.notes,
                         syncStatus = SyncStatus.PENDING_CREATE,
                     )
                 },

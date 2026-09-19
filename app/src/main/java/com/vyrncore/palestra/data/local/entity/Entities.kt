@@ -93,6 +93,9 @@ data class PlanExerciseEntity(
     val targetReps: Int,
     val targetWeightKg: Double? = null,
     val restSeconds: Int = 90,
+    /** Quick freeform note from the PT (technique cue, tempo, substitution) shown to the allievo
+     * right on the exercise card during the workout - no need to open chat to relay it. */
+    val notes: String? = null,
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 

@@ -17,6 +17,8 @@ object Routes {
     const val CHAT_THREAD = "chat_thread/{peerId}"
     const val HISTORY = "history"
     const val CALENDAR = "calendar"
+    const val SEARCH = "search"
+    const val WORKOUT_SUMMARY = "workout_summary/{sessionId}/{planId}"
 
     fun activeWorkout(sessionId: String, planId: String) = "active_workout/$sessionId/$planId"
     fun ptClientDetail(clientId: String) = "pt_client/$clientId"
@@ -24,4 +26,5 @@ object Routes {
     fun programEditor(clientId: String) = "program_editor/$clientId"
     fun restTimer(seconds: Int) = "rest_timer/$seconds"
     fun chatThread(peerId: String) = "chat_thread/$peerId"
+    fun workoutSummary(sessionId: String, planId: String) = "workout_summary/$sessionId/$planId"
 }

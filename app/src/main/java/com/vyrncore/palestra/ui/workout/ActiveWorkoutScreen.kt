@@ -29,6 +29,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.OndemandVideo
+import androidx.compose.material.icons.filled.StickyNote2
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -49,7 +50,7 @@ import com.vyrncore.palestra.util.youtubeTutorialSearchUrl
 
 @Composable
 fun ActiveWorkoutScreen(
-    onFinished: () -> Unit,
+    onFinished: (sessionId: String, planId: String) -> Unit,
     onOpenRestTimer: (seconds: Int) -> Unit,
     viewModel: ActiveWorkoutViewModel = hiltViewModel(),
 ) {
@@ -147,6 +148,24 @@ fun ActiveWorkoutScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            if (!exercise.notes.isNullOrBlank()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                    verticalAlignment = Alignment.Top,
+                                ) {
+                                    Icon(
+                                        Icons.Filled.StickyNote2,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(end = 6.dp).height(18.dp),
+                                    )
+                                    Text(
+                                        exercise.notes,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
                             LinearProgressIndicator(
                                 progress = { exerciseProgress },
                                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp).height(6.dp),
@@ -158,7 +177,7 @@ fun ActiveWorkoutScreen(
                 }
             }
             Button(
-                onClick = { viewModel.endWorkout(onFinished) },
+                onClick = { viewModel.endWorkout { onFinished(viewModel.sessionId, viewModel.planId) } },
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
             ) {
                 Text("Termina missione")

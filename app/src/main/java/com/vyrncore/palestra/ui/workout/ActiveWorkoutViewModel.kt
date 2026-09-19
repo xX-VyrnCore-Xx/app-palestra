@@ -43,6 +43,7 @@ class ActiveWorkoutViewModel @Inject constructor(
                     targetReps = planExercise.targetReps,
                     restSeconds = planExercise.restSeconds,
                     completedSets = loggedSets.count { it.exerciseId == planExercise.exerciseId },
+                    notes = planExercise.notes,
                 )
             },
         )
@@ -92,4 +93,5 @@ data class ActiveExerciseUi(
     val targetReps: Int,
     val restSeconds: Int,
     val completedSets: Int,
+    val notes: String? = null,
 )
