@@ -15,6 +15,8 @@ object Routes {
     const val PROGRAM_EDITOR = "program_editor/{clientId}"
     const val REST_TIMER = "rest_timer/{seconds}"
     const val CHAT_THREAD = "chat_thread/{peerId}"
+    const val HISTORY = "history"
+    const val CALENDAR = "calendar"
 
     fun activeWorkout(sessionId: String, planId: String) = "active_workout/$sessionId/$planId"
     fun ptClientDetail(clientId: String) = "pt_client/$clientId"

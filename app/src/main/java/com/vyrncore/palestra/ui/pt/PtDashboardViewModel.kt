@@ -29,6 +29,14 @@ data class ClientRanking(val clientId: String, val fullName: String, val workout
 
 enum class ClientSortMode { LAST_ACTIVE, NAME }
 
+/** One client's plan/program library, for the PT-side "Schede" tab. */
+data class ClientPlanOverview(
+    val clientId: String,
+    val fullName: String,
+    val planCount: Int,
+    val activeProgramName: String?,
+)
+
 /** Everything the PT dashboard needs to show about one client at a glance, computed client-side
  * from data the PT is already authorized to see (their own roster + those clients' sessions). */
 data class ClientOverview(
@@ -154,6 +162,32 @@ class PtDashboardViewModel @Inject constructor(
             overviews.filter { it.workoutsThisWeek > 0 }
                 .sortedByDescending { it.workoutsThisWeek }
                 .map { ClientRanking(it.clientId, it.fullName, it.workoutsThisWeek) }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Every client's plan/program library in one place, for the "Schede" tab - built the same way
+     * as [clientOverviews], by combining a per-client flow the PT is already authorized to read. */
+    val clientPlanOverviews: StateFlow<List<ClientPlanOverview>> = clients
+        .flatMapLatest { list ->
+            if (list.isEmpty()) {
+                flowOf(emptyList())
+            } else {
+                combine(
+                    list.map { client ->
+                        combine(
+                            workoutRepository.observePlansForUser(client.id),
+                            workoutRepository.observeProgramsForUser(client.id),
+                        ) { plans, programs ->
+                            ClientPlanOverview(
+                                clientId = client.id,
+                                fullName = client.fullName,
+                                planCount = plans.size,
+                                activeProgramName = programs.maxByOrNull { it.startEpochMs }?.name,
+                            )
+                        }
+                    },
+                ) { it.toList() }
+            }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

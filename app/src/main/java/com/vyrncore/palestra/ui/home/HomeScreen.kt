@@ -15,12 +15,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DynamicFeed
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Star
@@ -45,13 +49,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.data.repository.PlotoneFeedPost
 import com.vyrncore.palestra.data.repository.WeeklyRankingEntry
+import com.vyrncore.palestra.ui.components.BarChartEntry
 import com.vyrncore.palestra.ui.components.ConnectionStatusBar
 import com.vyrncore.palestra.ui.components.GradientHeader
 import com.vyrncore.palestra.ui.components.MetricCard
+import com.vyrncore.palestra.ui.components.PersonalRecordsCard
+import com.vyrncore.palestra.ui.components.SimpleBarChart
+import com.vyrncore.palestra.ui.components.SimpleLineChart
+import com.vyrncore.palestra.ui.components.WeekOverWeekCard
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalTime
@@ -60,6 +70,8 @@ import java.time.LocalTime
 @Composable
 fun HomeScreen(
     onStartSession: (sessionId: String, planId: String) -> Unit,
+    onOpenHistory: () -> Unit = {},
+    onOpenCalendar: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -67,6 +79,9 @@ fun HomeScreen(
     val isSyncing by viewModel.isSyncing.collectAsState()
     val weeklyRanking by viewModel.weeklyRanking.collectAsState()
     val feed by viewModel.feed.collectAsState()
+    val weeklyVolume by viewModel.weeklyVolume.collectAsState()
+    val volumeByMuscleGroup by viewModel.volumeByMuscleGroup.collectAsState()
+    val personalRecords by viewModel.personalRecords.collectAsState()
     val greeting = when (LocalTime.now().hour) {
         in 5..11 -> "Buongiorno"
         in 12..17 -> "Buon pomeriggio"
@@ -191,34 +206,227 @@ fun HomeScreen(
                 }
             }
 
-            if (uiState.unlockedBadges.isNotEmpty() || BADGE_MILESTONES.isNotEmpty()) {
-                BadgeSection(
-                    title = "MEDAGLIE DI SERVIZIO",
-                    icon = Icons.Filled.MilitaryTech,
-                    milestones = BADGE_MILESTONES,
-                    unlocked = uiState.unlockedBadges,
-                    suffix = "gg",
+            Text(
+                "I TUOI PROGRESSI",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp),
+            )
+
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                QuickLinkCard(
+                    icon = Icons.Filled.History,
+                    label = "Cronologia",
+                    onClick = onOpenHistory,
+                    modifier = Modifier.weight(1f),
+                )
+                QuickLinkCard(
+                    icon = Icons.Filled.CalendarMonth,
+                    label = "Calendario",
+                    onClick = onOpenCalendar,
+                    modifier = Modifier.weight(1f).padding(start = 12.dp),
                 )
             }
 
-            BadgeSection(
-                title = "DECORAZIONI OPERATIVE",
-                icon = Icons.Filled.MilitaryTech,
-                milestones = WORKOUT_COUNT_MILESTONES,
-                unlocked = uiState.unlockedWorkoutCountBadges,
-                suffix = "",
-            )
+            if (weeklyVolume.size >= 2) {
+                val (previous, current) = weeklyVolume.takeLast(2)
+                WeekOverWeekCard(
+                    previousVolumeKg = previous.totalVolumeKg,
+                    currentVolumeKg = current.totalVolumeKg,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
 
-            BadgeSection(
-                title = "MEDAGLIE DI POTENZA",
-                icon = Icons.Filled.MilitaryTech,
-                milestones = VOLUME_MILESTONES_KG,
-                unlocked = uiState.unlockedVolumeBadges,
-                suffix = " kg",
-                modifier = Modifier.padding(bottom = 16.dp),
+            if (weeklyVolume.size >= 2) {
+                Text(
+                    "Andamento volume settimanale",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
+                )
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                ) {
+                    SimpleLineChart(
+                        values = weeklyVolume.map { it.totalVolumeKg },
+                        modifier = Modifier.padding(16.dp),
+                        lineColor = MaterialTheme.colorScheme.secondary,
+                    )
+                }
+            }
+
+            if (volumeByMuscleGroup.isNotEmpty()) {
+                Text(
+                    "Volume per gruppo muscolare",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp),
+                )
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                ) {
+                    SimpleBarChart(
+                        entries = volumeByMuscleGroup.map { BarChartEntry(it.muscleGroup, it.totalVolumeKg) },
+                        modifier = Modifier.padding(16.dp),
+                        barColor = MaterialTheme.colorScheme.tertiary,
+                    )
+                }
+            }
+
+            if (personalRecords.isNotEmpty()) {
+                Text(
+                    "Record personali (1RM stimato)",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp),
+                )
+                PersonalRecordsCard(
+                    records = personalRecords,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                )
+            }
+
+            Text(
+                "MEDAGLIERE",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp),
             )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+            ) {
+                MedalSummaryCard(
+                    icon = Icons.Filled.LocalFireDepartment,
+                    title = "Servizio",
+                    unlockedCount = uiState.unlockedBadges.size,
+                    totalCount = BADGE_MILESTONES.size,
+                    nextMilestone = BADGE_MILESTONES.firstOrNull { it > uiState.longestStreakDays },
+                    currentValue = uiState.longestStreakDays,
+                    suffix = "gg",
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                MedalSummaryCard(
+                    icon = Icons.Filled.MilitaryTech,
+                    title = "Operative",
+                    unlockedCount = uiState.unlockedWorkoutCountBadges.size,
+                    totalCount = WORKOUT_COUNT_MILESTONES.size,
+                    nextMilestone = WORKOUT_COUNT_MILESTONES.firstOrNull { it > uiState.totalWorkouts },
+                    currentValue = uiState.totalWorkouts,
+                    suffix = "",
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                MedalSummaryCard(
+                    icon = Icons.Filled.Star,
+                    title = "Potenza",
+                    unlockedCount = uiState.unlockedVolumeBadges.size,
+                    totalCount = VOLUME_MILESTONES_KG.size,
+                    nextMilestone = VOLUME_MILESTONES_KG.firstOrNull { it > uiState.totalVolumeKg },
+                    currentValue = uiState.totalVolumeKg.toInt(),
+                    suffix = " kg",
+                    modifier = Modifier.padding(end = 12.dp, bottom = 8.dp),
+                )
+            }
         }
       }
+    }
+}
+
+/** A compact entry point into a full-screen destination that used to live in its own "Progressi"
+ * tab - folded into Home so the allievo never has to hunt for a separate nav slot for it. */
+@Composable
+private fun QuickLinkCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        onClick = onClick,
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Text(
+                label,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(start = 10.dp).weight(1f),
+            )
+            Icon(
+                Icons.Filled.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Collapses a whole milestone-badge row into a single compact card: how many are unlocked out of
+ * the total, plus a one-line "how far to the next one" readout - replacing three separate
+ * horizontally-scrolling rows of mostly-locked circles that used to dominate the screen. */
+@Composable
+private fun MedalSummaryCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    unlockedCount: Int,
+    totalCount: Int,
+    nextMilestone: Int?,
+    currentValue: Int,
+    suffix: String,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.width(150.dp),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = if (unlockedCount > 0) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = if (unlockedCount > 0) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                title,
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(top = 8.dp),
+                color = if (unlockedCount > 0) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                "$unlockedCount/$totalCount medaglie",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (unlockedCount > 0) MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (nextMilestone != null) {
+                Text(
+                    "Prossima: $currentValue/$nextMilestone$suffix",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (unlockedCount > 0) MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 6.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            } else if (totalCount > 0) {
+                Text(
+                    "Tutte sbloccate!",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+        }
     }
 }
 
@@ -358,72 +566,6 @@ private fun WeeklyComparisonRow(thisWeek: Int, lastWeek: Int, modifier: Modifier
                 modifier = Modifier.padding(start = 10.dp),
             )
         }
-    }
-}
-
-@Composable
-private fun BadgeSection(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    milestones: List<Int>,
-    unlocked: List<Int>,
-    suffix: String,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier) {
-        Text(
-            title,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp),
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-        ) {
-            milestones.forEach { milestone ->
-                BadgeCircle(
-                    icon = icon,
-                    label = "$milestone$suffix",
-                    unlocked = unlocked.contains(milestone),
-                    modifier = Modifier.padding(end = 12.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun BadgeCircle(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    unlocked: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .background(
-                    if (unlocked) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                    CircleShape,
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = if (unlocked) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-            )
-        }
-        Text(
-            label,
-            style = MaterialTheme.typography.labelMedium,
-            color = if (unlocked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-            modifier = Modifier.padding(top = 4.dp),
-        )
     }
 }
 

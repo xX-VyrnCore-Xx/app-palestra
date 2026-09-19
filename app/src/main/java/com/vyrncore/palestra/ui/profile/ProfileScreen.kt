@@ -62,6 +62,7 @@ fun ProfileScreen(
     val planNotificationsEnabled by viewModel.planNotificationsEnabled.collectAsState()
     val achievementNotificationsEnabled by viewModel.achievementNotificationsEnabled.collectAsState()
     var showNameDialog by remember { mutableStateOf(false) }
+    var showSignOutDialog by remember { mutableStateOf(false) }
 
     val avatarPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -227,12 +228,31 @@ fun ProfileScreen(
             }
 
             TextButton(
-                onClick = { viewModel.signOut(onSignedOut) },
+                onClick = { showSignOutDialog = true },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             ) {
                 Text("Esci", color = MaterialTheme.colorScheme.error)
             }
         }
+    }
+
+    if (showSignOutDialog) {
+        AlertDialog(
+            onDismissRequest = { showSignOutDialog = false },
+            title = { Text("Uscire dall'account?") },
+            text = { Text("Dovrai effettuare di nuovo l'accesso per usare l'app.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showSignOutDialog = false
+                        viewModel.signOut(onSignedOut)
+                    },
+                ) { Text("Esci", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSignOutDialog = false }) { Text("Annulla") }
+            },
+        )
     }
 
     if (showNameDialog) {
