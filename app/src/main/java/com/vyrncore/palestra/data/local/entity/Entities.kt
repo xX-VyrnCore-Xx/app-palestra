@@ -17,6 +17,8 @@ data class UserProfileEntity(
     val ptId: String? = null,
     /** Infortuni/limitazioni fisiche riportate: solo il PT le imposta, visibili solo a lui. */
     val injuries: String? = null,
+    /** Foto profilo scelta dall'utente, caricata nel bucket pubblico "avatars". */
+    val avatarUrl: String? = null,
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 
@@ -161,6 +163,9 @@ data class ChatMessageEntity(
     val attachmentUrl: String? = null,
     val attachmentName: String? = null,
     val attachmentType: ChatAttachmentType? = null,
+    /** Soft-delete flag: content/attachment are cleared but the row stays so the peer sees a
+     * "message deleted" tombstone instead of a confusing gap in the conversation. */
+    val isDeleted: Boolean = false,
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 

@@ -7,6 +7,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,7 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -31,6 +33,7 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +41,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -65,6 +69,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatThreadScreen(
     peerId: String,
@@ -76,8 +81,10 @@ fun ChatThreadScreen(
     val messages by viewModel.messages.collectAsState()
     val peerName by viewModel.peerName.collectAsState()
     var draft by remember { mutableStateOf("") }
+    var messageToDelete by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.ITALY) }
+    val dateFormat = remember { SimpleDateFormat("d MMMM yyyy", Locale.ITALY) }
 
     val attachmentPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -140,8 +147,25 @@ fun ChatThreadScreen(
                 modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 12.dp),
                 contentPadding = PaddingValues(vertical = 12.dp),
             ) {
-                items(messages, key = { it.id }) { message ->
+                itemsIndexed(messages, key = { _, message -> message.id }) { index, message ->
                     val isMine = message.senderId == viewModel.userId
+                    val previousDay = messages.getOrNull(index - 1)?.let { it.createdAtEpochMs / 86_400_000L }
+                    val thisDay = message.createdAtEpochMs / 86_400_000L
+                    if (previousDay != thisDay) {
+                        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                shape = RoundedCornerShape(12.dp),
+                            ) {
+                                Text(
+                                    dateFormat.format(Date(message.createdAtEpochMs)),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                )
+                            }
+                        }
+                    }
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -154,10 +178,23 @@ fun ChatThreadScreen(
                             modifier = Modifier
                                 .align(if (isMine) Alignment.CenterEnd else Alignment.CenterStart)
                                 .widthIn(max = 280.dp)
-                                .animateContentSize(animationSpec = tween(180)),
+                                .animateContentSize(animationSpec = tween(180))
+                                .combinedClickable(
+                                    onClick = {},
+                                    onLongClick = { if (isMine && !message.isDeleted) messageToDelete = message.id },
+                                ),
                         ) {
                             Column {
-                                MessageContent(message = message, isMine = isMine)
+                                if (message.isDeleted) {
+                                    Text(
+                                        "Messaggio eliminato",
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
+                                        color = (if (isMine) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant).copy(alpha = 0.7f),
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                    )
+                                } else {
+                                    MessageContent(message = message, isMine = isMine)
+                                }
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 6.dp),
@@ -182,6 +219,22 @@ fun ChatThreadScreen(
                 }
             }
         }
+    }
+
+    messageToDelete?.let { id ->
+        AlertDialog(
+            onDismissRequest = { messageToDelete = null },
+            title = { Text("Eliminare il messaggio?") },
+            text = { Text("Il messaggio verrà rimosso per te e per l'altra persona.") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.deleteMessage(id); messageToDelete = null }) {
+                    Text("Elimina", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { messageToDelete = null }) { Text("Annulla") }
+            },
+        )
     }
 }
 

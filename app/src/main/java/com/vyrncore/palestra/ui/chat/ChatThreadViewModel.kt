@@ -61,6 +61,10 @@ class ChatThreadViewModel @Inject constructor(
         viewModelScope.launch { chatRepository.sendMessage(userId, peer, content) }
     }
 
+    fun deleteMessage(messageId: String) {
+        viewModelScope.launch { chatRepository.deleteMessage(messageId, userId) }
+    }
+
     fun sendAttachment(uri: Uri) {
         val peer = peerId.value ?: return
         viewModelScope.launch {

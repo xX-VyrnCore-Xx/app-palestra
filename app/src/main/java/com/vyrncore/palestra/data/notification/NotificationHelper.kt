@@ -10,13 +10,16 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.vyrncore.palestra.R
+import com.vyrncore.palestra.data.repository.ThemeRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class NotificationHelper @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val themeRepository: ThemeRepository,
 ) {
     init {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -68,8 +71,8 @@ class NotificationHelper @Inject constructor(
         NotificationManagerCompat.from(context).notify(REMINDER_NOTIFICATION_ID, notification)
     }
 
-    fun showChatMessageNotification(conversationId: String, senderName: String, message: String) {
-        if (!hasNotificationPermission()) return
+    suspend fun showChatMessageNotification(conversationId: String, senderName: String, message: String) {
+        if (!hasNotificationPermission() || !themeRepository.chatNotificationsEnabled.first()) return
 
         val notification = NotificationCompat.Builder(context, CHAT_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
@@ -81,8 +84,8 @@ class NotificationHelper @Inject constructor(
         NotificationManagerCompat.from(context).notify(conversationId.hashCode(), notification)
     }
 
-    fun showPlanUpdateNotification(title: String, message: String) {
-        if (!hasNotificationPermission()) return
+    suspend fun showPlanUpdateNotification(title: String, message: String) {
+        if (!hasNotificationPermission() || !themeRepository.planNotificationsEnabled.first()) return
 
         val notification = NotificationCompat.Builder(context, PLAN_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
@@ -93,8 +96,8 @@ class NotificationHelper @Inject constructor(
         NotificationManagerCompat.from(context).notify(PLAN_NOTIFICATION_ID, notification)
     }
 
-    fun showPersonalRecordNotification(exerciseName: String, estimatedOneRepMaxKg: Double) {
-        if (!hasNotificationPermission()) return
+    suspend fun showPersonalRecordNotification(exerciseName: String, estimatedOneRepMaxKg: Double) {
+        if (!hasNotificationPermission() || !themeRepository.achievementNotificationsEnabled.first()) return
 
         val notification = NotificationCompat.Builder(context, ACHIEVEMENT_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)

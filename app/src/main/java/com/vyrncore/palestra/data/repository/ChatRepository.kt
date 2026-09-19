@@ -167,6 +167,24 @@ class ChatRepository @Inject constructor(
             }
     }
 
+    /** Soft-deletes a message the caller sent: clears its content/attachment locally and remotely
+     * but keeps the row so the peer sees a "messaggio eliminato" tombstone instead of a gap. */
+    suspend fun deleteMessage(messageId: String, requestedBySenderId: String) {
+        val message = chatMessageDao.getById(messageId) ?: return
+        if (message.senderId != requestedBySenderId) return
+        val updated = message.copy(
+            content = "",
+            attachmentUrl = null,
+            attachmentName = null,
+            attachmentType = null,
+            isDeleted = true,
+            syncStatus = SyncStatus.PENDING_UPDATE,
+        )
+        chatMessageDao.upsert(updated)
+        runCatching { postgrest.from("messages").upsert(updated.toDto()) }
+            .onSuccess { chatMessageDao.upsert(updated.copy(syncStatus = SyncStatus.SYNCED)) }
+    }
+
     suspend fun markConversationRead(userId: String, otherUserId: String) {
         val now = System.currentTimeMillis()
         chatMessageDao.markRead(userId, otherUserId, now)

@@ -270,6 +270,9 @@ interface ChatMessageDao {
 
     @Query("SELECT * FROM chat_messages WHERE syncStatus != 'SYNCED'")
     suspend fun getPendingSync(): List<ChatMessageEntity>
+
+    @Query("SELECT * FROM chat_messages WHERE id = :id LIMIT 1")
+    suspend fun getById(id: String): ChatMessageEntity?
 }
 
 @Dao

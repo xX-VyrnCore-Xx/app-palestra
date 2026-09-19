@@ -32,16 +32,18 @@ class FcmService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         val data = message.data
-        when (data["type"]) {
-            "chat_message" -> notificationHelper.showChatMessageNotification(
-                conversationId = data["conversationId"].orEmpty(),
-                senderName = data["senderName"] ?: "Vibe Fitness",
-                message = data["body"] ?: message.notification?.body.orEmpty(),
-            )
-            "plan_update" -> notificationHelper.showPlanUpdateNotification(
-                title = data["title"] ?: "Scheda aggiornata",
-                message = data["body"] ?: message.notification?.body.orEmpty(),
-            )
+        scope.launch {
+            when (data["type"]) {
+                "chat_message" -> notificationHelper.showChatMessageNotification(
+                    conversationId = data["conversationId"].orEmpty(),
+                    senderName = data["senderName"] ?: "Vibe Fitness",
+                    message = data["body"] ?: message.notification?.body.orEmpty(),
+                )
+                "plan_update" -> notificationHelper.showPlanUpdateNotification(
+                    title = data["title"] ?: "Scheda aggiornata",
+                    message = data["body"] ?: message.notification?.body.orEmpty(),
+                )
+            }
         }
     }
 }

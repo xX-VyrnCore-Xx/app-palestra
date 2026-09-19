@@ -11,6 +11,8 @@ create table if not exists public.profiles (
     injuries text,
     -- Token FCM del dispositivo corrente, usato dalla Edge Function send-push per le notifiche.
     fcm_token text,
+    -- Foto profilo scelta dall'utente, caricata nel bucket pubblico "avatars".
+    avatar_url text,
     created_at timestamptz not null default now()
 );
 
@@ -128,7 +130,10 @@ create table if not exists public.messages (
     -- Set together when a message carries a link/file/image instead of (or alongside) text.
     attachment_url text,
     attachment_name text,
-    attachment_type text
+    attachment_type text,
+    -- Soft-delete: the row stays as a tombstone so the peer sees "messaggio eliminato"
+    -- instead of a confusing gap in the conversation.
+    is_deleted boolean not null default false
 );
 
 create index if not exists messages_conversation_idx
@@ -389,6 +394,21 @@ create policy "chat_attachments_insert" on storage.objects
     for insert with check (bucket_id = 'chat-attachments' and auth.role() = 'authenticated');
 create policy "chat_attachments_select" on storage.objects
     for select using (bucket_id = 'chat-attachments');
+
+-- Profile avatars storage -----------------------------------------------------
+-- Same shape as chat-attachments: public read, signed-in write. Objects live under
+-- <user_id>/<uuid>.jpg so a user can only overwrite their own past uploads by path.
+
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+create policy "avatars_insert" on storage.objects
+    for insert with check (bucket_id = 'avatars' and auth.role() = 'authenticated');
+create policy "avatars_update" on storage.objects
+    for update using (bucket_id = 'avatars' and auth.role() = 'authenticated');
+create policy "avatars_select" on storage.objects
+    for select using (bucket_id = 'avatars');
 
 -- Built-in exercise catalog ---------------------------------------------------
 -- Same fixed IDs as ExerciseCatalogSeed.kt, so a device that seeds its local
