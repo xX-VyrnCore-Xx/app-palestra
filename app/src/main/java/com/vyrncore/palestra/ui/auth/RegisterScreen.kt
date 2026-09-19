@@ -7,22 +7,27 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.HowToReg
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
@@ -45,6 +50,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -54,6 +60,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.ui.components.BackendConfigBanner
 import com.vyrncore.palestra.ui.components.GradientHeader
+
+private val BADGE_SIZE = 64.dp
 
 @Composable
 fun RegisterScreen(
@@ -80,7 +88,31 @@ fun RegisterScreen(
             .imePadding()
             .verticalScroll(rememberScrollState()),
     ) {
-        GradientHeader(title = "Unisciti al Vibe", subtitle = "Crea il tuo account e inizia il tuo percorso")
+        Box {
+            GradientHeader(title = "Unisciti al Vibe", subtitle = "Crea il tuo account e inizia il tuo percorso")
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 6.dp,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .offset(y = BADGE_SIZE / 2)
+                    .size(BADGE_SIZE),
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        Icons.Filled.HowToReg,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(30.dp),
+                    )
+                }
+            }
+        }
+        // Same reasoning as LoginScreen: the badge overflows past the Box's measured bounds, so
+        // this Spacer is what actually reserves the room for it instead of the next sibling
+        // (BackendConfigBanner or the card) drawing underneath it.
+        Spacer(Modifier.height(BADGE_SIZE / 2))
 
         BackendConfigBanner(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
 
@@ -92,7 +124,7 @@ fun RegisterScreen(
             enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { it / 6 },
         ) {
             Surface(
-                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 12.dp),
                 shape = MaterialTheme.shapes.large,
                 tonalElevation = 1.dp,
                 shadowElevation = 2.dp,
@@ -210,6 +242,6 @@ fun RegisterScreen(
             }
         }
 
-        androidx.compose.foundation.layout.Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
     }
 }
