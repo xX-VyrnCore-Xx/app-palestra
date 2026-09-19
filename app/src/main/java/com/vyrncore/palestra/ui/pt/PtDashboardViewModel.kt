@@ -27,13 +27,28 @@ import javax.inject.Inject
 
 data class ClientRanking(val clientId: String, val fullName: String, val workoutsThisWeek: Int)
 
+enum class ClientSortMode { LAST_ACTIVE, NAME }
+
+/** Everything the PT dashboard needs to show about one client at a glance, computed client-side
+ * from data the PT is already authorized to see (their own roster + those clients' sessions). */
+data class ClientOverview(
+    val clientId: String,
+    val fullName: String,
+    val email: String,
+    val injuries: String?,
+    val workoutsThisWeek: Int,
+    val totalWorkouts: Int,
+    val lastActiveEpochMs: Long?,
+    val unreadFromClient: Int,
+)
+
 @HiltViewModel
 class PtDashboardViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    chatRepository: ChatRepository,
+    private val chatRepository: ChatRepository,
     private val syncManager: SyncManager,
     connectivityObserver: ConnectivityObserver,
-    workoutRepository: WorkoutRepository,
+    private val workoutRepository: WorkoutRepository,
     private val plotoneFeedRepository: PlotoneFeedRepository,
 ) : ViewModel() {
 
@@ -41,6 +56,20 @@ class PtDashboardViewModel @Inject constructor(
 
     private val _feed = MutableStateFlow<List<PlotoneFeedPost>>(emptyList())
     val feed: StateFlow<List<PlotoneFeedPost>> = _feed.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _sortMode = MutableStateFlow(ClientSortMode.LAST_ACTIVE)
+    val sortMode: StateFlow<ClientSortMode> = _sortMode.asStateFlow()
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun setSortMode(mode: ClientSortMode) {
+        _sortMode.value = mode
+    }
 
     init {
         viewModelScope.launch { _feed.value = plotoneFeedRepository.fetchFeed(ptId) }
@@ -55,27 +84,76 @@ class PtDashboardViewModel @Inject constructor(
     val isOnline = connectivityObserver.isOnline
     val isSyncing = syncManager.isSyncing
 
-    /** Top clients by workouts completed in the last 7 days — a small motivational nudge for the
-     * PT (who they may want to nudge) and a preview of what a future allievo-facing leaderboard
-     * could look like, built entirely from data the PT is already authorized to see. */
-    val weeklyRanking = clients
+    /** Per-client detail (activity, workload, unread messages), recomputed live as sessions/chat
+     * come in — the data source for both the roster list and the summary stat row above it. */
+    private val clientOverviews: StateFlow<List<ClientOverview>> = clients
         .flatMapLatest { list ->
             if (list.isEmpty()) {
                 flowOf(emptyList())
             } else {
                 combine(
                     list.map { client ->
-                        workoutRepository.observeSessionsForUser(client.id).map { sessionList ->
+                        combine(
+                            workoutRepository.observeSessionsForUser(client.id),
+                            chatRepository.observeUnreadCountFromSender(ptId, client.id),
+                        ) { sessions, unread ->
                             val weekAgo = LocalDate.now(ZoneId.systemDefault()).minusDays(7)
-                            val count = sessionList.count { session ->
-                                val endedAt = session.endedAtEpochMs ?: return@count false
-                                Instant.ofEpochMilli(endedAt).atZone(ZoneId.systemDefault()).toLocalDate().isAfter(weekAgo)
+                            val completed = sessions.mapNotNull { it.endedAtEpochMs }
+                            val workoutsThisWeek = completed.count {
+                                Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate().isAfter(weekAgo)
                             }
-                            ClientRanking(client.id, client.fullName, count)
+                            ClientOverview(
+                                clientId = client.id,
+                                fullName = client.fullName,
+                                email = client.email,
+                                injuries = client.injuries,
+                                workoutsThisWeek = workoutsThisWeek,
+                                totalWorkouts = completed.size,
+                                lastActiveEpochMs = completed.maxOrNull(),
+                                unreadFromClient = unread,
+                            )
                         }
                     },
-                ) { rankings -> rankings.toList().filter { it.workoutsThisWeek > 0 }.sortedByDescending { it.workoutsThisWeek } }
+                ) { it.toList() }
             }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val visibleClients: StateFlow<List<ClientOverview>> = combine(
+        clientOverviews, _searchQuery, _sortMode,
+    ) { overviews, query, sort ->
+        overviews
+            .filter { it.fullName.contains(query, ignoreCase = true) || it.email.contains(query, ignoreCase = true) }
+            .let { filtered ->
+                when (sort) {
+                    ClientSortMode.NAME -> filtered.sortedBy { it.fullName.lowercase() }
+                    ClientSortMode.LAST_ACTIVE -> filtered.sortedWith(
+                        compareByDescending<ClientOverview> { it.lastActiveEpochMs ?: -1 },
+                    )
+                }
+            }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Roster-wide counts shown as the dashboard's top stat row. */
+    val activeThisWeekCount: StateFlow<Int> = clientOverviews
+        .map { it.count { c -> c.workoutsThisWeek > 0 } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val inactiveCount: StateFlow<Int> = clientOverviews
+        .map { overviews ->
+            val weekAgo = System.currentTimeMillis() - 7L * 24 * 3600 * 1000
+            overviews.count { (it.lastActiveEpochMs ?: 0) < weekAgo }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    /** Top clients by workouts completed in the last 7 days — a small motivational nudge for the
+     * PT (who they may want to nudge) and a preview of what a future allievo-facing leaderboard
+     * could look like, built entirely from data the PT is already authorized to see. */
+    val weeklyRanking: StateFlow<List<ClientRanking>> = clientOverviews
+        .map { overviews ->
+            overviews.filter { it.workoutsThisWeek > 0 }
+                .sortedByDescending { it.workoutsThisWeek }
+                .map { ClientRanking(it.clientId, it.fullName, it.workoutsThisWeek) }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

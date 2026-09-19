@@ -22,17 +22,25 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.DynamicFeed
+import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SortByAlpha
+import androidx.compose.material.icons.filled.Whatshot
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -55,6 +63,7 @@ import com.vyrncore.palestra.ui.components.AnimatedNavBar
 import com.vyrncore.palestra.ui.components.ConnectionStatusBar
 import com.vyrncore.palestra.ui.components.EmptyState
 import com.vyrncore.palestra.ui.components.GradientHeader
+import com.vyrncore.palestra.ui.components.MetricCard
 import com.vyrncore.palestra.ui.components.NavBarItem
 import com.vyrncore.palestra.ui.components.pressScale
 import com.vyrncore.palestra.ui.profile.ProfileScreen
@@ -122,6 +131,11 @@ private fun PtClientListScreen(
     viewModel: PtDashboardViewModel,
 ) {
     val clients by viewModel.clients.collectAsState()
+    val visibleClients by viewModel.visibleClients.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val sortMode by viewModel.sortMode.collectAsState()
+    val activeThisWeek by viewModel.activeThisWeekCount.collectAsState()
+    val inactiveCount by viewModel.inactiveCount.collectAsState()
     val isOnline by viewModel.isOnline.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
     val weeklyRanking by viewModel.weeklyRanking.collectAsState()
@@ -133,41 +147,105 @@ private fun PtClientListScreen(
         onRefresh = { viewModel.refresh() },
         modifier = Modifier.padding(padding),
       ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            ConnectionStatusBar(isOnline = isOnline, isSyncing = isSyncing)
-            GradientHeader(
-                title = "${clients.size} reclute",
-                subtitle = "ID PT: ${viewModel.ptId.take(8)}… — condividilo per arruolare nuove reclute",
-                modifier = Modifier.padding(16.dp),
-                shape = RoundedCornerShape(24.dp),
-            )
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            item {
+                Column {
+                    ConnectionStatusBar(isOnline = isOnline, isSyncing = isSyncing)
+                    GradientHeader(
+                        title = "${clients.size} reclute",
+                        subtitle = "ID PT: ${viewModel.ptId.take(8)}… — condividilo per arruolare nuove reclute",
+                        modifier = Modifier.padding(16.dp),
+                        shape = RoundedCornerShape(24.dp),
+                    )
 
-            if (weeklyRanking.isNotEmpty()) {
-                WeeklyRankingCard(ranking = weeklyRanking, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
-            }
+                    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                        MetricCard(
+                            icon = Icons.Filled.People,
+                            value = "${clients.size}",
+                            label = "TOTALI",
+                            modifier = Modifier.weight(1f),
+                        )
+                        MetricCard(
+                            icon = Icons.Filled.Whatshot,
+                            value = "$activeThisWeek",
+                            label = "ATTIVE 7GG",
+                            modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+                        )
+                        MetricCard(
+                            icon = Icons.Filled.EventBusy,
+                            value = "$inactiveCount",
+                            label = "FERME",
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
 
-            if (feed.isNotEmpty()) {
-                PlotoneFeedCard(posts = feed, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+                    if (weeklyRanking.isNotEmpty()) {
+                        WeeklyRankingCard(ranking = weeklyRanking, modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+                    }
+
+                    if (feed.isNotEmpty()) {
+                        PlotoneFeedCard(posts = feed, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+                    }
+
+                    if (clients.isNotEmpty()) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = viewModel::setSearchQuery,
+                            placeholder = { Text("Cerca recluta per nome o email") },
+                            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                        )
+
+                        Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                            FilterChip(
+                                selected = sortMode == ClientSortMode.LAST_ACTIVE,
+                                onClick = { viewModel.setSortMode(ClientSortMode.LAST_ACTIVE) },
+                                leadingIcon = { Icon(Icons.Filled.Whatshot, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                                label = { Text("Più recenti") },
+                                modifier = Modifier.padding(end = 8.dp),
+                            )
+                            FilterChip(
+                                selected = sortMode == ClientSortMode.NAME,
+                                onClick = { viewModel.setSortMode(ClientSortMode.NAME) },
+                                leadingIcon = { Icon(Icons.Filled.SortByAlpha, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                                label = { Text("Nome") },
+                            )
+                        }
+                    }
+                }
             }
 
             if (clients.isEmpty()) {
-                EmptyState(icon = Icons.Filled.People, message = "Nessuna recluta arruolata ancora.")
+                item {
+                    EmptyState(icon = Icons.Filled.People, message = "Nessuna recluta arruolata ancora.")
+                }
+            } else if (visibleClients.isEmpty()) {
+                item {
+                    EmptyState(icon = Icons.Filled.Search, message = "Nessuna recluta corrisponde alla ricerca.")
+                }
             } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(clients, key = { it.id }) { client ->
-                        val interactionSource = remember { MutableInteractionSource() }
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                                .animateItem()
-                                .pressScale(interactionSource),
-                            shape = MaterialTheme.shapes.medium,
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            interactionSource = interactionSource,
-                            onClick = { onOpenClient(client.id) },
-                        ) {
-                            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                items(visibleClients, key = { it.clientId }) { client ->
+                    val interactionSource = remember { MutableInteractionSource() }
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .animateItem()
+                            .pressScale(interactionSource),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        interactionSource = interactionSource,
+                        onClick = { onOpenClient(client.clientId) },
+                    ) {
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            BadgedBox(
+                                badge = {
+                                    if (client.unreadFromClient > 0) {
+                                        Badge { Text("${client.unreadFromClient}") }
+                                    }
+                                },
+                            ) {
                                 Box(
                                     modifier = Modifier
                                         .size(44.dp)
@@ -181,22 +259,36 @@ private fun PtClientListScreen(
                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     )
                                 }
-                                Column(modifier = Modifier.padding(start = 16.dp)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(client.fullName, style = MaterialTheme.typography.titleMedium)
-                                        if (!client.injuries.isNullOrBlank()) {
-                                            Icon(
-                                                Icons.Filled.HealthAndSafety,
-                                                contentDescription = "Infortuni segnalati",
-                                                tint = MaterialTheme.colorScheme.error,
-                                                modifier = Modifier.padding(start = 6.dp).size(18.dp),
-                                            )
-                                        }
+                            }
+                            Column(modifier = Modifier.padding(start = 16.dp).weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(client.fullName, style = MaterialTheme.typography.titleMedium)
+                                    if (!client.injuries.isNullOrBlank()) {
+                                        Icon(
+                                            Icons.Filled.HealthAndSafety,
+                                            contentDescription = "Infortuni segnalati",
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.padding(start = 6.dp).size(18.dp),
+                                        )
                                     }
+                                }
+                                Text(
+                                    lastActiveLabel(client.lastActiveEpochMs),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (client.lastActiveEpochMs == null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            if (client.workoutsThisWeek > 0) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(MaterialTheme.colorScheme.tertiaryContainer)
+                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                ) {
                                     Text(
-                                        client.email,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        "${client.workoutsThisWeek}× 7gg",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
                                     )
                                 }
                             }
@@ -206,6 +298,19 @@ private fun PtClientListScreen(
             }
         }
       }
+    }
+}
+
+/** Human-readable "when did they last train" label, used both to sort by recency and to flag
+ * clients who have gone quiet without the PT having to compute it themself. */
+private fun lastActiveLabel(lastActiveEpochMs: Long?): String {
+    if (lastActiveEpochMs == null) return "Nessun allenamento ancora"
+    val days = Duration.between(Instant.ofEpochMilli(lastActiveEpochMs), Instant.now()).toDays()
+    return when {
+        days <= 0 -> "Attivo oggi"
+        days == 1L -> "Attivo ieri"
+        days < 7 -> "Attivo $days giorni fa"
+        else -> "Fermo da $days giorni"
     }
 }
 
