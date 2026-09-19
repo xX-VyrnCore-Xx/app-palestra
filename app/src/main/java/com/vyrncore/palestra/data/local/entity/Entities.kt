@@ -29,6 +29,8 @@ data class ExerciseEntity(
     val notes: String? = null,
     val createdByUserId: String? = null,
     val isCustom: Boolean = false,
+    /** Optional URL of a demonstrative image/GIF, shown wherever the exercise appears. */
+    val imageUrl: String? = null,
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 

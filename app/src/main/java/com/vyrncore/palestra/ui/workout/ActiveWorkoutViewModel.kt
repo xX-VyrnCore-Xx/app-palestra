@@ -3,10 +3,13 @@ package com.vyrncore.palestra.ui.workout
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vyrncore.palestra.data.repository.AuthRepository
+import com.vyrncore.palestra.data.repository.PlotoneFeedRepository
 import com.vyrncore.palestra.data.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -14,6 +17,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ActiveWorkoutViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
+    private val authRepository: AuthRepository,
+    private val plotoneFeedRepository: PlotoneFeedRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -31,6 +36,7 @@ class ActiveWorkoutViewModel @Inject constructor(
                     planExerciseId = planExercise.id,
                     exerciseId = planExercise.exerciseId,
                     name = exercises.firstOrNull { it.id == planExercise.exerciseId }?.name ?: "Esercizio",
+                    imageUrl = exercises.firstOrNull { it.id == planExercise.exerciseId }?.imageUrl,
                     targetSets = planExercise.targetSets,
                     targetReps = planExercise.targetReps,
                     restSeconds = planExercise.restSeconds,
@@ -49,8 +55,20 @@ class ActiveWorkoutViewModel @Inject constructor(
     fun endWorkout(onDone: () -> Unit) {
         viewModelScope.launch {
             workoutRepository.endSessionById(sessionId, notes = null)
+            postToPlotoneFeed()
             onDone()
         }
+    }
+
+    /** Best-effort share to the plotone feed: a light social nudge for the other allievi of the
+     * same PT, never something that should block or fail the workout ending. */
+    private suspend fun postToPlotoneFeed() {
+        val userId = authRepository.currentUserId ?: return
+        val profile = authRepository.observeProfile(userId).first() ?: return
+        val ptId = profile.ptId ?: return
+        val exerciseCount = uiState.value.exercises.count { it.completedSets > 0 }
+        if (exerciseCount == 0) return
+        plotoneFeedRepository.postWorkoutCompleted(userId, ptId, profile.fullName, exerciseCount)
     }
 }
 
@@ -62,6 +80,7 @@ data class ActiveExerciseUi(
     val planExerciseId: String,
     val exerciseId: String,
     val name: String,
+    val imageUrl: String? = null,
     val targetSets: Int,
     val targetReps: Int,
     val restSeconds: Int,
