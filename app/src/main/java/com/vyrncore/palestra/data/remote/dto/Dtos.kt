@@ -61,6 +61,7 @@ data class PlanExerciseDto(
     @SerialName("target_reps") val targetReps: Int,
     @SerialName("target_weight_kg") val targetWeightKg: Double? = null,
     @SerialName("rest_seconds") val restSeconds: Int = 90,
+    val notes: String? = null,
 )
 
 @Serializable
