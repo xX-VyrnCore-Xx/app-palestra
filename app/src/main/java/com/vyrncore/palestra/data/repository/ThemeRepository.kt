@@ -18,6 +18,9 @@ private val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
 private val REMINDERS_ENABLED_KEY = booleanPreferencesKey("workout_reminders_enabled")
 private val REMINDER_THRESHOLD_DAYS_KEY = intPreferencesKey("workout_reminder_threshold_days")
 private val REMINDER_MESSAGE_KEY = stringPreferencesKey("workout_reminder_custom_message")
+private val CHAT_NOTIFICATIONS_KEY = booleanPreferencesKey("chat_notifications_enabled")
+private val PLAN_NOTIFICATIONS_KEY = booleanPreferencesKey("plan_notifications_enabled")
+private val ACHIEVEMENT_NOTIFICATIONS_KEY = booleanPreferencesKey("achievement_notifications_enabled")
 
 /** Default: nudge after 2 inactive days, same as the original hardcoded behavior. */
 const val DEFAULT_REMINDER_THRESHOLD_DAYS = 2
@@ -57,5 +60,23 @@ class ThemeRepository @Inject constructor(
         context.settingsDataStore.edit {
             if (message.isNullOrBlank()) it.remove(REMINDER_MESSAGE_KEY) else it[REMINDER_MESSAGE_KEY] = message
         }
+    }
+
+    val chatNotificationsEnabled = context.settingsDataStore.data.map { prefs -> prefs[CHAT_NOTIFICATIONS_KEY] ?: true }
+
+    suspend fun setChatNotificationsEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { it[CHAT_NOTIFICATIONS_KEY] = enabled }
+    }
+
+    val planNotificationsEnabled = context.settingsDataStore.data.map { prefs -> prefs[PLAN_NOTIFICATIONS_KEY] ?: true }
+
+    suspend fun setPlanNotificationsEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { it[PLAN_NOTIFICATIONS_KEY] = enabled }
+    }
+
+    val achievementNotificationsEnabled = context.settingsDataStore.data.map { prefs -> prefs[ACHIEVEMENT_NOTIFICATIONS_KEY] ?: true }
+
+    suspend fun setAchievementNotificationsEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { it[ACHIEVEMENT_NOTIFICATIONS_KEY] = enabled }
     }
 }

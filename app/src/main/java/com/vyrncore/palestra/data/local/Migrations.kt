@@ -57,3 +57,18 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_programs_assignedToUserId ON programs(assignedToUserId)")
     }
 }
+
+/** Optional user-chosen profile picture, uploaded to the "avatars" storage bucket. */
+val MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE user_profiles ADD COLUMN avatarUrl TEXT")
+    }
+}
+
+/** Soft-delete flag for chat messages: a deleted message keeps its row (as a tombstone) instead
+ * of leaving a confusing gap in the conversation. */
+val MIGRATION_8_9 = object : Migration(8, 9) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE chat_messages ADD COLUMN isDeleted INTEGER NOT NULL DEFAULT 0")
+    }
+}

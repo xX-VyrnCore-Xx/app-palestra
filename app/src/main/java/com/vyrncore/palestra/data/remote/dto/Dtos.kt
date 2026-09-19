@@ -11,6 +11,7 @@ data class UserProfileDto(
     val role: String,
     @SerialName("pt_id") val ptId: String? = null,
     val injuries: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
 )
 
 @Serializable
@@ -110,6 +111,7 @@ data class ChatMessageDto(
     @SerialName("attachment_url") val attachmentUrl: String? = null,
     @SerialName("attachment_name") val attachmentName: String? = null,
     @SerialName("attachment_type") val attachmentType: String? = null,
+    @SerialName("is_deleted") val isDeleted: Boolean = false,
 )
 
 @Serializable
