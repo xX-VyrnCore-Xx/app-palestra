@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Star
@@ -45,10 +46,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vyrncore.palestra.data.repository.PlotoneFeedPost
 import com.vyrncore.palestra.data.repository.WeeklyRankingEntry
 import com.vyrncore.palestra.ui.components.ConnectionStatusBar
 import com.vyrncore.palestra.ui.components.GradientHeader
 import com.vyrncore.palestra.ui.components.MetricCard
+import java.time.Duration
+import java.time.Instant
 import java.time.LocalTime
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,6 +65,7 @@ fun HomeScreen(
     val isOnline by viewModel.isOnline.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
     val weeklyRanking by viewModel.weeklyRanking.collectAsState()
+    val feed by viewModel.feed.collectAsState()
     val greeting = when (LocalTime.now().hour) {
         in 5..11 -> "Buongiorno"
         in 12..17 -> "Buon pomeriggio"
@@ -121,6 +126,13 @@ fun HomeScreen(
                     ranking = weeklyRanking,
                     myName = uiState.fullName.substringBefore(' '),
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                )
+            }
+
+            if (feed.isNotEmpty()) {
+                PlotoneFeedCard(
+                    posts = feed,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
 
@@ -401,6 +413,63 @@ private fun BadgeCircle(
             color = if (unlocked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             modifier = Modifier.padding(top = 4.dp),
         )
+    }
+}
+
+/** How long ago a feed post's ISO 8601 timestamp was, in a short Italian phrasing. */
+private fun timeAgo(iso: String?): String {
+    val instant = iso?.let { runCatching { Instant.parse(it) }.getOrNull() } ?: return ""
+    val minutes = Duration.between(instant, Instant.now()).toMinutes()
+    return when {
+        minutes < 1 -> "adesso"
+        minutes < 60 -> "${minutes}m fa"
+        minutes < 24 * 60 -> "${minutes / 60}h fa"
+        else -> "${minutes / (24 * 60)}gg fa"
+    }
+}
+
+/** Auto-posted activity feed shared by every allievo of the same PT — a light social nudge each
+ * time someone completes a workout, built on top of a table only readable by same-PT peers. */
+@Composable
+private fun PlotoneFeedCard(posts: List<PlotoneFeedPost>, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.DynamicFeed, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Text(
+                    "Bacheca del plotone",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+            posts.take(6).forEach { post ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        post.displayName,
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(end = 4.dp),
+                    )
+                    Text(
+                        post.message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        timeAgo(post.createdAt),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
     }
 }
 

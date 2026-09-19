@@ -22,6 +22,7 @@ data class ExerciseDto(
     val notes: String? = null,
     @SerialName("created_by_user_id") val createdByUserId: String? = null,
     @SerialName("is_custom") val isCustom: Boolean = false,
+    @SerialName("image_url") val imageUrl: String? = null,
 )
 
 @Serializable

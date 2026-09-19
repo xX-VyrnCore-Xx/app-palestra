@@ -166,6 +166,10 @@ fun PlanEditorScreen(
                 viewModel.addExercise(exercise.id, exercise.name)
                 showPicker = false
             },
+            onCreateCustom = { name, muscleGroup, imageUrl ->
+                viewModel.createCustomExercise(name, muscleGroup, imageUrl)
+                showPicker = false
+            },
         )
     }
 }

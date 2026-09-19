@@ -4,11 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.ChatRepository
+import com.vyrncore.palestra.data.repository.PlotoneFeedPost
+import com.vyrncore.palestra.data.repository.PlotoneFeedRepository
 import com.vyrncore.palestra.data.repository.WorkoutRepository
 import com.vyrncore.palestra.data.sync.ConnectivityObserver
 import com.vyrncore.palestra.data.sync.SyncManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -29,9 +34,17 @@ class PtDashboardViewModel @Inject constructor(
     private val syncManager: SyncManager,
     connectivityObserver: ConnectivityObserver,
     workoutRepository: WorkoutRepository,
+    private val plotoneFeedRepository: PlotoneFeedRepository,
 ) : ViewModel() {
 
     val ptId: String get() = authRepository.currentUserId.orEmpty()
+
+    private val _feed = MutableStateFlow<List<PlotoneFeedPost>>(emptyList())
+    val feed: StateFlow<List<PlotoneFeedPost>> = _feed.asStateFlow()
+
+    init {
+        viewModelScope.launch { _feed.value = plotoneFeedRepository.fetchFeed(ptId) }
+    }
 
     val clients = authRepository.observeClients(ptId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -67,6 +80,9 @@ class PtDashboardViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun refresh() {
-        viewModelScope.launch { runCatching { syncManager.syncAll() } }
+        viewModelScope.launch {
+            runCatching { syncManager.syncAll() }
+            _feed.value = plotoneFeedRepository.fetchFeed(ptId)
+        }
     }
 }

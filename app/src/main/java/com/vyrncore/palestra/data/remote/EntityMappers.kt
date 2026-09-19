@@ -28,7 +28,7 @@ private fun String.toEpochMs(): Long = Instant.parse(this).toEpochMilli()
 
 fun UserProfileEntity.toDto() = UserProfileDto(id, email, fullName, role.name, ptId, injuries)
 
-fun ExerciseEntity.toDto() = ExerciseDto(id, name, muscleGroup, equipment, notes, createdByUserId, isCustom)
+fun ExerciseEntity.toDto() = ExerciseDto(id, name, muscleGroup, equipment, notes, createdByUserId, isCustom, imageUrl)
 
 fun WorkoutPlanEntity.toDto() = WorkoutPlanDto(
     id, name, description, createdByPtId, assignedToUserId, createdAtEpochMs.toIso(), category, estimatedMinutes
@@ -52,7 +52,7 @@ fun BodyMetricEntity.toDto() = BodyMetricDto(
 
 fun UserProfileDto.toEntity() = UserProfileEntity(id, email, fullName, UserRole.valueOf(role), ptId, injuries, SyncStatus.SYNCED)
 
-fun ExerciseDto.toEntity() = ExerciseEntity(id, name, muscleGroup, equipment, notes, createdByUserId, isCustom, SyncStatus.SYNCED)
+fun ExerciseDto.toEntity() = ExerciseEntity(id, name, muscleGroup, equipment, notes, createdByUserId, isCustom, imageUrl, SyncStatus.SYNCED)
 
 fun WorkoutPlanDto.toEntity() = WorkoutPlanEntity(
     id, name, description, createdByPtId, assignedToUserId, createdAt.toEpochMs(), category, estimatedMinutes, SyncStatus.SYNCED

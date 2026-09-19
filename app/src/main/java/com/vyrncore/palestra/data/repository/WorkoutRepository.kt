@@ -54,17 +54,20 @@ class WorkoutRepository @Inject constructor(
         }
     }
 
-    suspend fun addCustomExercise(name: String, muscleGroup: String, createdByUserId: String) {
+    suspend fun addCustomExercise(name: String, muscleGroup: String, createdByUserId: String, imageUrl: String? = null): String {
+        val id = UUID.randomUUID().toString()
         exerciseDao.upsert(
             ExerciseEntity(
-                id = UUID.randomUUID().toString(),
+                id = id,
                 name = name,
                 muscleGroup = muscleGroup,
                 createdByUserId = createdByUserId,
                 isCustom = true,
+                imageUrl = imageUrl,
                 syncStatus = SyncStatus.PENDING_CREATE,
             )
         )
+        return id
     }
 
     // Plans (created by PT, assigned to a client)

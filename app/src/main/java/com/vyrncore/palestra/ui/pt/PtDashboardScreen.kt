@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.LocalFireDepartment
@@ -57,6 +58,9 @@ import com.vyrncore.palestra.ui.components.GradientHeader
 import com.vyrncore.palestra.ui.components.NavBarItem
 import com.vyrncore.palestra.ui.components.pressScale
 import com.vyrncore.palestra.ui.profile.ProfileScreen
+import com.vyrncore.palestra.data.repository.PlotoneFeedPost
+import java.time.Duration
+import java.time.Instant
 
 private data class PtTab(val label: String, val icon: ImageVector)
 
@@ -121,6 +125,7 @@ private fun PtClientListScreen(
     val isOnline by viewModel.isOnline.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
     val weeklyRanking by viewModel.weeklyRanking.collectAsState()
+    val feed by viewModel.feed.collectAsState()
 
     Scaffold(topBar = { TopAppBar(title = { Text("Il tuo plotone") }) }) { padding ->
       PullToRefreshBox(
@@ -139,6 +144,10 @@ private fun PtClientListScreen(
 
             if (weeklyRanking.isNotEmpty()) {
                 WeeklyRankingCard(ranking = weeklyRanking, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+            }
+
+            if (feed.isNotEmpty()) {
+                PlotoneFeedCard(posts = feed, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
             }
 
             if (clients.isEmpty()) {
@@ -197,6 +206,58 @@ private fun PtClientListScreen(
             }
         }
       }
+    }
+}
+
+private fun timeAgo(iso: String?): String {
+    val instant = iso?.let { runCatching { Instant.parse(it) }.getOrNull() } ?: return ""
+    val minutes = Duration.between(instant, Instant.now()).toMinutes()
+    return when {
+        minutes < 1 -> "adesso"
+        minutes < 60 -> "${minutes}m fa"
+        minutes < 24 * 60 -> "${minutes / 60}h fa"
+        else -> "${minutes / (24 * 60)}gg fa"
+    }
+}
+
+/** Same auto-posted activity feed shown to allievi, from the PT's side: every workout completion
+ * across the whole plotone, at a glance. */
+@Composable
+private fun PlotoneFeedCard(posts: List<PlotoneFeedPost>, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.DynamicFeed, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Text(
+                    "Bacheca del plotone",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+            posts.take(6).forEach { post ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(post.displayName, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(end = 4.dp))
+                    Text(
+                        post.message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        timeAgo(post.createdAt),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
     }
 }
 

@@ -24,3 +24,10 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
         db.execSQL("ALTER TABLE user_profiles ADD COLUMN injuries TEXT")
     }
 }
+
+/** Optional demonstrative image/GIF URL per exercise. */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE exercises ADD COLUMN imageUrl TEXT")
+    }
+}

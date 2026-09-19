@@ -3,6 +3,8 @@ package com.vyrncore.palestra.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vyrncore.palestra.data.repository.AuthRepository
+import com.vyrncore.palestra.data.repository.PlotoneFeedPost
+import com.vyrncore.palestra.data.repository.PlotoneFeedRepository
 import com.vyrncore.palestra.data.repository.WeeklyRankingEntry
 import com.vyrncore.palestra.data.repository.WorkoutRepository
 import com.vyrncore.palestra.data.sync.ConnectivityObserver
@@ -13,6 +15,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -104,6 +107,7 @@ data class HomeUiState(
 class HomeViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val authRepository: AuthRepository,
+    private val plotoneFeedRepository: PlotoneFeedRepository,
     private val syncManager: SyncManager,
     connectivityObserver: ConnectivityObserver,
 ) : ViewModel() {
@@ -116,14 +120,24 @@ class HomeViewModel @Inject constructor(
     private val _weeklyRanking = MutableStateFlow<List<WeeklyRankingEntry>>(emptyList())
     val weeklyRanking: StateFlow<List<WeeklyRankingEntry>> = _weeklyRanking.asStateFlow()
 
+    private val _feed = MutableStateFlow<List<PlotoneFeedPost>>(emptyList())
+    val feed: StateFlow<List<PlotoneFeedPost>> = _feed.asStateFlow()
+
     init {
         viewModelScope.launch { _weeklyRanking.value = workoutRepository.fetchWeeklyRanking() }
+        viewModelScope.launch { refreshFeed() }
+    }
+
+    private suspend fun refreshFeed() {
+        val ptId = authRepository.observeProfile(userId).first()?.ptId ?: return
+        _feed.value = plotoneFeedRepository.fetchFeed(ptId)
     }
 
     fun refresh() {
         viewModelScope.launch {
             runCatching { syncManager.syncAll() }
             _weeklyRanking.value = workoutRepository.fetchWeeklyRanking()
+            refreshFeed()
         }
     }
 

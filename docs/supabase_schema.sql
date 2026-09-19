@@ -40,7 +40,9 @@ create table if not exists public.exercises (
     equipment text,
     notes text,
     created_by_user_id uuid references public.profiles (id) on delete set null,
-    is_custom boolean not null default false
+    is_custom boolean not null default false,
+    -- Optional demonstrative image/GIF URL, shown wherever the exercise appears.
+    image_url text
 );
 
 create table if not exists public.workout_plans (
@@ -141,6 +143,21 @@ create table if not exists public.ai_messages (
 
 create index if not exists ai_messages_user_idx on public.ai_messages (user_id, created_at);
 
+-- Plotone feed: a lightweight activity feed, auto-posted when an allievo finishes a workout,
+-- visible to every allievo sharing the same PT (and to that PT). display_name is captured at
+-- insert time (first name only, matching get_weekly_ranking's privacy bar) so reads never need
+-- a join back to profiles.
+create table if not exists public.plotone_feed_posts (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references public.profiles (id) on delete cascade,
+    pt_id uuid not null references public.profiles (id) on delete cascade,
+    display_name text not null,
+    message text not null,
+    created_at timestamptz not null default now()
+);
+
+create index if not exists plotone_feed_posts_pt_idx on public.plotone_feed_posts (pt_id, created_at);
+
 -- Account-wide NVIDIA NIM sliding-window rate limit (the API key is capped at 40 requests/minute
 -- across every user); only the ai-chat Edge Function (service role) reads/writes this table.
 create table if not exists public.ai_rate_limit_events (
@@ -162,6 +179,7 @@ alter table public.set_entries enable row level security;
 alter table public.body_metrics enable row level security;
 alter table public.messages enable row level security;
 alter table public.pt_notes enable row level security;
+alter table public.plotone_feed_posts enable row level security;
 
 -- profiles: a user can read/update their own row; a PT can read their clients' rows.
 create policy "profiles_self_select" on public.profiles
@@ -275,6 +293,16 @@ create policy "pt_notes_owner_insert" on public.pt_notes
 create policy "pt_notes_owner_update" on public.pt_notes
     for update using (auth.uid() = pt_id) with check (auth.uid() = pt_id);
 
+-- plotone_feed_posts: visible to the PT and to every allievo sharing that same PT; an allievo
+-- may only post as themself.
+create policy "plotone_feed_select" on public.plotone_feed_posts
+    for select using (
+        auth.uid() = pt_id or
+        exists (select 1 from public.profiles pr where pr.id = auth.uid() and pr.pt_id = plotone_feed_posts.pt_id)
+    );
+create policy "plotone_feed_insert" on public.plotone_feed_posts
+    for insert with check (auth.uid() = user_id);
+
 -- ai_messages: visible/writable only by the user the conversation belongs to.
 -- ai_rate_limit_events has no client policies at all: only the Edge Function's service-role
 -- key (which bypasses RLS) reads/writes it.
@@ -292,6 +320,7 @@ alter publication supabase_realtime add table public.messages;
 alter publication supabase_realtime add table public.workout_plans;
 alter publication supabase_realtime add table public.plan_exercises;
 alter publication supabase_realtime add table public.body_metrics;
+alter publication supabase_realtime add table public.plotone_feed_posts;
 
 -- Weekly ranking (PT and Allievo home screens) -------------------------------
 -- SECURITY DEFINER so an allievo can see how they compare to peers of the same PT without

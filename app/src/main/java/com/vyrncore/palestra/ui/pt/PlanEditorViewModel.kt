@@ -54,6 +54,14 @@ class PlanEditorViewModel @Inject constructor(
         _draftExercises.value = _draftExercises.value + DraftPlanExercise(exerciseId, exerciseName)
     }
 
+    fun createCustomExercise(name: String, muscleGroup: String, imageUrl: String?) {
+        viewModelScope.launch {
+            val ptId = authRepository.currentUserId.orEmpty()
+            val id = workoutRepository.addCustomExercise(name, muscleGroup, ptId, imageUrl)
+            addExercise(id, name)
+        }
+    }
+
     fun removeExercise(exerciseId: String) {
         _draftExercises.value = _draftExercises.value.filterNot { it.exerciseId == exerciseId }
     }
