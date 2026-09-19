@@ -52,6 +52,107 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+/** Real, current data about the signed-in allievo, injected as extra system context so the
+ * assistant's advice is grounded in their actual training instead of generic. Every query below
+ * runs through userClient (RLS-scoped to this user), so it can never leak another user's rows. */
+// deno-lint-ignore no-explicit-any
+async function buildAllievoContext(userClient: any, userId: string): Promise<string | null> {
+  const [{ data: sessions }, { data: plans }, { data: metrics }] = await Promise.all([
+    userClient
+      .from("workout_sessions")
+      .select("started_at, ended_at")
+      .eq("user_id", userId)
+      .order("started_at", { ascending: false })
+      .limit(30),
+    userClient
+      .from("workout_plans")
+      .select("name, created_at")
+      .eq("assigned_to_user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1),
+    userClient
+      .from("body_metrics")
+      .select("date, weight_kg")
+      .eq("user_id", userId)
+      .order("date", { ascending: false })
+      .limit(1),
+  ]);
+
+  const completed = (sessions ?? []).filter((s: { ended_at: string | null }) => s.ended_at);
+  const weekAgo = Date.now() - 7 * 24 * 3600_000;
+  const workoutsThisWeek = completed.filter((s: { ended_at: string }) => new Date(s.ended_at).getTime() > weekAgo).length;
+  const lastSession = completed[0];
+  const daysSinceLastSession = lastSession
+    ? Math.floor((Date.now() - new Date(lastSession.ended_at).getTime()) / 86_400_000)
+    : null;
+  const currentPlan = plans?.[0]?.name ?? null;
+  const latestWeight = metrics?.[0]?.weight_kg ?? null;
+
+  const lines = [
+    "Contesto allievo (dati reali e aggiornati, usali per personalizzare la risposta senza doverli chiedere di nuovo):",
+    currentPlan ? `- Scheda attuale: ${currentPlan}` : "- Nessuna scheda assegnata al momento",
+    `- Allenamenti completati negli ultimi 7 giorni: ${workoutsThisWeek}`,
+    daysSinceLastSession === null
+      ? "- Non ha ancora completato nessun allenamento"
+      : daysSinceLastSession === 0
+        ? "- Ultimo allenamento: oggi"
+        : `- Ultimo allenamento: ${daysSinceLastSession} giorni fa`,
+    latestWeight ? `- Ultimo peso corporeo registrato: ${latestWeight} kg` : null,
+  ].filter((line): line is string => line !== null);
+
+  return lines.join("\n");
+}
+
+/** Real, current roster data for the signed-in PT - who's active, who's gone quiet - so the
+ * assistant can answer questions like "chi non si allena da una settimana?" without the PT having
+ * to look it up themself. Scoped to the PT's own clients via RLS on both queries. */
+// deno-lint-ignore no-explicit-any
+async function buildPtContext(userClient: any, ptId: string): Promise<string | null> {
+  const { data: clients } = await userClient
+    .from("profiles")
+    .select("id, full_name")
+    .eq("pt_id", ptId);
+  if (!clients || clients.length === 0) {
+    return "Contesto PT: nessuna recluta arruolata ancora.";
+  }
+
+  const clientIds = clients.map((c: { id: string }) => c.id);
+  const { data: sessions } = await userClient
+    .from("workout_sessions")
+    .select("user_id, ended_at")
+    .in("user_id", clientIds)
+    .not("ended_at", "is", null);
+
+  const lastActiveByClient = new Map<string, number>();
+  for (const s of sessions ?? []) {
+    const ts = new Date(s.ended_at as string).getTime();
+    const prev = lastActiveByClient.get(s.user_id as string) ?? 0;
+    if (ts > prev) lastActiveByClient.set(s.user_id as string, ts);
+  }
+
+  const weekAgo = Date.now() - 7 * 24 * 3600_000;
+  const inactive: string[] = [];
+  let activeThisWeek = 0;
+  for (const client of clients as { id: string; full_name: string }[]) {
+    const lastActive = lastActiveByClient.get(client.id);
+    if (lastActive && lastActive > weekAgo) {
+      activeThisWeek++;
+    } else {
+      inactive.push(client.full_name);
+    }
+  }
+
+  const lines = [
+    "Contesto PT (dati reali e aggiornati sul tuo plotone, usali per rispondere senza dover chiedere di nuovo):",
+    `- Reclute totali: ${clients.length}`,
+    `- Attive negli ultimi 7 giorni: ${activeThisWeek}`,
+    inactive.length > 0
+      ? `- Ferme da più di 7 giorni (o mai attive): ${inactive.join(", ")}`
+      : "- Tutte le reclute si sono allenate negli ultimi 7 giorni",
+  ];
+  return lines.join("\n");
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders() });
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
@@ -115,8 +216,13 @@ Deno.serve(async (req: Request) => {
   const orderedHistory = (history ?? []).reverse();
 
   const systemPrompt = profile.role === "PT" ? PT_SYSTEM_PROMPT : ALLIEVO_SYSTEM_PROMPT;
+  const contextBlock = profile.role === "PT"
+    ? await buildPtContext(userClient, userId)
+    : await buildAllievoContext(userClient, userId);
+
   const nimMessages = [
     { role: "system", content: systemPrompt },
+    ...(contextBlock ? [{ role: "system", content: contextBlock }] : []),
     ...orderedHistory.map((m) => ({ role: m.role, content: m.content })),
     { role: "user", content: message },
   ];
