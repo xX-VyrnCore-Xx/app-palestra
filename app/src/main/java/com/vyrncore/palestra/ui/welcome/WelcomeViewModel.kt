@@ -6,11 +6,22 @@ import com.vyrncore.palestra.data.repository.AllievoPrivateProfile
 import com.vyrncore.palestra.data.repository.AllievoProfileRepository
 import com.vyrncore.palestra.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.jan.supabase.functions.Functions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import javax.inject.Inject
+
+@Serializable
+private data class SendPushRequest(
+    val recipientId: String,
+    val type: String,
+    val title: String,
+    val body: String,
+)
 
 /** Single-select options shown as chips, in display order. */
 val EXPERIENCE_LEVELS = listOf("Principiante", "Intermedio", "Avanzato")
@@ -41,6 +52,7 @@ data class WelcomeUiState(
 class WelcomeViewModel @Inject constructor(
     private val allievoProfileRepository: AllievoProfileRepository,
     private val authRepository: AuthRepository,
+    private val functions: Functions,
 ) : ViewModel() {
 
     private val userId get() = authRepository.currentUserId.orEmpty()
@@ -109,7 +121,26 @@ class WelcomeViewModel @Inject constructor(
                 )
             }
             _uiState.value = _uiState.value.copy(isSaving = false, saved = true)
+            notifyPtProfileCompleted()
             onSaved()
+        }
+    }
+
+    /** Best-effort nudge to the allievo's PT: their new recruit finished the questionnaire, so
+     * there's now a profile worth building a plan around instead of starting from nothing. */
+    private suspend fun notifyPtProfileCompleted() {
+        val profile = authRepository.observeProfile(userId).first() ?: return
+        val ptId = profile.ptId ?: return
+        runCatching {
+            functions.invoke(
+                "send-push",
+                body = SendPushRequest(
+                    recipientId = ptId,
+                    type = "plan_update",
+                    title = "Nuova recluta pronta",
+                    body = "${profile.fullName} ha completato il proprio profilo: dai un'occhiata prima di assegnare la scheda.",
+                ),
+            )
         }
     }
 

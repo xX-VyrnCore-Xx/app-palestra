@@ -2,6 +2,7 @@ package com.vyrncore.palestra.ui.chat
 
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,6 +25,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.ui.components.EmptyState
+import com.vyrncore.palestra.ui.components.pressScale
 import com.vyrncore.palestra.ui.theme.Lime50
 import com.vyrncore.palestra.ui.theme.Magenta60
 import com.vyrncore.palestra.ui.theme.Orange50
@@ -68,11 +71,13 @@ fun ChatListScreen(
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
                 items(conversations, key = { it.peerId }) { conversation ->
+                    val interactionSource = remember { MutableInteractionSource() }
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 6.dp)
-                            .animateItem(placementSpec = tween(220)),
+                            .animateItem(placementSpec = tween(220))
+                            .pressScale(interactionSource),
                         shape = MaterialTheme.shapes.medium,
                         colors = CardDefaults.cardColors(
                             containerColor = if (conversation.unreadCount > 0) {
@@ -82,6 +87,7 @@ fun ChatListScreen(
                             },
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = if (conversation.unreadCount > 0) 3.dp else 1.dp),
+                        interactionSource = interactionSource,
                         onClick = { onOpenChat(conversation.peerId) },
                     ) {
                         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
