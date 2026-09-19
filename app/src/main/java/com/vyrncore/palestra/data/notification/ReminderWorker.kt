@@ -35,6 +35,9 @@ class ReminderWorker(
         val profile = authRepository.observeProfile(userId).first()
         if (profile?.role != UserRole.ALLIEVO) return Result.success()
 
+        val thresholdDays = themeRepository.reminderThresholdDays.first()
+        val customMessage = themeRepository.reminderCustomMessage.first()
+
         val lastSessionEpochMs = workoutRepository.observeSessionsForUser(userId).first()
             .mapNotNull { it.endedAtEpochMs }
             .maxOrNull()
@@ -43,10 +46,10 @@ class ReminderWorker(
             ChronoUnit.DAYS.between(Instant.ofEpochMilli(it), Instant.now())
         }
 
-        if (daysSinceLastWorkout == null || daysSinceLastWorkout >= 2) {
+        if (daysSinceLastWorkout == null || daysSinceLastWorkout >= thresholdDays) {
             notificationHelper.showWorkoutReminder(
                 title = "Il tuo Vibe ti aspetta 🔥",
-                message = if (daysSinceLastWorkout == null) {
+                message = customMessage?.takeIf { it.isNotBlank() } ?: if (daysSinceLastWorkout == null) {
                     "Non hai ancora registrato un allenamento. Si parte!"
                 } else {
                     "Non ti alleni da $daysSinceLastWorkout giorni. Torna in palestra!"

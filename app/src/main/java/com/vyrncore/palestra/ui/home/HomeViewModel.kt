@@ -86,6 +86,7 @@ data class HomeUiState(
     val streakDays: Int = 0,
     val longestStreakDays: Int = 0,
     val workoutsThisWeek: Int = 0,
+    val workoutsLastWeek: Int = 0,
     val totalWorkouts: Int = 0,
     val unlockedBadges: List<Int> = emptyList(),
     val unlockedWorkoutCountBadges: List<Int> = emptyList(),
@@ -154,7 +155,9 @@ class HomeViewModel @Inject constructor(
         }
 
         val weekAgo = LocalDate.now(zone).minusDays(7)
+        val twoWeeksAgo = LocalDate.now(zone).minusDays(14)
         val workoutsThisWeek = doneDates.count { it.isAfter(weekAgo) }
+        val workoutsLastWeek = doneDates.count { it.isAfter(twoWeeksAgo) && !it.isAfter(weekAgo) }
         val totalWorkouts = sessions.count { it.endedAtEpochMs != null }
 
         val totalVolumeKg = volumeByMuscle.sumOf { it.totalVolumeKg }
@@ -172,6 +175,7 @@ class HomeViewModel @Inject constructor(
             streakDays = streak,
             longestStreakDays = longestStreak,
             workoutsThisWeek = workoutsThisWeek,
+            workoutsLastWeek = workoutsLastWeek,
             totalWorkouts = totalWorkouts,
             unlockedBadges = unlockedBadges,
             unlockedWorkoutCountBadges = unlockedWorkoutCountBadges,

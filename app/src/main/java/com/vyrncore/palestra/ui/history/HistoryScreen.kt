@@ -10,8 +10,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -21,9 +24,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.ui.components.EmptyState
+import com.vyrncore.palestra.util.CsvExporter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -32,8 +37,22 @@ import java.util.Locale
 fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
     val history by viewModel.history.collectAsState()
     val dateFormat = remember { SimpleDateFormat("dd MMM, HH:mm", Locale.ITALY) }
+    val context = LocalContext.current
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Cronologia") }) }) { padding ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Cronologia") },
+                actions = {
+                    if (history.isNotEmpty()) {
+                        IconButton(onClick = { CsvExporter.shareWorkoutHistory(context, history) }) {
+                            Icon(Icons.Filled.Share, contentDescription = "Esporta CSV")
+                        }
+                    }
+                },
+            )
+        },
+    ) { padding ->
         if (history.isEmpty()) {
             EmptyState(
                 icon = Icons.Filled.History,

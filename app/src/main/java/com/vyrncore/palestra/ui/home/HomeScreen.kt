@@ -22,6 +22,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.TrendingDown
+import androidx.compose.material.icons.filled.TrendingFlat
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -106,6 +109,12 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f).padding(start = 12.dp),
                 )
             }
+
+            WeeklyComparisonRow(
+                thisWeek = uiState.workoutsThisWeek,
+                lastWeek = uiState.workoutsLastWeek,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            )
 
             if (weeklyRanking.isNotEmpty()) {
                 WeeklyRankingCard(
@@ -294,6 +303,36 @@ private fun WeeklyGoalCard(completed: Int, goal: Int, modifier: Modifier = Modif
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
                 modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+    }
+}
+
+/** A quick "are you improving" read at a glance: how this week's workout count stacks up
+ * against last week's, without making the allievo dig into the Statistiche tab for it. */
+@Composable
+private fun WeeklyComparisonRow(thisWeek: Int, lastWeek: Int, modifier: Modifier = Modifier) {
+    val delta = thisWeek - lastWeek
+    val (icon, tint, message) = when {
+        lastWeek == 0 && thisWeek == 0 -> Triple(Icons.Filled.TrendingFlat, MaterialTheme.colorScheme.onSurfaceVariant, "Nessun allenamento ancora questa settimana")
+        delta > 0 -> Triple(Icons.Filled.TrendingUp, MaterialTheme.colorScheme.tertiary, "+$delta rispetto alla settimana scorsa")
+        delta < 0 -> Triple(Icons.Filled.TrendingDown, MaterialTheme.colorScheme.error, "$delta rispetto alla settimana scorsa")
+        else -> Triple(Icons.Filled.TrendingFlat, MaterialTheme.colorScheme.onSurfaceVariant, "Stesso ritmo della settimana scorsa")
+    }
+    Card(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(icon, contentDescription = null, tint = tint)
+            Text(
+                message,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(start = 10.dp),
             )
         }
     }
