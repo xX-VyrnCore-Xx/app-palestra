@@ -42,7 +42,7 @@ fun ProgramEntity.toDto() = ProgramDto(
 )
 
 fun PlanExerciseEntity.toDto() = PlanExerciseDto(
-    id, planId, exerciseId, orderIndex, targetSets, targetReps, targetWeightKg, restSeconds
+    id, planId, exerciseId, orderIndex, targetSets, targetReps, targetWeightKg, restSeconds, notes
 )
 
 fun WorkoutSessionEntity.toDto() = WorkoutSessionDto(
@@ -71,7 +71,7 @@ fun ProgramDto.toEntity() = ProgramEntity(
 )
 
 fun PlanExerciseDto.toEntity() = PlanExerciseEntity(
-    id, planId, exerciseId, orderIndex, targetSets, targetReps, targetWeightKg, restSeconds, SyncStatus.SYNCED
+    id, planId, exerciseId, orderIndex, targetSets, targetReps, targetWeightKg, restSeconds, notes, SyncStatus.SYNCED
 )
 
 fun WorkoutSessionDto.toEntity() = WorkoutSessionEntity(
