@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -68,6 +69,7 @@ fun AiAssistantScreen(
     }
 
     Scaffold(
+        modifier = Modifier.imePadding(),
         topBar = {
             TopAppBar(title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -78,6 +80,9 @@ fun AiAssistantScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) { Snackbar(it) } },
         bottomBar = {
+            // Always embedded as a dashboard tab (never a standalone destination), so the
+            // system navigation bar inset is already reserved by the outer Scaffold's own
+            // bottomBar (the AnimatedNavBar) - adding it again here would double the gap.
             Row(
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
