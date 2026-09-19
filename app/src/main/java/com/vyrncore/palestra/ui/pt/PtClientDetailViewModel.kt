@@ -42,6 +42,9 @@ class PtClientDetailViewModel @Inject constructor(
     val plans = workoutRepository.observePlansForUser(clientId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val programs = workoutRepository.observeProgramsForUser(clientId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val sessions = workoutRepository.observeSessionsForUser(clientId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

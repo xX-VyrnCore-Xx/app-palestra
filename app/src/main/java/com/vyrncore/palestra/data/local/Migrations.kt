@@ -31,3 +31,29 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
         db.execSQL("ALTER TABLE exercises ADD COLUMN imageUrl TEXT")
     }
 }
+
+/** Multi-week structured programs (mesocicli): each week is a regular workout_plans row tagged
+ * with its program and week number, so nothing else in the plan pipeline needs to change. */
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE workout_plans ADD COLUMN programId TEXT")
+        db.execSQL("ALTER TABLE workout_plans ADD COLUMN weekIndex INTEGER")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_workout_plans_programId ON workout_plans(programId)")
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS programs (
+                id TEXT NOT NULL PRIMARY KEY,
+                name TEXT NOT NULL,
+                createdByPtId TEXT NOT NULL,
+                assignedToUserId TEXT NOT NULL,
+                totalWeeks INTEGER NOT NULL,
+                weeklyIncrementPercent REAL NOT NULL,
+                startEpochMs INTEGER NOT NULL,
+                syncStatus TEXT NOT NULL
+            )
+            """.trimIndent(),
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_programs_createdByPtId ON programs(createdByPtId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_programs_assignedToUserId ON programs(assignedToUserId)")
+    }
+}

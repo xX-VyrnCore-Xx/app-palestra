@@ -3,6 +3,7 @@ package com.vyrncore.palestra.ui.workout
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vyrncore.palestra.data.notification.NotificationHelper
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.PlotoneFeedRepository
 import com.vyrncore.palestra.data.repository.WorkoutRepository
@@ -19,6 +20,7 @@ class ActiveWorkoutViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val authRepository: AuthRepository,
     private val plotoneFeedRepository: PlotoneFeedRepository,
+    private val notificationHelper: NotificationHelper,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -48,7 +50,12 @@ class ActiveWorkoutViewModel @Inject constructor(
 
     fun logSet(exerciseId: String, setNumber: Int, reps: Int, weightKg: Double) {
         viewModelScope.launch {
-            workoutRepository.logSet(sessionId, exerciseId, setNumber, reps, weightKg, rpe = null)
+            val isNewRecord = workoutRepository.logSet(sessionId, exerciseId, setNumber, reps, weightKg, rpe = null)
+            if (isNewRecord) {
+                val exerciseName = uiState.value.exercises.firstOrNull { it.exerciseId == exerciseId }?.name ?: return@launch
+                val estimatedOneRepMaxKg = weightKg * (1 + reps / 30.0)
+                notificationHelper.showPersonalRecordNotification(exerciseName, estimatedOneRepMaxKg)
+            }
         }
     }
 

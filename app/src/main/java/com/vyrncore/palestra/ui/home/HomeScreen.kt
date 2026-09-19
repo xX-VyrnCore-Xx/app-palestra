@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -151,8 +152,18 @@ fun HomeScreen(
                         Text(
                             uiState.nextPlanName.orEmpty(),
                             style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
+                            modifier = Modifier.padding(top = 4.dp),
                         )
+                        if (uiState.activeProgramName != null) {
+                            Text(
+                                "${uiState.activeProgramName} · Settimana ${uiState.activeProgramCurrentWeek} di ${uiState.activeProgramTotalWeeks}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
                         Button(
                             onClick = {
                                 viewModel.startWorkout(uiState.nextPlanId!!) { sessionId ->

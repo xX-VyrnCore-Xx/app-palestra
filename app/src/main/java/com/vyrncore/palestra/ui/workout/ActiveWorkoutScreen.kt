@@ -28,7 +28,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.OndemandVideo
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -39,9 +41,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.vyrncore.palestra.util.youtubeTutorialSearchUrl
 
 @Composable
 fun ActiveWorkoutScreen(
@@ -125,7 +129,11 @@ fun ActiveWorkoutScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text(exercise.name, style = MaterialTheme.typography.titleMedium)
+                                Text(exercise.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                                val uriHandler = LocalUriHandler.current
+                                IconButton(onClick = { uriHandler.openUri(youtubeTutorialSearchUrl(exercise.name)) }) {
+                                    Icon(Icons.Filled.OndemandVideo, contentDescription = "Cerca tutorial video")
+                                }
                                 if (isDone) {
                                     Icon(
                                         Icons.Filled.CheckCircle,

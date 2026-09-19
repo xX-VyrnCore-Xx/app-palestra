@@ -12,12 +12,14 @@ object Routes {
     const val PROFILE = "profile"
     const val PT_CLIENT_DETAIL = "pt_client/{clientId}"
     const val PLAN_EDITOR = "plan_editor/{clientId}"
+    const val PROGRAM_EDITOR = "program_editor/{clientId}"
     const val REST_TIMER = "rest_timer/{seconds}"
     const val CHAT_THREAD = "chat_thread/{peerId}"
 
     fun activeWorkout(sessionId: String, planId: String) = "active_workout/$sessionId/$planId"
     fun ptClientDetail(clientId: String) = "pt_client/$clientId"
     fun planEditor(clientId: String) = "plan_editor/$clientId"
+    fun programEditor(clientId: String) = "program_editor/$clientId"
     fun restTimer(seconds: Int) = "rest_timer/$seconds"
     fun chatThread(peerId: String) = "chat_thread/$peerId"
 }

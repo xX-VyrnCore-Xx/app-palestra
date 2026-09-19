@@ -26,6 +26,7 @@ import com.vyrncore.palestra.ui.chat.ChatThreadScreen
 import com.vyrncore.palestra.ui.dashboard.AllievoDashboardScreen
 import com.vyrncore.palestra.ui.profile.ProfileScreen
 import com.vyrncore.palestra.ui.pt.PlanEditorScreen
+import com.vyrncore.palestra.ui.pt.ProgramEditorScreen
 import com.vyrncore.palestra.ui.pt.PtClientDetailScreen
 import com.vyrncore.palestra.ui.pt.PtDashboardScreen
 import com.vyrncore.palestra.ui.timer.RestTimerScreen
@@ -120,6 +121,7 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
         ) {
             PtClientDetailScreen(
                 onCreatePlan = { clientId -> navController.navigate(Routes.planEditor(clientId)) },
+                onCreateProgram = { clientId -> navController.navigate(Routes.programEditor(clientId)) },
                 onOpenChat = { clientId -> navController.navigate(Routes.chatThread(clientId)) },
             )
         }
@@ -128,6 +130,12 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
             arguments = listOf(navArgument("clientId") { type = NavType.StringType }),
         ) {
             PlanEditorScreen(onSaved = { navController.popBackStack() })
+        }
+        composable(
+            Routes.PROGRAM_EDITOR,
+            arguments = listOf(navArgument("clientId") { type = NavType.StringType }),
+        ) {
+            ProgramEditorScreen(onSaved = { navController.popBackStack() })
         }
         composable(
             Routes.CHAT_THREAD,

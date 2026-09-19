@@ -45,6 +45,19 @@ create table if not exists public.exercises (
     image_url text
 );
 
+-- Structured multi-week programs (mesocicli): a PT sets a base plan, a week count and a
+-- per-week load increment; each week is generated as its own row in workout_plans, tagged with
+-- program_id/week_index below.
+create table if not exists public.programs (
+    id uuid primary key default gen_random_uuid(),
+    name text not null,
+    created_by_pt_id uuid not null references public.profiles (id) on delete cascade,
+    assigned_to_user_id uuid not null references public.profiles (id) on delete cascade,
+    total_weeks int not null,
+    weekly_increment_percent numeric not null default 0,
+    start_at timestamptz not null default now()
+);
+
 create table if not exists public.workout_plans (
     id uuid primary key default gen_random_uuid(),
     name text not null,
@@ -53,7 +66,10 @@ create table if not exists public.workout_plans (
     assigned_to_user_id uuid not null references public.profiles (id) on delete cascade,
     created_at timestamptz not null default now(),
     category text,
-    estimated_minutes int
+    estimated_minutes int,
+    -- Set when this plan is one week of a program above; null for a standalone plan.
+    program_id uuid references public.programs (id) on delete cascade,
+    week_index int
 );
 
 create table if not exists public.plan_exercises (
@@ -180,6 +196,7 @@ alter table public.body_metrics enable row level security;
 alter table public.messages enable row level security;
 alter table public.pt_notes enable row level security;
 alter table public.plotone_feed_posts enable row level security;
+alter table public.programs enable row level security;
 
 -- profiles: a user can read/update their own row; a PT can read their clients' rows.
 create policy "profiles_self_select" on public.profiles
@@ -292,6 +309,15 @@ create policy "pt_notes_owner_insert" on public.pt_notes
     for insert with check (auth.uid() = pt_id);
 create policy "pt_notes_owner_update" on public.pt_notes
     for update using (auth.uid() = pt_id) with check (auth.uid() = pt_id);
+
+-- programs: PT manages programs they created; assigned client can read theirs (same shape as
+-- workout_plans' policies, since a program is just a container for a run of weekly plans).
+create policy "programs_select" on public.programs
+    for select using (auth.uid() = created_by_pt_id or auth.uid() = assigned_to_user_id);
+create policy "programs_insert" on public.programs
+    for insert with check (auth.uid() = created_by_pt_id);
+create policy "programs_update" on public.programs
+    for update using (auth.uid() = created_by_pt_id);
 
 -- plotone_feed_posts: visible to the PT and to every allievo sharing that same PT; an allievo
 -- may only post as themself.

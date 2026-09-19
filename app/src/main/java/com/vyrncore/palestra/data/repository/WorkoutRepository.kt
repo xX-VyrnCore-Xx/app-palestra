@@ -4,7 +4,9 @@ import com.vyrncore.palestra.data.local.ExerciseCatalogSeed
 import com.vyrncore.palestra.data.local.SyncStatus
 import com.vyrncore.palestra.data.local.dao.ExerciseDao
 import com.vyrncore.palestra.data.local.dao.MuscleGroupVolume
+import com.vyrncore.palestra.data.local.dao.PersonalRecord
 import com.vyrncore.palestra.data.local.dao.PlanExerciseDao
+import com.vyrncore.palestra.data.local.dao.ProgramDao
 import com.vyrncore.palestra.data.local.dao.SessionSummary
 import com.vyrncore.palestra.data.local.dao.SetEntryDao
 import com.vyrncore.palestra.data.local.dao.WeeklyVolume
@@ -12,6 +14,7 @@ import com.vyrncore.palestra.data.local.dao.WorkoutPlanDao
 import com.vyrncore.palestra.data.local.dao.WorkoutSessionDao
 import com.vyrncore.palestra.data.local.entity.ExerciseEntity
 import com.vyrncore.palestra.data.local.entity.PlanExerciseEntity
+import com.vyrncore.palestra.data.local.entity.ProgramEntity
 import com.vyrncore.palestra.data.local.entity.SetEntryEntity
 import com.vyrncore.palestra.data.local.entity.WorkoutPlanEntity
 import com.vyrncore.palestra.data.local.entity.WorkoutSessionEntity
@@ -23,6 +26,7 @@ import kotlinx.serialization.Serializable
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.pow
 
 @Serializable
 data class WeeklyRankingEntry(
@@ -37,6 +41,7 @@ class WorkoutRepository @Inject constructor(
     private val planExerciseDao: PlanExerciseDao,
     private val workoutSessionDao: WorkoutSessionDao,
     private val setEntryDao: SetEntryDao,
+    private val programDao: ProgramDao,
     private val postgrest: Postgrest,
 ) {
     /** Peers sharing the same PT, ranked by workouts completed in the last 7 days. Computed
@@ -115,6 +120,73 @@ class WorkoutRepository @Inject constructor(
         return planId
     }
 
+    // Structured multi-week programs (mesocicli)
+    fun observeProgramsForUser(userId: String): Flow<List<ProgramEntity>> = programDao.observeForUser(userId)
+
+    fun observeProgramsCreatedByPt(ptId: String): Flow<List<ProgramEntity>> = programDao.observeCreatedByPt(ptId)
+
+    fun observePlansForProgram(programId: String): Flow<List<WorkoutPlanEntity>> = workoutPlanDao.observeForProgram(programId)
+
+    /** Creates a program by generating one workout_plans row per week upfront, with each week's
+     * target weights scaled by (1 + weeklyIncrementPercent/100)^(week-1) from the base exercises -
+     * a simple linear-percentage progressive overload, applied once at creation rather than
+     * computed lazily, so every week's plan is a completely ordinary plan the rest of the app
+     * (sync, active workout, history) already knows how to handle. */
+    suspend fun createProgram(
+        name: String,
+        createdByPtId: String,
+        assignedToUserId: String,
+        totalWeeks: Int,
+        weeklyIncrementPercent: Double,
+        baseExercises: List<PlanExerciseEntity>,
+        category: String? = null,
+    ): String {
+        val programId = UUID.randomUUID().toString()
+        programDao.upsert(
+            ProgramEntity(
+                id = programId,
+                name = name,
+                createdByPtId = createdByPtId,
+                assignedToUserId = assignedToUserId,
+                totalWeeks = totalWeeks,
+                weeklyIncrementPercent = weeklyIncrementPercent,
+                startEpochMs = System.currentTimeMillis(),
+                syncStatus = SyncStatus.PENDING_CREATE,
+            )
+        )
+        val estimatedMinutes = (baseExercises.sumOf { it.targetSets } * 3 / 2).takeIf { it > 0 }
+        for (week in 1..totalWeeks) {
+            val planId = UUID.randomUUID().toString()
+            val factor = (1 + weeklyIncrementPercent / 100.0).pow(week - 1)
+            workoutPlanDao.upsert(
+                WorkoutPlanEntity(
+                    id = planId,
+                    name = "$name – Settimana $week",
+                    createdByPtId = createdByPtId,
+                    assignedToUserId = assignedToUserId,
+                    createdAtEpochMs = System.currentTimeMillis(),
+                    category = category,
+                    estimatedMinutes = estimatedMinutes,
+                    programId = programId,
+                    weekIndex = week,
+                    syncStatus = SyncStatus.PENDING_CREATE,
+                )
+            )
+            baseExercises.forEachIndexed { index, exercise ->
+                planExerciseDao.upsert(
+                    exercise.copy(
+                        id = UUID.randomUUID().toString(),
+                        planId = planId,
+                        orderIndex = index,
+                        targetWeightKg = exercise.targetWeightKg?.let { it * factor },
+                        syncStatus = SyncStatus.PENDING_CREATE,
+                    )
+                )
+            }
+        }
+        return programId
+    }
+
     // Active workout session tracking
     fun observeSession(sessionId: String): Flow<WorkoutSessionEntity?> = workoutSessionDao.observeById(sessionId)
 
@@ -132,6 +204,9 @@ class WorkoutRepository @Inject constructor(
 
     fun observeWeeklyVolume(userId: String): Flow<List<WeeklyVolume>> =
         setEntryDao.observeWeeklyVolume(userId)
+
+    fun observePersonalRecords(userId: String): Flow<List<PersonalRecord>> =
+        setEntryDao.observePersonalRecords(userId)
 
     suspend fun startSession(userId: String, planId: String?): String {
         val sessionId = UUID.randomUUID().toString()
@@ -162,7 +237,10 @@ class WorkoutRepository @Inject constructor(
         )
     }
 
-    suspend fun logSet(sessionId: String, exerciseId: String, setNumber: Int, reps: Int, weightKg: Double, rpe: Double?) {
+    /** Logs a set and returns true if it beats every previous set logged for this exercise - an
+     * estimated 1RM (Epley) new personal record, used to trigger a celebratory notification. */
+    suspend fun logSet(sessionId: String, exerciseId: String, setNumber: Int, reps: Int, weightKg: Double, rpe: Double?): Boolean {
+        val previousBest = setEntryDao.bestEstimatedOneRepMax(sessionId, exerciseId)
         setEntryDao.upsert(
             SetEntryEntity(
                 id = UUID.randomUUID().toString(),
@@ -176,5 +254,7 @@ class WorkoutRepository @Inject constructor(
                 syncStatus = SyncStatus.PENDING_CREATE,
             )
         )
+        val newEstimatedOneRepMax = weightKg * (1 + reps / 30.0)
+        return previousBest != null && newEstimatedOneRepMax > previousBest
     }
 }
