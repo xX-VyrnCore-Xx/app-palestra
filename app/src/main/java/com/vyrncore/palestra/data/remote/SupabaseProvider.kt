@@ -3,6 +3,7 @@ package com.vyrncore.palestra.data.remote
 import com.vyrncore.palestra.BuildConfig
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.annotations.SupabaseInternal
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
@@ -13,6 +14,7 @@ import io.ktor.client.plugins.HttpTimeout
 /** Single Supabase client, configured with the Auth/Postgrest/Realtime/Storage/Functions plugins used across the app. */
 object SupabaseProvider {
 
+    @OptIn(SupabaseInternal::class)
     val client: SupabaseClient by lazy {
         createSupabaseClient(
             supabaseUrl = BuildConfig.SUPABASE_URL,
