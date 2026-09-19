@@ -56,6 +56,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.ui.components.BackendConfigBanner
 import com.vyrncore.palestra.ui.components.GradientHeader
 
+private val BADGE_SIZE = 64.dp
+
 @Composable
 fun LoginScreen(
     onLoggedIn: (String) -> Unit,
@@ -83,7 +85,6 @@ fun LoginScreen(
             GradientHeader(
                 title = "Vibe Fitness",
                 subtitle = "Bentornato, senti il ritmo e continua ad allenarti",
-                modifier = Modifier.padding(bottom = 36.dp),
             )
             Surface(
                 shape = CircleShape,
@@ -91,8 +92,8 @@ fun LoginScreen(
                 shadowElevation = 6.dp,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .offset(y = 28.dp)
-                    .size(64.dp),
+                    .offset(y = BADGE_SIZE / 2)
+                    .size(BADGE_SIZE),
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
@@ -104,6 +105,10 @@ fun LoginScreen(
                 }
             }
         }
+        // The badge above overflows past the Box's own bounds (offset doesn't grow the layout),
+        // so this Spacer is what actually reserves the room for it - without it, the badge's
+        // bottom half draws on top of whatever comes next instead of pushing it down.
+        Spacer(Modifier.height(BADGE_SIZE / 2))
 
         BackendConfigBanner(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
 
