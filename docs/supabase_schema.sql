@@ -14,12 +14,17 @@ create table if not exists public.profiles (
     created_at timestamptz not null default now()
 );
 
--- Profilo privato dell'allievo (dolori/lesioni, alimentazione, stile di vita, obiettivi),
--- compilato nella Welcome Page al primo accesso. Strettamente privato: la RLS sotto lo rende
--- leggibile/scrivibile solo dal proprietario, mai dal PT, e l'app non lo passa mai
--- all'assistente AI - nessun altro punto della codebase deve mai leggere questa tabella.
+-- Profilo dell'allievo compilato nella Welcome Page al primo accesso (esperienza, giorni di
+-- allenamento, obiettivo, stile di vita, dolori/lesioni, alimentazione). Leggibile/scrivibile dal
+-- proprietario; il proprio PT può leggerlo (mai scriverlo) per costruire una scheda su misura -
+-- vedi la policy _pt_read sotto. L'assistente AI non lo legge mai: nessun altro punto della
+-- codebase deve toccare questa tabella.
 create table if not exists public.allievo_private_profiles (
     user_id uuid primary key references public.profiles (id) on delete cascade,
+    experience_level text,
+    training_days text,
+    activity_level text,
+    primary_goal text,
     pain_injuries text,
     nutrition text,
     lifestyle text,
@@ -169,9 +174,17 @@ create policy "profiles_self_update" on public.profiles
 create policy "profiles_pt_update_client" on public.profiles
     for update using (auth.uid() = pt_id);
 
--- allievo_private_profiles: strictly owner-only - no PT exception, unlike profiles.injuries above.
+-- allievo_private_profiles: full read/write for the owner, read-only for their own PT (so a
+-- new client's answers can inform the plan the PT builds them) - see the table comment above.
 create policy "allievo_private_profiles_owner_only" on public.allievo_private_profiles
     for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "allievo_private_profiles_pt_read" on public.allievo_private_profiles
+    for select using (
+        exists (
+            select 1 from public.profiles pr
+            where pr.id = allievo_private_profiles.user_id and pr.pt_id = auth.uid()
+        )
+    );
 
 -- exercises: readable by everyone signed in; writable by the creator.
 create policy "exercises_select" on public.exercises

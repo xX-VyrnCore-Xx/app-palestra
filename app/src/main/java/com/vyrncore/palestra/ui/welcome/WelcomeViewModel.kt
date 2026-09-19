@@ -12,19 +12,30 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/** Single-select options shown as chips, in display order. */
+val EXPERIENCE_LEVELS = listOf("Principiante", "Intermedio", "Avanzato")
+val TRAINING_DAYS_OPTIONS = listOf("1-2 giorni", "3-4 giorni", "5+ giorni")
+val PRIMARY_GOAL_OPTIONS = listOf("Perdere peso", "Aumentare massa", "Migliorare resistenza", "Tonificare", "Salute generale")
+val ACTIVITY_LEVEL_OPTIONS = listOf("Lavoro sedentario", "Moderatamente attivo", "Molto attivo")
+
 data class WelcomeUiState(
+    val experienceLevel: String? = null,
+    val trainingDays: String? = null,
+    val primaryGoal: String? = null,
+    val activityLevel: String? = null,
     val painInjuries: String = "",
     val nutrition: String = "",
-    val lifestyle: String = "",
     val goals: String = "",
     val isSaving: Boolean = false,
     val saved: Boolean = false,
 )
 
 /**
- * Backs the private onboarding questionnaire an allievo fills in once, right after their first
- * login. Everything written here is strictly owner-only (RLS on allievo_private_profiles) - it
- * is never shown to the PT and never forwarded to the AI assistant.
+ * Backs the onboarding questionnaire an allievo fills in once, right after their first login: a
+ * short wizard mixing single-select questions (experience, training days, goal, lifestyle) with
+ * open text ones (injuries, diet, other notes). RLS on allievo_private_profiles lets the owner
+ * and their own PT read the answers (the PT uses them to tailor a plan); the AI assistant never
+ * does, and this ViewModel never forwards them anywhere but that table.
  */
 @HiltViewModel
 class WelcomeViewModel @Inject constructor(
@@ -37,6 +48,27 @@ class WelcomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(WelcomeUiState())
     val uiState: StateFlow<WelcomeUiState> = _uiState.asStateFlow()
 
+    private val _step = MutableStateFlow(0)
+    val step: StateFlow<Int> = _step.asStateFlow()
+
+    val stepCount = 7
+
+    fun selectExperienceLevel(value: String) {
+        _uiState.value = _uiState.value.copy(experienceLevel = value)
+    }
+
+    fun selectTrainingDays(value: String) {
+        _uiState.value = _uiState.value.copy(trainingDays = value)
+    }
+
+    fun selectPrimaryGoal(value: String) {
+        _uiState.value = _uiState.value.copy(primaryGoal = value)
+    }
+
+    fun selectActivityLevel(value: String) {
+        _uiState.value = _uiState.value.copy(activityLevel = value)
+    }
+
     fun updatePainInjuries(value: String) {
         _uiState.value = _uiState.value.copy(painInjuries = value)
     }
@@ -45,12 +77,16 @@ class WelcomeViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(nutrition = value)
     }
 
-    fun updateLifestyle(value: String) {
-        _uiState.value = _uiState.value.copy(lifestyle = value)
-    }
-
     fun updateGoals(value: String) {
         _uiState.value = _uiState.value.copy(goals = value)
+    }
+
+    fun nextStep() {
+        if (_step.value < stepCount - 1) _step.value += 1
+    }
+
+    fun previousStep() {
+        if (_step.value > 0) _step.value -= 1
     }
 
     fun save(onSaved: () -> Unit) {
@@ -61,9 +97,12 @@ class WelcomeViewModel @Inject constructor(
                 allievoProfileRepository.save(
                     AllievoPrivateProfile(
                         userId = userId,
+                        experienceLevel = state.experienceLevel,
+                        trainingDays = state.trainingDays,
+                        primaryGoal = state.primaryGoal,
+                        activityLevel = state.activityLevel,
                         painInjuries = state.painInjuries.trim().takeIf { it.isNotBlank() },
                         nutrition = state.nutrition.trim().takeIf { it.isNotBlank() },
-                        lifestyle = state.lifestyle.trim().takeIf { it.isNotBlank() },
                         goals = state.goals.trim().takeIf { it.isNotBlank() },
                         completedOnboarding = true,
                     ),

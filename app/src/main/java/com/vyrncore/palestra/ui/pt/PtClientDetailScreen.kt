@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -18,6 +19,8 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.HealthAndSafety
+import androidx.compose.material.icons.filled.MilitaryTech
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -58,6 +61,7 @@ fun PtClientDetailScreen(
     val note by viewModel.note.collectAsState()
     val injuries by viewModel.injuries.collectAsState()
     val clientName by viewModel.clientName.collectAsState()
+    val allievoProfile by viewModel.allievoProfile.collectAsState()
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.ITALY) }
 
     var noteDraft by remember(note) { mutableStateOf(note?.content.orEmpty()) }
@@ -150,6 +154,11 @@ fun PtClientDetailScreen(
                 }
             }
 
+            AllievoProfileCard(
+                profile = allievoProfile,
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+            )
+
             Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
                 MetricCard(
                     icon = Icons.Filled.FitnessCenter,
@@ -240,5 +249,69 @@ fun PtClientDetailScreen(
           }
           }
         }
+    }
+}
+
+/** What the allievo told us in the Welcome questionnaire - shown to the PT to build a plan that
+ * actually fits, not guessed from scratch. Absent until the allievo completes onboarding. */
+@Composable
+private fun AllievoProfileCard(
+    profile: com.vyrncore.palestra.data.repository.AllievoPrivateProfile?,
+    modifier: Modifier = Modifier,
+) {
+    if (profile == null || !profile.completedOnboarding) return
+
+    Card(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Icon(Icons.Filled.MilitaryTech, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Text(
+                    "Profilo recluta",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+
+            val chips = listOfNotNull(
+                profile.experienceLevel,
+                profile.trainingDays,
+                profile.primaryGoal,
+                profile.activityLevel,
+            )
+            if (chips.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(top = 12.dp),
+                ) {
+                    chips.forEach { label ->
+                        AssistChip(
+                            onClick = {},
+                            enabled = false,
+                            label = { Text(label) },
+                            modifier = Modifier.padding(end = 8.dp),
+                        )
+                    }
+                }
+            }
+
+            AllievoProfileNote(label = "Dolori/lesioni", value = profile.painInjuries)
+            AllievoProfileNote(label = "Alimentazione", value = profile.nutrition)
+            AllievoProfileNote(label = "Note", value = profile.goals)
+        }
+    }
+}
+
+@Composable
+private fun AllievoProfileNote(label: String, value: String?) {
+    if (value.isNullOrBlank()) return
+    Column(modifier = Modifier.padding(top = 12.dp)) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 2.dp))
     }
 }
