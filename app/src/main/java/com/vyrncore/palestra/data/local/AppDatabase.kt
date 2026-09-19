@@ -7,6 +7,7 @@ import com.vyrncore.palestra.data.local.dao.BodyMetricDao
 import com.vyrncore.palestra.data.local.dao.ChatMessageDao
 import com.vyrncore.palestra.data.local.dao.ExerciseDao
 import com.vyrncore.palestra.data.local.dao.PlanExerciseDao
+import com.vyrncore.palestra.data.local.dao.ProgramDao
 import com.vyrncore.palestra.data.local.dao.PtNoteDao
 import com.vyrncore.palestra.data.local.dao.SetEntryDao
 import com.vyrncore.palestra.data.local.dao.UserProfileDao
@@ -16,6 +17,7 @@ import com.vyrncore.palestra.data.local.entity.BodyMetricEntity
 import com.vyrncore.palestra.data.local.entity.ChatMessageEntity
 import com.vyrncore.palestra.data.local.entity.ExerciseEntity
 import com.vyrncore.palestra.data.local.entity.PlanExerciseEntity
+import com.vyrncore.palestra.data.local.entity.ProgramEntity
 import com.vyrncore.palestra.data.local.entity.PtNoteEntity
 import com.vyrncore.palestra.data.local.entity.SetEntryEntity
 import com.vyrncore.palestra.data.local.entity.UserProfileEntity
@@ -33,8 +35,9 @@ import com.vyrncore.palestra.data.local.entity.WorkoutSessionEntity
         BodyMetricEntity::class,
         ChatMessageEntity::class,
         PtNoteEntity::class,
+        ProgramEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -48,6 +51,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun bodyMetricDao(): BodyMetricDao
     abstract fun chatMessageDao(): ChatMessageDao
     abstract fun ptNoteDao(): PtNoteDao
+    abstract fun programDao(): ProgramDao
 
     companion object {
         const val DATABASE_NAME = "palestra.db"

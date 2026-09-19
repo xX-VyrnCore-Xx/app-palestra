@@ -52,10 +52,12 @@ import java.util.Locale
 @Composable
 fun PtClientDetailScreen(
     onCreatePlan: (clientId: String) -> Unit,
+    onCreateProgram: (clientId: String) -> Unit,
     onOpenChat: (clientId: String) -> Unit,
     viewModel: PtClientDetailViewModel = hiltViewModel(),
 ) {
     val plans by viewModel.plans.collectAsState()
+    val programs by viewModel.programs.collectAsState()
     val sessions by viewModel.sessions.collectAsState()
     val bodyMetrics by viewModel.bodyMetrics.collectAsState()
     val note by viewModel.note.collectAsState()
@@ -86,8 +88,16 @@ fun PtClientDetailScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onCreatePlan(viewModel.clientId) }) {
-                Icon(Icons.Filled.Add, contentDescription = "Nuova scheda")
+            Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
+                FloatingActionButton(onClick = { onCreateProgram(viewModel.clientId) }) {
+                    Icon(Icons.Filled.CalendarMonth, contentDescription = "Nuovo programma")
+                }
+                FloatingActionButton(
+                    onClick = { onCreatePlan(viewModel.clientId) },
+                    modifier = Modifier.padding(top = 12.dp),
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "Nuova scheda")
+                }
             }
         },
     ) { padding ->
@@ -191,19 +201,44 @@ fun PtClientDetailScreen(
                 }
             }
 
+            if (programs.isNotEmpty()) {
+                Text(
+                    "Programmi",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+                )
+                programs.forEach { program ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(program.name, style = MaterialTheme.typography.titleSmall)
+                            Text(
+                                "${program.totalWeeks} settimane · +${program.weeklyIncrementPercent}%/settimana",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            )
+                        }
+                    }
+                }
+            }
+
             Text(
                 "Schede assegnate",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
             )
-            if (plans.isEmpty()) {
+            val standalonePlans = plans.filter { it.programId == null }
+            if (standalonePlans.isEmpty()) {
                 Text(
-                    "Nessuna scheda assegnata ancora.",
+                    "Nessuna scheda singola assegnata ancora.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
-                plans.forEach { plan ->
+                standalonePlans.forEach { plan ->
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
                         shape = MaterialTheme.shapes.medium,

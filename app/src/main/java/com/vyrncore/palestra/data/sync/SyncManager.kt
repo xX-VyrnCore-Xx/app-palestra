@@ -5,6 +5,7 @@ import com.vyrncore.palestra.data.local.dao.BodyMetricDao
 import com.vyrncore.palestra.data.local.dao.ChatMessageDao
 import com.vyrncore.palestra.data.local.dao.ExerciseDao
 import com.vyrncore.palestra.data.local.dao.PlanExerciseDao
+import com.vyrncore.palestra.data.local.dao.ProgramDao
 import com.vyrncore.palestra.data.local.dao.PtNoteDao
 import com.vyrncore.palestra.data.local.dao.SetEntryDao
 import com.vyrncore.palestra.data.local.dao.UserProfileDao
@@ -15,6 +16,7 @@ import com.vyrncore.palestra.data.remote.dto.BodyMetricDto
 import com.vyrncore.palestra.data.remote.dto.ChatMessageDto
 import com.vyrncore.palestra.data.remote.dto.ExerciseDto
 import com.vyrncore.palestra.data.remote.dto.PlanExerciseDto
+import com.vyrncore.palestra.data.remote.dto.ProgramDto
 import com.vyrncore.palestra.data.remote.dto.PtNoteDto
 import com.vyrncore.palestra.data.remote.dto.SetEntryDto
 import com.vyrncore.palestra.data.remote.dto.UserProfileDto
@@ -66,6 +68,7 @@ class SyncManager @Inject constructor(
     private val bodyMetricDao: BodyMetricDao,
     private val chatMessageDao: ChatMessageDao,
     private val ptNoteDao: PtNoteDao,
+    private val programDao: ProgramDao,
 ) {
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
@@ -121,6 +124,10 @@ class SyncManager @Inject constructor(
         ptNoteDao.getPendingSync().forEach { entity ->
             postgrest.from("pt_notes").upsert(entity.toDto())
             ptNoteDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED))
+        }
+        programDao.getPendingSync().forEach { entity ->
+            postgrest.from("programs").upsert(entity.toDto())
+            programDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED))
         }
     }
 
@@ -209,5 +216,15 @@ class SyncManager @Inject constructor(
                     .decodeList<PtNoteDto>()
             }.getOrDefault(emptyList()).forEach { ptNoteDao.upsert(it.toEntity()) }
         }
+
+        val programsAssigned = runCatching {
+            postgrest.from("programs").select { filter { isIn("assigned_to_user_id", relevantUserIds) } }
+                .decodeList<ProgramDto>()
+        }.getOrDefault(emptyList())
+        val programsCreated = runCatching {
+            postgrest.from("programs").select { filter { eq("created_by_pt_id", userId) } }
+                .decodeList<ProgramDto>()
+        }.getOrDefault(emptyList())
+        (programsAssigned + programsCreated).distinctBy { it.id }.forEach { programDao.upsert(it.toEntity()) }
     }
 }

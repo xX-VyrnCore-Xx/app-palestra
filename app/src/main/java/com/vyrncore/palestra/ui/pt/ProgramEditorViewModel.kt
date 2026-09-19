@@ -13,25 +13,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class DraftPlanExercise(
-    val exerciseId: String,
-    val exerciseName: String,
-    val targetSets: Int = 3,
-    val targetReps: Int = 10,
-    val targetWeightKg: Double? = null,
-    val restSeconds: Int = 90,
-)
-
-/** Common plan categories offered in the editor; a PT can still leave this unset. */
-val PLAN_CATEGORIES = listOf("Full Body", "Push", "Pull", "Gambe", "Cardio", "Mobilità")
-
 @HiltViewModel
-class PlanEditorViewModel @Inject constructor(
+class ProgramEditorViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val authRepository: AuthRepository,
     private val syncScheduler: SyncScheduler,
@@ -42,10 +29,6 @@ class PlanEditorViewModel @Inject constructor(
 
     val exerciseCatalog = workoutRepository.observeExercises()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    /** Injuries/limitations the PT recorded for this client - shown as a warning while building the plan. */
-    val clientInjuries = authRepository.observeProfile(clientId).map { it?.injuries }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _draftExercises = MutableStateFlow<List<DraftPlanExercise>>(emptyList())
     val draftExercises: StateFlow<List<DraftPlanExercise>> = _draftExercises.asStateFlow()
@@ -67,27 +50,28 @@ class PlanEditorViewModel @Inject constructor(
         _draftExercises.value = _draftExercises.value.filterNot { it.exerciseId == exerciseId }
     }
 
-    fun updateExercise(exerciseId: String, sets: Int, reps: Int, restSeconds: Int) {
+    fun updateExercise(exerciseId: String, sets: Int, reps: Int, weightKg: Double?, restSeconds: Int) {
         _draftExercises.value = _draftExercises.value.map {
-            if (it.exerciseId == exerciseId) it.copy(targetSets = sets, targetReps = reps, restSeconds = restSeconds) else it
+            if (it.exerciseId == exerciseId) {
+                it.copy(targetSets = sets, targetReps = reps, targetWeightKg = weightKg, restSeconds = restSeconds)
+            } else {
+                it
+            }
         }
     }
 
-    fun savePlan(name: String, description: String?, category: String?, onSaved: () -> Unit) {
+    fun saveProgram(name: String, totalWeeks: Int, weeklyIncrementPercent: Double, category: String?, onSaved: () -> Unit) {
         val ptId = authRepository.currentUserId.orEmpty()
         val exercises = _draftExercises.value
-        // Rough estimate: ~1.5 min per set (work + rest), so a PT sees a sensible default
-        // without having to type a duration by hand.
-        val estimatedMinutes = exercises.sumOf { it.targetSets } * 3 / 2
         viewModelScope.launch {
-            workoutRepository.createPlan(
+            workoutRepository.createProgram(
                 name = name,
-                description = description,
                 createdByPtId = ptId,
                 assignedToUserId = clientId,
+                totalWeeks = totalWeeks,
+                weeklyIncrementPercent = weeklyIncrementPercent,
                 category = category,
-                estimatedMinutes = estimatedMinutes.takeIf { it > 0 },
-                exercises = exercises.map {
+                baseExercises = exercises.map {
                     PlanExerciseEntity(
                         id = "",
                         planId = "",
@@ -95,6 +79,7 @@ class PlanEditorViewModel @Inject constructor(
                         orderIndex = 0,
                         targetSets = it.targetSets,
                         targetReps = it.targetReps,
+                        targetWeightKg = it.targetWeightKg,
                         restSeconds = it.restSeconds,
                         syncStatus = SyncStatus.PENDING_CREATE,
                     )

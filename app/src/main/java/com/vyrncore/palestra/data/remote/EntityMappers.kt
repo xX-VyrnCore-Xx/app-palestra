@@ -6,6 +6,7 @@ import com.vyrncore.palestra.data.local.entity.ChatAttachmentType
 import com.vyrncore.palestra.data.local.entity.ChatMessageEntity
 import com.vyrncore.palestra.data.local.entity.ExerciseEntity
 import com.vyrncore.palestra.data.local.entity.PlanExerciseEntity
+import com.vyrncore.palestra.data.local.entity.ProgramEntity
 import com.vyrncore.palestra.data.local.entity.PtNoteEntity
 import com.vyrncore.palestra.data.local.entity.SetEntryEntity
 import com.vyrncore.palestra.data.local.entity.UserProfileEntity
@@ -16,6 +17,7 @@ import com.vyrncore.palestra.data.remote.dto.BodyMetricDto
 import com.vyrncore.palestra.data.remote.dto.ChatMessageDto
 import com.vyrncore.palestra.data.remote.dto.ExerciseDto
 import com.vyrncore.palestra.data.remote.dto.PlanExerciseDto
+import com.vyrncore.palestra.data.remote.dto.ProgramDto
 import com.vyrncore.palestra.data.remote.dto.PtNoteDto
 import com.vyrncore.palestra.data.remote.dto.SetEntryDto
 import com.vyrncore.palestra.data.remote.dto.UserProfileDto
@@ -31,7 +33,12 @@ fun UserProfileEntity.toDto() = UserProfileDto(id, email, fullName, role.name, p
 fun ExerciseEntity.toDto() = ExerciseDto(id, name, muscleGroup, equipment, notes, createdByUserId, isCustom, imageUrl)
 
 fun WorkoutPlanEntity.toDto() = WorkoutPlanDto(
-    id, name, description, createdByPtId, assignedToUserId, createdAtEpochMs.toIso(), category, estimatedMinutes
+    id, name, description, createdByPtId, assignedToUserId, createdAtEpochMs.toIso(), category, estimatedMinutes,
+    programId, weekIndex,
+)
+
+fun ProgramEntity.toDto() = ProgramDto(
+    id, name, createdByPtId, assignedToUserId, totalWeeks, weeklyIncrementPercent, startEpochMs.toIso()
 )
 
 fun PlanExerciseEntity.toDto() = PlanExerciseDto(
@@ -55,7 +62,12 @@ fun UserProfileDto.toEntity() = UserProfileEntity(id, email, fullName, UserRole.
 fun ExerciseDto.toEntity() = ExerciseEntity(id, name, muscleGroup, equipment, notes, createdByUserId, isCustom, imageUrl, SyncStatus.SYNCED)
 
 fun WorkoutPlanDto.toEntity() = WorkoutPlanEntity(
-    id, name, description, createdByPtId, assignedToUserId, createdAt.toEpochMs(), category, estimatedMinutes, SyncStatus.SYNCED
+    id, name, description, createdByPtId, assignedToUserId, createdAt.toEpochMs(), category, estimatedMinutes,
+    programId, weekIndex, SyncStatus.SYNCED,
+)
+
+fun ProgramDto.toEntity() = ProgramEntity(
+    id, name, createdByPtId, assignedToUserId, totalWeeks, weeklyIncrementPercent, startAt.toEpochMs(), SyncStatus.SYNCED
 )
 
 fun PlanExerciseDto.toEntity() = PlanExerciseEntity(

@@ -35,6 +35,19 @@ data class WorkoutPlanDto(
     @SerialName("created_at") val createdAt: String,
     val category: String? = null,
     @SerialName("estimated_minutes") val estimatedMinutes: Int? = null,
+    @SerialName("program_id") val programId: String? = null,
+    @SerialName("week_index") val weekIndex: Int? = null,
+)
+
+@Serializable
+data class ProgramDto(
+    val id: String,
+    val name: String,
+    @SerialName("created_by_pt_id") val createdByPtId: String,
+    @SerialName("assigned_to_user_id") val assignedToUserId: String,
+    @SerialName("total_weeks") val totalWeeks: Int,
+    @SerialName("weekly_increment_percent") val weeklyIncrementPercent: Double,
+    @SerialName("start_at") val startAt: String,
 )
 
 @Serializable

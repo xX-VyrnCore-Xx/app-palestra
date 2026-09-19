@@ -36,7 +36,7 @@ data class ExerciseEntity(
 
 @Entity(
     tableName = "workout_plans",
-    indices = [Index("createdByPtId"), Index("assignedToUserId")],
+    indices = [Index("createdByPtId"), Index("assignedToUserId"), Index("programId")],
 )
 data class WorkoutPlanEntity(
     @PrimaryKey val id: String,
@@ -47,6 +47,26 @@ data class WorkoutPlanEntity(
     val createdAtEpochMs: Long,
     val category: String? = null,
     val estimatedMinutes: Int? = null,
+    /** Set when this plan is one week of a multi-week [ProgramEntity], null for a standalone plan. */
+    val programId: String? = null,
+    /** 1-based week number within the program, null for a standalone plan. */
+    val weekIndex: Int? = null,
+    val syncStatus: SyncStatus = SyncStatus.SYNCED,
+)
+
+@Entity(
+    tableName = "programs",
+    indices = [Index("createdByPtId"), Index("assignedToUserId")],
+)
+data class ProgramEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val createdByPtId: String,
+    val assignedToUserId: String,
+    val totalWeeks: Int,
+    /** Percent by which target weight is scaled up on each successive week's plan (e.g. 2.5 = +2.5%/week). */
+    val weeklyIncrementPercent: Double,
+    val startEpochMs: Long,
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 

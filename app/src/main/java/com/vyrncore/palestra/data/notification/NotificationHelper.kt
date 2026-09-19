@@ -42,6 +42,13 @@ class NotificationHelper @Inject constructor(
                     NotificationManager.IMPORTANCE_DEFAULT,
                 )
             )
+            manager?.createNotificationChannel(
+                NotificationChannel(
+                    ACHIEVEMENT_CHANNEL_ID,
+                    "Record e traguardi",
+                    NotificationManager.IMPORTANCE_HIGH,
+                )
+            )
         }
     }
 
@@ -86,11 +93,25 @@ class NotificationHelper @Inject constructor(
         NotificationManagerCompat.from(context).notify(PLAN_NOTIFICATION_ID, notification)
     }
 
+    fun showPersonalRecordNotification(exerciseName: String, estimatedOneRepMaxKg: Double) {
+        if (!hasNotificationPermission()) return
+
+        val notification = NotificationCompat.Builder(context, ACHIEVEMENT_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("🎖️ Nuovo record personale!")
+            .setContentText("$exerciseName · 1RM stimato ${"%.1f".format(estimatedOneRepMaxKg)} kg")
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+        NotificationManagerCompat.from(context).notify(exerciseName.hashCode(), notification)
+    }
+
     private companion object {
         const val REMINDER_CHANNEL_ID = "workout_reminders"
         const val REMINDER_NOTIFICATION_ID = 1001
         const val CHAT_CHANNEL_ID = "chat_messages"
         const val PLAN_CHANNEL_ID = "plan_updates"
         const val PLAN_NOTIFICATION_ID = 1002
+        const val ACHIEVEMENT_CHANNEL_ID = "achievements"
     }
 }

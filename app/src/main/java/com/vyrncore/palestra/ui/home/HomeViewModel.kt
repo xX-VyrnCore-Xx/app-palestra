@@ -101,6 +101,9 @@ data class HomeUiState(
     val xpIntoLevel: Int = 0,
     val nextPlanId: String? = null,
     val nextPlanName: String? = null,
+    val activeProgramName: String? = null,
+    val activeProgramCurrentWeek: Int? = null,
+    val activeProgramTotalWeeks: Int? = null,
 )
 
 @HiltViewModel
@@ -146,7 +149,8 @@ class HomeViewModel @Inject constructor(
         workoutRepository.observePlansForUser(userId),
         authRepository.observeProfile(userId),
         workoutRepository.observeVolumeByMuscleGroup(userId),
-    ) { sessions, plans, profile, volumeByMuscle ->
+        workoutRepository.observeProgramsForUser(userId),
+    ) { sessions, plans, profile, volumeByMuscle, programs ->
         val zone = ZoneId.systemDefault()
         val doneDates = sessions.mapNotNull { it.endedAtEpochMs }
             .map { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
@@ -183,7 +187,15 @@ class HomeViewModel @Inject constructor(
         val xp = totalWorkouts * XP_PER_SESSION + badgeCount * XP_PER_BADGE
         val level = 1 + xp / XP_PER_LEVEL
 
-        val nextPlan = plans.firstOrNull()
+        val activeProgram = programs.maxByOrNull { it.startEpochMs }
+        val activeProgramCurrentWeek = activeProgram?.let {
+            val elapsedWeeks = (System.currentTimeMillis() - it.startEpochMs) / (7L * 24 * 3600 * 1000)
+            (elapsedWeeks.toInt() + 1).coerceIn(1, it.totalWeeks)
+        }
+        val programPlan = activeProgram?.let { program ->
+            plans.firstOrNull { it.programId == program.id && it.weekIndex == activeProgramCurrentWeek }
+        }
+        val nextPlan = programPlan ?: plans.firstOrNull { it.programId == null }
         HomeUiState(
             fullName = profile?.fullName.orEmpty(),
             streakDays = streak,
@@ -201,6 +213,9 @@ class HomeViewModel @Inject constructor(
             xpIntoLevel = xp % XP_PER_LEVEL,
             nextPlanId = nextPlan?.id,
             nextPlanName = nextPlan?.name,
+            activeProgramName = activeProgram?.name,
+            activeProgramCurrentWeek = activeProgramCurrentWeek,
+            activeProgramTotalWeeks = activeProgram?.totalWeeks,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
 

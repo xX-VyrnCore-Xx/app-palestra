@@ -12,6 +12,7 @@ import com.vyrncore.palestra.data.local.entity.BodyMetricEntity
 import com.vyrncore.palestra.data.local.entity.ChatMessageEntity
 import com.vyrncore.palestra.data.local.entity.ExerciseEntity
 import com.vyrncore.palestra.data.local.entity.PlanExerciseEntity
+import com.vyrncore.palestra.data.local.entity.ProgramEntity
 import com.vyrncore.palestra.data.local.entity.PtNoteEntity
 import com.vyrncore.palestra.data.local.entity.SetEntryEntity
 import com.vyrncore.palestra.data.local.entity.UserProfileEntity
@@ -69,8 +70,26 @@ interface WorkoutPlanDao {
     @Query("SELECT * FROM workout_plans WHERE syncStatus != 'SYNCED'")
     suspend fun getPendingSync(): List<WorkoutPlanEntity>
 
+    @Query("SELECT * FROM workout_plans WHERE programId = :programId ORDER BY weekIndex ASC")
+    fun observeForProgram(programId: String): Flow<List<WorkoutPlanEntity>>
+
     @Delete
     suspend fun delete(plan: WorkoutPlanEntity)
+}
+
+@Dao
+interface ProgramDao {
+    @Upsert
+    suspend fun upsert(program: ProgramEntity)
+
+    @Query("SELECT * FROM programs WHERE assignedToUserId = :userId ORDER BY startEpochMs DESC")
+    fun observeForUser(userId: String): Flow<List<ProgramEntity>>
+
+    @Query("SELECT * FROM programs WHERE createdByPtId = :ptId ORDER BY startEpochMs DESC")
+    fun observeCreatedByPt(ptId: String): Flow<List<ProgramEntity>>
+
+    @Query("SELECT * FROM programs WHERE syncStatus != 'SYNCED'")
+    suspend fun getPendingSync(): List<ProgramEntity>
 }
 
 @Dao
@@ -170,11 +189,40 @@ interface SetEntryDao {
         """,
     )
     fun observeWeeklyVolume(userId: String): Flow<List<WeeklyVolume>>
+
+    /** Best estimated 1RM (Epley formula: weight * (1 + reps/30)) ever logged per exercise. */
+    @Query(
+        """
+        SELECT se.exerciseId AS exerciseId, e.name AS exerciseName,
+               MAX(se.weightKg * (1 + se.reps / 30.0)) AS estimatedOneRepMaxKg
+        FROM set_entries se
+        JOIN workout_sessions ws ON ws.id = se.sessionId
+        JOIN exercises e ON e.id = se.exerciseId
+        WHERE ws.userId = :userId
+        GROUP BY se.exerciseId
+        ORDER BY estimatedOneRepMaxKg DESC
+        """,
+    )
+    fun observePersonalRecords(userId: String): Flow<List<PersonalRecord>>
+
+    /** The best estimated 1RM logged so far for this exercise by the session's owner, used to
+     * detect whether a just-logged set is a new personal record. Null if none logged yet. */
+    @Query(
+        """
+        SELECT MAX(se.weightKg * (1 + se.reps / 30.0))
+        FROM set_entries se
+        JOIN workout_sessions ws ON ws.id = se.sessionId
+        WHERE ws.userId = (SELECT userId FROM workout_sessions WHERE id = :sessionId) AND se.exerciseId = :exerciseId
+        """,
+    )
+    suspend fun bestEstimatedOneRepMax(sessionId: String, exerciseId: String): Double?
 }
 
 data class MuscleGroupVolume(val muscleGroup: String, val totalVolumeKg: Double)
 
 data class WeeklyVolume(val weekBucket: Long, val totalVolumeKg: Double)
+
+data class PersonalRecord(val exerciseId: String, val exerciseName: String, val estimatedOneRepMaxKg: Double)
 
 @Dao
 interface BodyMetricDao {

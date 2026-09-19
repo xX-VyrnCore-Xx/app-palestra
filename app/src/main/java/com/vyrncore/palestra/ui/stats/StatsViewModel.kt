@@ -3,6 +3,7 @@ package com.vyrncore.palestra.ui.stats
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vyrncore.palestra.data.local.dao.MuscleGroupVolume
+import com.vyrncore.palestra.data.local.dao.PersonalRecord
 import com.vyrncore.palestra.data.local.dao.WeeklyVolume
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.WorkoutRepository
@@ -40,6 +41,9 @@ class StatsViewModel @Inject constructor(
         workoutRepository.observeWeeklyVolume(userId),
     ) { byMuscle, weekly -> byMuscle to weekly }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList<MuscleGroupVolume>() to emptyList())
+
+    val personalRecords: StateFlow<List<PersonalRecord>> = workoutRepository.observePersonalRecords(userId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val uiState: StateFlow<StatsUiState> = combine(
         workoutRepository.observeExercises(),
