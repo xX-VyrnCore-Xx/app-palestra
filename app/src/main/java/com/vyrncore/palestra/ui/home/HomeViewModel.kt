@@ -2,6 +2,9 @@ package com.vyrncore.palestra.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vyrncore.palestra.data.local.dao.MuscleGroupVolume
+import com.vyrncore.palestra.data.local.dao.PersonalRecord
+import com.vyrncore.palestra.data.local.dao.WeeklyVolume
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.PlotoneFeedPost
 import com.vyrncore.palestra.data.repository.PlotoneFeedRepository
@@ -125,6 +128,16 @@ class HomeViewModel @Inject constructor(
 
     private val _feed = MutableStateFlow<List<PlotoneFeedPost>>(emptyList())
     val feed: StateFlow<List<PlotoneFeedPost>> = _feed.asStateFlow()
+
+    /** Advanced progress charts, folded directly into Home instead of a separate tab. */
+    val weeklyVolume: StateFlow<List<WeeklyVolume>> = workoutRepository.observeWeeklyVolume(userId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val volumeByMuscleGroup: StateFlow<List<MuscleGroupVolume>> = workoutRepository.observeVolumeByMuscleGroup(userId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val personalRecords: StateFlow<List<PersonalRecord>> = workoutRepository.observePersonalRecords(userId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         viewModelScope.launch { _weeklyRanking.value = workoutRepository.fetchWeeklyRanking() }

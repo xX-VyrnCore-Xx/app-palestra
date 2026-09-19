@@ -22,8 +22,10 @@ import com.vyrncore.palestra.ui.RootViewModel
 import com.vyrncore.palestra.ui.auth.LoginScreen
 import com.vyrncore.palestra.ui.auth.RegisterScreen
 import com.vyrncore.palestra.ui.bodymetrics.BodyMetricsScreen
+import com.vyrncore.palestra.ui.calendar.CalendarScreen
 import com.vyrncore.palestra.ui.chat.ChatThreadScreen
 import com.vyrncore.palestra.ui.dashboard.AllievoDashboardScreen
+import com.vyrncore.palestra.ui.history.HistoryScreen
 import com.vyrncore.palestra.ui.profile.ProfileScreen
 import com.vyrncore.palestra.ui.pt.PlanEditorScreen
 import com.vyrncore.palestra.ui.pt.ProgramEditorScreen
@@ -81,6 +83,8 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
                             navController.navigate(Routes.activeWorkout(sessionId, planId))
                         },
                         onOpenBodyMetrics = { navController.navigate(Routes.BODY_METRICS) },
+                        onOpenHistory = { navController.navigate(Routes.HISTORY) },
+                        onOpenCalendar = { navController.navigate(Routes.CALENDAR) },
                         onSignedOut = {
                             navController.navigate(Routes.LOGIN) { popUpTo(0) }
                         },
@@ -143,6 +147,15 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
         ) { backStackEntry ->
             val peerId = checkNotNull(backStackEntry.arguments?.getString("peerId"))
             ChatThreadScreen(peerId = peerId, onBack = { navController.popBackStack() })
+        }
+        composable(Routes.HISTORY) {
+            HistoryScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.CALENDAR) {
+            CalendarScreen(
+                onOpenSession = { sessionId, planId -> navController.navigate(Routes.activeWorkout(sessionId, planId)) },
+                onBack = { navController.popBackStack() },
+            )
         }
     }
 }

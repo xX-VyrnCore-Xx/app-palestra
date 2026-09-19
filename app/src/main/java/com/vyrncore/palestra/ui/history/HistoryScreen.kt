@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
@@ -34,7 +35,7 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
+fun HistoryScreen(onBack: (() -> Unit)? = null, viewModel: HistoryViewModel = hiltViewModel()) {
     val history by viewModel.history.collectAsState()
     val dateFormat = remember { SimpleDateFormat("dd MMM, HH:mm", Locale.ITALY) }
     val context = LocalContext.current
@@ -43,6 +44,13 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
         topBar = {
             TopAppBar(
                 title = { Text("Cronologia") },
+                navigationIcon = {
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Filled.ArrowBack, contentDescription = "Indietro")
+                        }
+                    }
+                },
                 actions = {
                     if (history.isNotEmpty()) {
                         IconButton(onClick = { CsvExporter.shareWorkoutHistory(context, history) }) {

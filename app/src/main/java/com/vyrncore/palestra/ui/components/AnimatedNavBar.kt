@@ -50,6 +50,10 @@ fun AnimatedNavBar(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    /** Index of the tab to render as a permanently-filled circular "hub" (e.g. Chat), instead of
+     * the usual pill-on-select treatment - a light way to give it visual priority without the
+     * layout risk of a true floating notch that pops out of the bar's own bounds. */
+    emphasizedIndex: Int? = null,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -66,14 +70,77 @@ fun AnimatedNavBar(
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             items.forEachIndexed { index, item ->
-                NavBarTab(
-                    item = item,
-                    selected = index == selectedIndex,
-                    onClick = { onSelect(index) },
-                    modifier = Modifier.weight(1f),
-                )
+                if (index == emphasizedIndex) {
+                    EmphasizedNavBarTab(
+                        item = item,
+                        selected = index == selectedIndex,
+                        onClick = { onSelect(index) },
+                        modifier = Modifier.weight(1f),
+                    )
+                } else {
+                    NavBarTab(
+                        item = item,
+                        selected = index == selectedIndex,
+                        onClick = { onSelect(index) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun EmphasizedNavBarTab(
+    item: NavBarItem,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val bubbleColor by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+        animationSpec = tween(220),
+        label = "navHubColor",
+    )
+    val contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.1f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "navHubScale",
+    )
+
+    Column(
+        modifier = modifier.clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+            onClick = onClick,
+        ),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp * scale)
+                .clip(RoundedCornerShape(50))
+                .background(bubbleColor),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (item.badgeCount > 0) {
+                androidx.compose.material3.BadgedBox(
+                    badge = { androidx.compose.material3.Badge { Text("${item.badgeCount}") } },
+                ) {
+                    Icon(item.icon, contentDescription = item.label, tint = contentColor)
+                }
+            } else {
+                Icon(item.icon, contentDescription = item.label, tint = contentColor)
+            }
+        }
+        Text(
+            item.label,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp),
+        )
     }
 }
 

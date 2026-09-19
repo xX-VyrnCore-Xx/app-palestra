@@ -6,6 +6,8 @@ import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.ChatRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
@@ -20,6 +22,10 @@ class AllievoDashboardViewModel @Inject constructor(
 
     val ptId = authRepository.observeProfile(userId).map { it?.ptId }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val ptName = ptId.flatMapLatest { pt ->
+        if (pt == null) flowOf(null) else authRepository.observeProfile(pt).map { it?.fullName }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val unreadCount = chatRepository.observeUnreadCount(userId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)

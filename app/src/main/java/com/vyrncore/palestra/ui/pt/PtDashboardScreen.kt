@@ -21,8 +21,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.EventBusy
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.LocalFireDepartment
@@ -73,8 +75,13 @@ import java.time.Instant
 
 private data class PtTab(val label: String, val icon: ImageVector)
 
+/** Chat sits front and center (index 2), mirroring the allievo-side navbar: Plotone/Schede to its
+ * left, Assistente/Profilo to its right. */
+private const val CHAT_TAB_INDEX = 2
+
 private val tabs = listOf(
     PtTab("Plotone", Icons.Filled.People),
+    PtTab("Schede", Icons.Filled.FitnessCenter),
     PtTab("Chat", Icons.Filled.Forum),
     PtTab("Assistente", Icons.Filled.AutoAwesome),
     PtTab("Profilo", Icons.Filled.Person),
@@ -102,6 +109,7 @@ fun PtDashboardScreen(
                 },
                 selectedIndex = selectedTab,
                 onSelect = { selectedTab = it },
+                emphasizedIndex = CHAT_TAB_INDEX,
             )
         },
     ) { padding ->
@@ -116,9 +124,74 @@ fun PtDashboardScreen(
         ) { tab ->
             when (tab) {
                 0 -> PtClientListScreen(onOpenClient = onOpenClient, viewModel = viewModel)
-                1 -> ChatListScreen(onOpenChat = onOpenChat)
-                2 -> AiAssistantScreen(onBack = {})
+                1 -> PtPlansScreen(onOpenClient = onOpenClient, viewModel = viewModel)
+                CHAT_TAB_INDEX -> ChatListScreen(onOpenChat = onOpenChat)
+                3 -> AiAssistantScreen(onBack = {})
                 else -> ProfileScreen(onOpenBodyMetrics = {}, onSignedOut = onSignedOut)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PtPlansScreen(
+    onOpenClient: (clientId: String) -> Unit,
+    viewModel: PtDashboardViewModel,
+) {
+    val overviews by viewModel.clientPlanOverviews.collectAsState()
+
+    Scaffold(topBar = { TopAppBar(title = { Text("Schede") }) }) { padding ->
+        if (overviews.isEmpty()) {
+            EmptyState(
+                icon = Icons.Filled.FitnessCenter,
+                message = "Nessuna recluta arruolata ancora.",
+                modifier = Modifier.padding(padding).fillMaxSize(),
+            )
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
+                items(overviews, key = { it.clientId }) { overview ->
+                    val interactionSource = remember { MutableInteractionSource() }
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .pressScale(interactionSource),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        interactionSource = interactionSource,
+                        onClick = { onOpenClient(overview.clientId) },
+                    ) {
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    Icons.Filled.FitnessCenter,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                            }
+                            Column(modifier = Modifier.padding(start = 16.dp).weight(1f)) {
+                                Text(overview.fullName, style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    overview.activeProgramName?.let { "Programma attivo: $it" }
+                                        ?: if (overview.planCount > 0) "${overview.planCount} sched${if (overview.planCount == 1) "a" else "e"}" else "Nessuna scheda assegnata",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (overview.planCount == 0 && overview.activeProgramName == null) {
+                                        MaterialTheme.colorScheme.error
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                )
+                            }
+                            Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
             }
         }
     }
