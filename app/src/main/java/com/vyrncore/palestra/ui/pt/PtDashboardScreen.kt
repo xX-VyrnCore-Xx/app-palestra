@@ -1,6 +1,8 @@
 package com.vyrncore.palestra.ui.pt
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -41,6 +43,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -91,6 +94,7 @@ private val tabs = listOf(
 fun PtDashboardScreen(
     onOpenClient: (clientId: String) -> Unit,
     onOpenChat: (clientId: String) -> Unit,
+    onOpenSearch: () -> Unit,
     onSignedOut: () -> Unit,
     viewModel: PtDashboardViewModel = hiltViewModel(),
 ) {
@@ -117,13 +121,15 @@ fun PtDashboardScreen(
             targetState = selectedTab,
             modifier = Modifier.padding(padding),
             transitionSpec = {
-                (fadeIn(tween(220)) + scaleIn(initialScale = 0.97f, animationSpec = tween(220))) togetherWith
-                    fadeOut(tween(140))
+                (fadeIn(tween(200)) + scaleIn(
+                    initialScale = 0.96f,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
+                )) togetherWith fadeOut(tween(120))
             },
             label = "ptTabContent",
         ) { tab ->
             when (tab) {
-                0 -> PtClientListScreen(onOpenClient = onOpenClient, viewModel = viewModel)
+                0 -> PtClientListScreen(onOpenClient = onOpenClient, onOpenSearch = onOpenSearch, viewModel = viewModel)
                 1 -> PtPlansScreen(onOpenClient = onOpenClient, viewModel = viewModel)
                 CHAT_TAB_INDEX -> ChatListScreen(onOpenChat = onOpenChat)
                 3 -> AiAssistantScreen(onBack = {})
@@ -201,6 +207,7 @@ private fun PtPlansScreen(
 @Composable
 private fun PtClientListScreen(
     onOpenClient: (clientId: String) -> Unit,
+    onOpenSearch: () -> Unit,
     viewModel: PtDashboardViewModel,
 ) {
     val clients by viewModel.clients.collectAsState()
@@ -214,7 +221,18 @@ private fun PtClientListScreen(
     val weeklyRanking by viewModel.weeklyRanking.collectAsState()
     val feed by viewModel.feed.collectAsState()
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Il tuo plotone") }) }) { padding ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Il tuo plotone") },
+                actions = {
+                    IconButton(onClick = onOpenSearch) {
+                        Icon(Icons.Filled.Search, contentDescription = "Cerca")
+                    }
+                },
+            )
+        },
+    ) { padding ->
       PullToRefreshBox(
         isRefreshing = isSyncing,
         onRefresh = { viewModel.refresh() },

@@ -72,3 +72,10 @@ val MIGRATION_8_9 = object : Migration(8, 9) {
         db.execSQL("ALTER TABLE chat_messages ADD COLUMN isDeleted INTEGER NOT NULL DEFAULT 0")
     }
 }
+
+/** Quick freeform note the PT can leave on a single exercise within a plan. */
+val MIGRATION_9_10 = object : Migration(9, 10) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE plan_exercises ADD COLUMN notes TEXT")
+    }
+}

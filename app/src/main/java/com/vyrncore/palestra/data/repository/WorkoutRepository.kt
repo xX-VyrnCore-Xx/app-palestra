@@ -82,6 +82,8 @@ class WorkoutRepository @Inject constructor(
 
     fun observePlanExercises(planId: String): Flow<List<PlanExerciseEntity>> = planExerciseDao.observeForPlan(planId)
 
+    suspend fun getPlanById(planId: String): WorkoutPlanEntity? = workoutPlanDao.getById(planId)
+
     fun observePlanExerciseCount(planId: String): Flow<Int> = planExerciseDao.observeExerciseCount(planId)
 
     suspend fun createPlan(

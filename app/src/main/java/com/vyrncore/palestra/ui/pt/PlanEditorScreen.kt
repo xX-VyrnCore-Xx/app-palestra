@@ -143,6 +143,14 @@ fun PlanEditorScreen(
                                     modifier = Modifier.weight(1f).padding(start = 8.dp),
                                 )
                             }
+                            OutlinedTextField(
+                                value = exercise.notes.orEmpty(),
+                                onValueChange = { viewModel.updateExerciseNote(exercise.exerciseId, it) },
+                                label = { Text("Nota (opzionale)") },
+                                placeholder = { Text("Es. tempo 3-1-1, o cedimento all'ultima serie") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            )
                         }
                     }
                 }

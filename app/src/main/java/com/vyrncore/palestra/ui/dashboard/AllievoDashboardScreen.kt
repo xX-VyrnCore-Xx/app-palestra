@@ -1,6 +1,8 @@
 package com.vyrncore.palestra.ui.dashboard
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -51,6 +53,7 @@ fun AllievoDashboardScreen(
     onOpenBodyMetrics: () -> Unit,
     onOpenHistory: () -> Unit,
     onOpenCalendar: () -> Unit,
+    onOpenSearch: () -> Unit,
     onSignedOut: () -> Unit,
     viewModel: AllievoDashboardViewModel = hiltViewModel(),
 ) {
@@ -79,8 +82,10 @@ fun AllievoDashboardScreen(
             targetState = selectedTab,
             modifier = Modifier.padding(padding),
             transitionSpec = {
-                (fadeIn(tween(220)) + scaleIn(initialScale = 0.97f, animationSpec = tween(220))) togetherWith
-                    fadeOut(tween(140))
+                (fadeIn(tween(200)) + scaleIn(
+                    initialScale = 0.96f,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
+                )) togetherWith fadeOut(tween(120))
             },
             label = "allievoTabContent",
         ) { tab ->
@@ -89,6 +94,7 @@ fun AllievoDashboardScreen(
                     onStartSession = onOpenSession,
                     onOpenHistory = onOpenHistory,
                     onOpenCalendar = onOpenCalendar,
+                    onOpenSearch = onOpenSearch,
                 )
                 1 -> WorkoutPlansScreen(onOpenSession = onOpenSession)
                 CHAT_TAB_INDEX -> AllievoChatScreen(ptId = ptId, ptName = ptName.orEmpty())

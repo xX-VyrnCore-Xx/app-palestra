@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MilitaryTech
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingFlat
@@ -37,6 +38,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -72,6 +74,7 @@ fun HomeScreen(
     onStartSession: (sessionId: String, planId: String) -> Unit,
     onOpenHistory: () -> Unit = {},
     onOpenCalendar: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -100,14 +103,22 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             ConnectionStatusBar(isOnline = isOnline, isSyncing = isSyncing)
-            GradientHeader(
-                title = "$greeting${if (uiState.fullName.isNotBlank()) ", ${uiState.fullName.substringBefore(' ')}" else ""}",
-                subtitle = if (uiState.streakDays > 0) {
-                    "🎖️ ${uiState.streakDays} giorni di servizio consecutivi, avanti così!"
-                } else {
-                    "Pronto per la prossima missione?"
-                },
-            )
+            Box {
+                GradientHeader(
+                    title = "$greeting${if (uiState.fullName.isNotBlank()) ", ${uiState.fullName.substringBefore(' ')}" else ""}",
+                    subtitle = if (uiState.streakDays > 0) {
+                        "🎖️ ${uiState.streakDays} giorni di servizio consecutivi, avanti così!"
+                    } else {
+                        "Pronto per la prossima missione?"
+                    },
+                )
+                IconButton(
+                    onClick = onOpenSearch,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 20.dp, end = 12.dp),
+                ) {
+                    Icon(Icons.Filled.Search, contentDescription = "Cerca", tint = Color.White)
+                }
+            }
 
             RankCard(
                 level = uiState.level,

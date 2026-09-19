@@ -1,5 +1,8 @@
 package com.vyrncore.palestra.ui.navigation
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -31,9 +34,11 @@ import com.vyrncore.palestra.ui.pt.PlanEditorScreen
 import com.vyrncore.palestra.ui.pt.ProgramEditorScreen
 import com.vyrncore.palestra.ui.pt.PtClientDetailScreen
 import com.vyrncore.palestra.ui.pt.PtDashboardScreen
+import com.vyrncore.palestra.ui.search.GlobalSearchScreen
 import com.vyrncore.palestra.ui.timer.RestTimerScreen
 import com.vyrncore.palestra.ui.welcome.WelcomeScreen
 import com.vyrncore.palestra.ui.workout.ActiveWorkoutScreen
+import com.vyrncore.palestra.ui.workout.WorkoutSummaryScreen
 
 @Composable
 fun PalestraNavGraph(rootViewModel: RootViewModel) {
@@ -46,10 +51,24 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        enterTransition = { fadeIn(animationSpec = androidx.compose.animation.core.tween(200)) + slideInHorizontally(initialOffsetX = { it / 6 }) },
-        exitTransition = { fadeOut(animationSpec = androidx.compose.animation.core.tween(150)) },
-        popEnterTransition = { fadeIn(animationSpec = androidx.compose.animation.core.tween(200)) },
-        popExitTransition = { fadeOut(animationSpec = androidx.compose.animation.core.tween(150)) + slideOutHorizontally(targetOffsetX = { it / 6 }) },
+        // A sober, macOS-like fluidity for screen transitions: motion follows a critically-damped
+        // spring instead of a fixed-duration tween, so it settles naturally rather than stopping abruptly.
+        enterTransition = {
+            fadeIn(animationSpec = tween(220)) +
+                slideInHorizontally(
+                    initialOffsetX = { it / 6 },
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+                )
+        },
+        exitTransition = { fadeOut(animationSpec = tween(160)) },
+        popEnterTransition = { fadeIn(animationSpec = tween(220)) },
+        popExitTransition = {
+            fadeOut(animationSpec = tween(160)) +
+                slideOutHorizontally(
+                    targetOffsetX = { it / 6 },
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+                )
+        },
     ) {
         composable(Routes.LOGIN) {
             LoginScreen(
@@ -73,6 +92,7 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
                 UserRole.PT -> PtDashboardScreen(
                     onOpenClient = { clientId -> navController.navigate(Routes.ptClientDetail(clientId)) },
                     onOpenChat = { clientId -> navController.navigate(Routes.chatThread(clientId)) },
+                    onOpenSearch = { navController.navigate(Routes.SEARCH) },
                     onSignedOut = { navController.navigate(Routes.LOGIN) { popUpTo(0) } },
                 )
                 UserRole.ALLIEVO -> if (needsOnboarding) {
@@ -85,6 +105,7 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
                         onOpenBodyMetrics = { navController.navigate(Routes.BODY_METRICS) },
                         onOpenHistory = { navController.navigate(Routes.HISTORY) },
                         onOpenCalendar = { navController.navigate(Routes.CALENDAR) },
+                        onOpenSearch = { navController.navigate(Routes.SEARCH) },
                         onSignedOut = {
                             navController.navigate(Routes.LOGIN) { popUpTo(0) }
                         },
@@ -109,9 +130,19 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
             arguments = listOf(navArgument("sessionId") { type = NavType.StringType }, navArgument("planId") { type = NavType.StringType }),
         ) {
             ActiveWorkoutScreen(
-                onFinished = { navController.popBackStack() },
+                onFinished = { sessionId, planId ->
+                    navController.navigate(Routes.workoutSummary(sessionId, planId)) {
+                        popUpTo(Routes.ACTIVE_WORKOUT) { inclusive = true }
+                    }
+                },
                 onOpenRestTimer = { seconds -> navController.navigate(Routes.restTimer(seconds)) },
             )
+        }
+        composable(
+            Routes.WORKOUT_SUMMARY,
+            arguments = listOf(navArgument("sessionId") { type = NavType.StringType }, navArgument("planId") { type = NavType.StringType }),
+        ) {
+            WorkoutSummaryScreen(onDone = { navController.popBackStack() })
         }
         composable(
             Routes.REST_TIMER,
@@ -155,6 +186,20 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
             CalendarScreen(
                 onOpenSession = { sessionId, planId -> navController.navigate(Routes.activeWorkout(sessionId, planId)) },
                 onBack = { navController.popBackStack() },
+            )
+        }
+        composable(Routes.SEARCH) {
+            GlobalSearchScreen(
+                onBack = { navController.popBackStack() },
+                onStartSession = { sessionId, planId ->
+                    navController.navigate(Routes.activeWorkout(sessionId, planId)) { popUpTo(Routes.SEARCH) { inclusive = true } }
+                },
+                onOpenClient = { clientId ->
+                    navController.navigate(Routes.ptClientDetail(clientId)) { popUpTo(Routes.SEARCH) { inclusive = true } }
+                },
+                onOpenChat = { peerId ->
+                    navController.navigate(Routes.chatThread(peerId)) { popUpTo(Routes.SEARCH) { inclusive = true } }
+                },
             )
         }
     }
