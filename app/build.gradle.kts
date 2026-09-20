@@ -1,3 +1,4 @@
+import com.android.build.gradle.api.ApkVariantOutput
 import java.util.Properties
 
 plugins {
@@ -10,13 +11,13 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+// Bump versionCode by 1 on every release; versionName follows semver (MAJOR.MINOR.PATCH).
+val appVersionCode = 2
+val appVersionName = "1.1.0"
+
 android {
     namespace = "com.vyrncore.palestra"
-    compileSdk = 34
-
-    // Bump versionCode by 1 on every release; versionName follows semver (MAJOR.MINOR.PATCH).
-    val appVersionCode = 2
-    val appVersionName = "1.1.0"
+    compileSdk = 35
 
     base.archivesName.set("VibeFitness-$appVersionName")
 
@@ -28,7 +29,7 @@ android {
     defaultConfig {
         applicationId = "com.vyrncore.palestra"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         versionCode = appVersionCode
         versionName = appVersionName
 
@@ -111,7 +112,7 @@ android {
     // suffix. The version alone is enough to tell builds apart; the build type isn't user-facing.
     applicationVariants.all {
         outputs.all {
-            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
+            (this as ApkVariantOutput).outputFileName =
                 "VibeFitness-$appVersionName.apk"
         }
     }
