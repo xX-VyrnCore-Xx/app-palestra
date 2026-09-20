@@ -96,6 +96,10 @@ fun AllievoDashboardScreen(
                     onOpenHistory = onOpenHistory,
                     onOpenCalendar = onOpenCalendar,
                     onOpenSearch = onOpenSearch,
+                    // Home's tappable suggestions deep-link into the matching dashboard tab
+                    // (assistant nudges -> Assistente, "chiedi al PT" -> Chat) instead of dead-ending.
+                    onOpenAssistant = { selectedTab = 3 },
+                    onOpenChat = { selectedTab = CHAT_TAB_INDEX },
                 )
                 1 -> WorkoutPlansScreen(onOpenSession = onOpenSession)
                 CHAT_TAB_INDEX -> AllievoChatScreen(ptId = ptId, ptName = ptName.orEmpty())

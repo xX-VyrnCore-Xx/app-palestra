@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -21,10 +22,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DynamicFeed
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Search
@@ -46,8 +51,11 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -61,9 +69,14 @@ import com.vyrncore.palestra.ui.components.ConnectionStatusBar
 import com.vyrncore.palestra.ui.components.GradientHeader
 import com.vyrncore.palestra.ui.components.MetricCard
 import com.vyrncore.palestra.ui.components.PersonalRecordsCard
+import com.vyrncore.palestra.ui.components.pressScale
 import com.vyrncore.palestra.ui.components.SimpleBarChart
 import com.vyrncore.palestra.ui.components.SimpleLineChart
 import com.vyrncore.palestra.ui.components.WeekOverWeekCard
+import com.vyrncore.palestra.ui.home.HomeSuggestionAction.Assistant
+import com.vyrncore.palestra.ui.home.HomeSuggestionAction.ChatPt
+import com.vyrncore.palestra.ui.home.HomeSuggestionAction.History
+import com.vyrncore.palestra.ui.home.HomeSuggestionAction.StartWorkout
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalTime
@@ -75,6 +88,8 @@ fun HomeScreen(
     onOpenHistory: () -> Unit = {},
     onOpenCalendar: () -> Unit = {},
     onOpenSearch: () -> Unit = {},
+    onOpenAssistant: () -> Unit = {},
+    onOpenChat: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -148,6 +163,26 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             )
 
+            SuggestionsSection(
+                suggestions = uiState.suggestions,
+                onSuggestionTap = { suggestion ->
+                    when (suggestion.action) {
+                        StartWorkout -> {
+                            val planId = uiState.nextPlanId ?: return@SuggestionsSection
+                            uiState.sessionsWithPending[planId]?.let { sessionId ->
+                                onStartSession(sessionId, planId)
+                            } ?: viewModel.startWorkout(planId) { sessionId ->
+                                onStartSession(sessionId, planId)
+                            }
+                        }
+                        History -> onOpenHistory()
+                        Assistant -> onOpenAssistant()
+                        ChatPt -> onOpenChat()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            )
+
             if (weeklyRanking.isNotEmpty()) {
                 WeeklyRankingCard(
                     ranking = weeklyRanking,
@@ -204,17 +239,11 @@ fun HomeScreen(
                     }
                 }
             } else {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        "Nessuna missione assegnata ancora",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                NoMissionCard(
+                    onOpenAssistant = onOpenAssistant,
+                    onOpenChat = onOpenChat,
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                )
             }
 
             Text(
@@ -343,6 +372,153 @@ fun HomeScreen(
             }
         }
       }
+    }
+}
+
+/** The "Ordini del giorno" block: context-aware, tappable nudges computed from the allievo's real
+ * data. Every card is actionable — no dead-end chips: StartWorkout launches (or resumes) the
+ * session, the rest deep-link to the screen that solves the nudge. */
+@Composable
+private fun SuggestionsSection(
+    suggestions: List<HomeSuggestion>,
+    onSuggestionTap: (HomeSuggestion) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (suggestions.isEmpty()) return
+    Column(modifier = modifier) {
+        Text(
+            "ORDINI DEL GIORNO",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
+        )
+        suggestions.forEach { suggestion ->
+            HomeActionCard(
+                suggestion = suggestion,
+                onClick = { onSuggestionTap(suggestion) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+        }
+    }
+}
+
+/** One tappable suggestion: icon, title, one-line why, and a chevron so it clearly reads as a
+ * button. Gives a light haptic tick plus the shared press-scale bounce on tap. */
+@Composable
+private fun HomeActionCard(
+    suggestion: HomeSuggestion,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val haptic = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
+    Card(
+        onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            onClick()
+        },
+        modifier = modifier
+            .pressScale(interactionSource),
+        interactionSource = interactionSource,
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                suggestion.action.icon(),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 10.dp),
+            ) {
+                Text(
+                    suggestion.title,
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    suggestion.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Icon(
+                Icons.Filled.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Icon shown on a suggestion card, matched to the action the card deep-links into. */
+private fun HomeSuggestionAction.icon() = when (this) {
+    StartWorkout -> Icons.Filled.FitnessCenter
+    History -> Icons.Filled.History
+    Assistant -> Icons.Filled.AutoAwesome
+    ChatPt -> Icons.Filled.Chat
+}
+
+/** Dead-end replacement for the old "nessuna missione" label: explains what's missing and offers
+ * two tappable ways out — asking the PT for a plan, or letting the assistant suggest one. */
+@Composable
+private fun NoMissionCard(
+    onOpenAssistant: () -> Unit,
+    onOpenChat: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp).fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                Icons.Filled.Replay,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                "Nessuna missione assegnata ancora",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            Text(
+                "Il PT può prepararti una scheda su misura: intanto l'assistente ti suggerisce come non fermarti.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            Row(modifier = Modifier.padding(top = 12.dp)) {
+                Button(onClick = onOpenChat, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Filled.Chat, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Text("Chiedi al PT", modifier = Modifier.padding(start = 6.dp))
+                }
+                Button(
+                    onClick = onOpenAssistant,
+                    modifier = Modifier.weight(1f).padding(start = 12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
+                ) {
+                    Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Text("Assistente", modifier = Modifier.padding(start = 6.dp))
+                }
+            }
+        }
     }
 }
 

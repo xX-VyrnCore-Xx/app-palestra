@@ -87,6 +87,122 @@ fun rankStars(level: Int): Int = when {
     else -> 5 // Ufficiali generali
 }
 
+/** One tappable "ordine del giorno" on the Home screen: a context-aware nudge computed from the
+ * allievo's real data (streak, weekly goal, next badge, next promotion) paired with the action to
+ * run when the card is tapped. The UI renders at most [MAX_HOME_SUGGESTIONS] of these. */
+data class HomeSuggestion(
+    val id: String,
+    val title: String,
+    val description: String,
+    val action: HomeSuggestionAction,
+)
+
+enum class HomeSuggestionAction { StartWorkout, Assistant, ChatPt, History }
+
+/** Cap on the tappable suggestion chips shown in Home's "Ordini del giorno" section. */
+const val MAX_HOME_SUGGESTIONS = 3
+
+/** Ranking of all possible suggestions, most pressing first; the builder walks it and stops at the cap.
+ * Each suggestion is only produced when the underlying condition (computed from real data) holds. */
+private fun buildHomeSuggestions(state: HomeUiState): List<HomeSuggestion> = buildList {
+    // 1. Just go train: always the top priority whenever there is anything to run.
+    if (state.nextPlanId != null) {
+        add(
+            HomeSuggestion(
+                id = "start_workout",
+                title = "Devi ancora allenarti questa settimana",
+                description = "La scheda “${state.nextPlanName.orEmpty()}” ti aspetta: reparti e carichi sono già pronti.",
+                action = HomeSuggestionAction.StartWorkout,
+            ),
+        )
+    }
+    // 2. Weekly goal reached: celebrate and warn about the streak you'd be risking.
+    if (state.workoutsThisWeek >= WEEKLY_GOAL) {
+        add(
+            HomeSuggestion(
+                id = "goal_reached",
+                title = "Obiettivo settimanale centrato!",
+                description = "${state.workoutsThisWeek} missioni completate: ogni giorno extra vale XP e tiene viva la streak di ${state.streakDays} giorni.",
+                action = HomeSuggestionAction.History,
+            ),
+        )
+    }
+    // 3. Quiet week: a nudge, not a scolding — the PT chat is the fastest way to get unblocked.
+    if (state.workoutsThisWeek < WEEKLY_GOAL && state.nextPlanId != null) {
+        add(
+            HomeSuggestion(
+                id = "behind_weekly_goal",
+                title = "La settimana è ancora in sospeso",
+                description = "Ti mancano ${WEEKLY_GOAL - state.workoutsThisWeek} missioni all'obiettivo: anche una sessione breve vale più di zero.",
+                action = HomeSuggestionAction.StartWorkout,
+            ),
+        )
+    }
+    // 4. One workout away from the next streak badge: the closest win on the board.
+    BADGE_MILESTONES.firstOrNull { it > state.longestStreakDays }?.let { next ->
+        add(
+            HomeSuggestion(
+                id = "next_streak_badge",
+                title = "A $next giorni di streak apre la prossima medaglia",
+                description = "Sei a ${next - state.longestStreakDays} giorni di distanza: aggiorna la scheda dal profilo per includere oggi.",
+                action = HomeSuggestionAction.History,
+            ),
+        )
+    }
+    // 5. Total volume closing in on the next milestone badge.
+    VOLUME_MILESTONES_KG.firstOrNull { it > state.totalVolumeKg }?.let { next ->
+        add(
+            HomeSuggestion(
+                id = "next_volume_badge",
+                title = "Mancano ${formatKgToNextMilestone(next - state.totalVolumeKg)} alla prossima medaglia",
+                description = "Hai sollevato ${state.totalVolumeKg.toInt()} kg in totale: la soglia successiva è $next kg.",
+                action = HomeSuggestionAction.History,
+            ),
+        )
+    }
+    // 6. Promotion in sight: XP from one more session is usually enough to level up.
+    val xpToPromotion = XP_PER_LEVEL - state.xpIntoLevel
+    if (xpToPromotion <= XP_PER_SESSION) {
+        add(
+            HomeSuggestion(
+                id = "promotion_in_sight",
+                title = "A un passo dalla promozione",
+                description = "Ti mancano $xpToPromotion XP per il grado di ${levelTitle(state.level + 1)}: una missione e ci sei.",
+                action = HomeSuggestionAction.StartWorkout,
+            ),
+        )
+    }
+    // 7. Nothing assigned at all: point at the two people who can fix that.
+    if (state.nextPlanId == null) {
+        add(
+            HomeSuggestion(
+                id = "no_plan",
+                title = "Nessuna missione assegnata",
+                description = "Scrivi al tuo PT per farti assegnare una scheda, o chiedi all'assistente come strutturarti intanto.",
+                action = HomeSuggestionAction.ChatPt,
+            ),
+        )
+    }
+    // 8. Pure idle fall-back so the section is never an empty void.
+    if (isEmpty()) {
+        add(
+            HomeSuggestion(
+                id = "assistant_generic",
+                title = "Non sai da dove ripartire?",
+                description = "L'assistente analizza i tuoi progressi e ti propone la mossa successiva.",
+                action = HomeSuggestionAction.Assistant,
+            ),
+        )
+    }
+}
+
+/** Renders a kg delta for the volume-badge suggestion without drowning the label in decimals:
+ * sub-1kg deltas still read as "meno di 1 kg". */
+private fun formatKgToNextMilestone(kg: Double): String {
+    val rounded = kotlin.math.ceil(kg).toInt()
+    return if (rounded < 1) "meno di 1 kg" else "$rounded kg"
+}
+
 data class HomeUiState(
     val fullName: String = "",
     val streakDays: Int = 0,
@@ -107,6 +223,10 @@ data class HomeUiState(
     val activeProgramName: String? = null,
     val activeProgramCurrentWeek: Int? = null,
     val activeProgramTotalWeeks: Int? = null,
+    /** Ids of plans whose latest session is still open, keyed for "riprendi l'allenamento" actions. */
+    val sessionsWithPending: Map<String, String> = emptyMap(),
+    /** Context-aware tappable nudges, computed from the same stats the rest of Home displays. */
+    val suggestions: List<HomeSuggestion> = emptyList(),
 )
 
 @HiltViewModel
@@ -209,7 +329,11 @@ class HomeViewModel @Inject constructor(
             plans.firstOrNull { it.programId == program.id && it.weekIndex == activeProgramCurrentWeek }
         }
         val nextPlan = programPlan ?: plans.firstOrNull { it.programId == null }
-        HomeUiState(
+
+        val sessionsWithPending = sessions.filter { it.endedAtEpochMs == null && it.planId != null }
+            .associate { it.planId!! to it.id }
+
+        val baseState = HomeUiState(
             fullName = profile?.fullName.orEmpty(),
             streakDays = streak,
             longestStreakDays = longestStreak,
@@ -229,6 +353,10 @@ class HomeViewModel @Inject constructor(
             activeProgramName = activeProgram?.name,
             activeProgramCurrentWeek = activeProgramCurrentWeek,
             activeProgramTotalWeeks = activeProgram?.totalWeeks,
+        )
+        baseState.copy(
+            sessionsWithPending = sessionsWithPending,
+            suggestions = buildHomeSuggestions(baseState).take(MAX_HOME_SUGGESTIONS),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
 
