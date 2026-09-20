@@ -12,6 +12,10 @@ data class UserProfileDto(
     @SerialName("pt_id") val ptId: String? = null,
     val injuries: String? = null,
     @SerialName("avatar_url") val avatarUrl: String? = null,
+    val bio: String? = null,
+    @SerialName("height_cm") val heightCm: Int? = null,
+    @SerialName("weight_kg") val weightKg: Double? = null,
+    @SerialName("primary_goal") val primaryGoal: String? = null,
 )
 
 @Serializable
@@ -24,6 +28,7 @@ data class ExerciseDto(
     @SerialName("created_by_user_id") val createdByUserId: String? = null,
     @SerialName("is_custom") val isCustom: Boolean = false,
     @SerialName("image_url") val imageUrl: String? = null,
+    val difficulty: String? = null,
 )
 
 @Serializable

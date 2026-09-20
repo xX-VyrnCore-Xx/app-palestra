@@ -2,6 +2,7 @@ package com.vyrncore.palestra.ui.welcome
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
@@ -9,10 +10,13 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,18 +32,30 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DirectionsRun
+import androidx.compose.material.icons.filled.Egg
+import androidx.compose.material.icons.filled.EventNote
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Healing
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MilitaryTech
+import androidx.compose.material.icons.filled.MonitorWeight
+import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,19 +65,28 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.ui.components.GradientHeader
+import com.vyrncore.palestra.ui.components.pressScale
 
 /**
  * First-login-only questionnaire for the allievo, as a short wizard: single-select steps
  * (experience, training days, goal, lifestyle) followed by open-text ones (injuries, diet,
- * notes). Answers are readable by the allievo and their own PT (to tailor a plan) - never by the
- * AI assistant, which the copy on the privacy step says explicitly.
+ * notes) and a final recap. Answers are readable by the allievo and their own PT (to tailor a
+ * plan) - never by the AI assistant, which the copy on the privacy step says explicitly.
+ *
+ * Selection steps render as tappable cards with a leading icon and a spring check-badge, in a
+ * Technogym-like onboarding feel; the recap step mirrors the chosen answers back before saving.
  */
 @Composable
 fun WelcomeScreen(
@@ -112,30 +137,45 @@ fun WelcomeScreen(
                 ) {
                     when (targetStep) {
                         0 -> SelectStep(
+                            stepIcon = Icons.Filled.MilitaryTech,
                             question = "Qual è il tuo livello di esperienza?",
                             options = EXPERIENCE_LEVELS,
+                            optionIcons = listOf(Icons.Filled.Spa, Icons.Filled.FitnessCenter, Icons.Filled.Bolt),
                             selected = uiState.experienceLevel,
                             onSelect = viewModel::selectExperienceLevel,
                         )
                         1 -> SelectStep(
+                            stepIcon = Icons.Filled.CalendarMonth,
                             question = "Quanti giorni a settimana puoi allenarti?",
                             options = TRAINING_DAYS_OPTIONS,
+                            optionIcons = listOf(Icons.Filled.EventNote, Icons.Filled.CalendarMonth, Icons.Filled.DirectionsRun),
                             selected = uiState.trainingDays,
                             onSelect = viewModel::selectTrainingDays,
                         )
                         2 -> SelectStep(
+                            stepIcon = Icons.Filled.Flag,
                             question = "Qual è il tuo obiettivo principale?",
                             options = PRIMARY_GOAL_OPTIONS,
+                            optionIcons = listOf(
+                                Icons.Filled.MonitorWeight,
+                                Icons.Filled.FitnessCenter,
+                                Icons.Filled.DirectionsRun,
+                                Icons.Filled.Spa,
+                                Icons.Filled.Favorite,
+                            ),
                             selected = uiState.primaryGoal,
                             onSelect = viewModel::selectPrimaryGoal,
                         )
                         3 -> SelectStep(
+                            stepIcon = Icons.Filled.TrackChanges,
                             question = "Che stile di vita fai di solito?",
                             options = ACTIVITY_LEVEL_OPTIONS,
+                            optionIcons = listOf(Icons.Filled.Spa, Icons.Filled.DirectionsRun, Icons.Filled.Bolt),
                             selected = uiState.activityLevel,
                             onSelect = viewModel::selectActivityLevel,
                         )
                         4 -> OpenStep(
+                            stepIcon = Icons.Filled.Healing,
                             question = "Hai dolori o lesioni di cui tenere conto?",
                             placeholder = "Es. mal di schiena, ginocchio operato, ecc. Lascia vuoto se nessuno.",
                             value = uiState.painInjuries,
@@ -143,17 +183,20 @@ fun WelcomeScreen(
                             showPrivacyNotice = true,
                         )
                         5 -> OpenStep(
+                            stepIcon = Icons.Filled.Egg,
                             question = "Come ti alimenti di solito?",
                             placeholder = "Diete, intolleranze, abitudini alimentari...",
                             value = uiState.nutrition,
                             onValueChange = viewModel::updateNutrition,
                         )
-                        else -> OpenStep(
+                        6 -> OpenStep(
+                            stepIcon = Icons.Filled.Flag,
                             question = "Altro che vuoi dire al tuo PT?",
                             placeholder = "Obiettivi, richieste particolari, note libere...",
                             value = uiState.goals,
                             onValueChange = viewModel::updateGoals,
                         )
+                        else -> RecapStep(uiState = uiState)
                     }
                 }
             }
@@ -194,44 +237,113 @@ private fun WizardProgress(current: Int, total: Int, modifier: Modifier = Modifi
     }
 }
 
+/** One tappable answer card: leading icon, label and an animated check badge when selected. */
+@Composable
+private fun OptionCard(
+    label: String,
+    icon: ImageVector,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val borderColor by androidx.compose.animation.animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
+        animationSpec = tween(200),
+        label = "optionCardBorder",
+    )
+    val containerColor by androidx.compose.animation.animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+        animationSpec = tween(200),
+        label = "optionCardContainer",
+    )
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (selected) 4.dp else 1.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(spring(dampingRatio = Spring.DampingRatioLowBouncy))
+            .border(1.5.dp, borderColor, RoundedCornerShape(16.dp))
+            .pressScale(interaction)
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (selected) {
+                            Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary))
+                        } else {
+                            Brush.linearGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surfaceVariant))
+                        },
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+            Text(
+                label,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 14.dp),
+            )
+            AnimatedVisibility(
+                visible = selected,
+                enter = fadeIn(tween(180)) + slideInVertically(tween(180)) { it / 2 },
+                exit = fadeOut(tween(120)),
+            ) {
+                Icon(
+                    Icons.Filled.CheckCircle,
+                    contentDescription = "Selezionato",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun SelectStep(
+    stepIcon: ImageVector,
     question: String,
     options: List<String>,
+    optionIcons: List<ImageVector>,
     selected: String?,
     onSelect: (String) -> Unit,
 ) {
-    AnimatedVisibility(visible = true, enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 10 }) {
-        Column {
-            Icon(
-                Icons.Filled.MilitaryTech,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp).padding(top = 8.dp),
-            )
-            Text(
-                question,
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(top = 16.dp, bottom = 24.dp),
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                options.forEach { option ->
-                    FilterChip(
-                        selected = option == selected,
-                        onClick = { onSelect(option) },
-                        label = {
-                            Text(
-                                option,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(vertical = 6.dp),
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
+    Column {
+        Icon(
+            stepIcon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(32.dp).padding(top = 8.dp),
+        )
+        Text(
+            question,
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(top = 16.dp, bottom = 24.dp),
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            options.forEachIndexed { index, option ->
+                OptionCard(
+                    label = option,
+                    icon = optionIcons.getOrElse(index) { Icons.Filled.FitnessCenter },
+                    selected = option == selected,
+                    onClick = { onSelect(option) },
+                )
             }
         }
     }
@@ -239,33 +351,88 @@ private fun SelectStep(
 
 @Composable
 private fun OpenStep(
+    stepIcon: ImageVector,
     question: String,
     placeholder: String,
     value: String,
     onValueChange: (String) -> Unit,
     showPrivacyNotice: Boolean = false,
 ) {
-    AnimatedVisibility(visible = true, enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 10 }) {
-        Column {
-            if (showPrivacyNotice) {
-                PrivacyNotice(modifier = Modifier.padding(top = 8.dp, bottom = 20.dp))
-            } else {
-                Spacer(Modifier.height(8.dp))
-            }
-            Text(
-                question,
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = 16.dp),
-            )
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                placeholder = { Text(placeholder, style = MaterialTheme.typography.bodySmall) },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 3,
-                maxLines = 6,
-            )
+    Column {
+        if (showPrivacyNotice) {
+            PrivacyNotice(modifier = Modifier.padding(top = 8.dp, bottom = 20.dp))
+        } else {
+            Spacer(Modifier.height(8.dp))
         }
+        Icon(
+            stepIcon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(32.dp),
+        )
+        Text(
+            question,
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(top = 16.dp, bottom = 16.dp),
+        )
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = { Text(placeholder, style = MaterialTheme.typography.bodySmall) },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3,
+            maxLines = 6,
+        )
+    }
+}
+
+/** Final mirror step: echoes the picked answers back before saving. */
+@Composable
+private fun RecapStep(uiState: WelcomeUiState) {
+    Column {
+        Icon(
+            Icons.Filled.CheckCircle,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.tertiary,
+            modifier = Modifier.size(32.dp),
+        )
+        Text(
+            "Tutto pronto?",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(top = 16.dp, bottom = 16.dp),
+        )
+        listOf(
+            "Esperienza" to uiState.experienceLevel,
+            "Allenamento" to uiState.trainingDays,
+            "Obiettivo" to uiState.primaryGoal,
+            "Stile di vita" to uiState.activityLevel,
+        ).forEach { (label, value) ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    value ?: "Non impostato",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.End,
+                )
+            }
+        }
+        Text(
+            "Potrai modificare tutto dal tuo profilo in ogni momento.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 16.dp),
+        )
     }
 }
 

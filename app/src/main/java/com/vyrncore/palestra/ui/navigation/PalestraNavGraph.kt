@@ -73,6 +73,7 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
         composable(Routes.LOGIN) {
             LoginScreen(
                 onLoggedIn = { userId ->
+                    // Login never onboards: a returning user goes straight to their dashboard.
                     rootViewModel.setLoggedInUser(userId)
                     navController.navigate("home") { popUpTo(Routes.LOGIN) { inclusive = true } }
                 },
@@ -83,8 +84,11 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
             RegisterScreen(
                 onRegistered = { userId ->
                     rootViewModel.setLoggedInUser(userId)
+                    // A fresh ALLIEVO lands on the Welcome wizard; a PT lands on their dashboard.
+                    rootViewModel.requestOnboarding()
                     navController.navigate("home") { popUpTo(Routes.LOGIN) { inclusive = true } }
                 },
+                onNavigateToLogin = { navController.popBackStack() },
             )
         }
         composable("home") {

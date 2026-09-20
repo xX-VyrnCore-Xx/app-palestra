@@ -30,7 +30,8 @@ App Android nativa per il brand di palestre **Vibe Fitness**, pensata per due ru
 - Classifica settimanale motivazionale: allievo e PT vedono chi si è allenato di più negli ultimi 7 giorni tra gli allievi dello stesso PT (funzione Postgres server-side che restituisce solo nome e conteggio, nessun accesso incrociato ai dati altrui)
 - Schede di allenamento con categoria (Full Body, Push, Pull, Gambe, Cardio, Mobilità), durata stimata e numero di esercizi mostrati in lista
 - Profilo con tema chiaro/scuro/di sistema (persistito) e logout
-- Catalogo di 24 esercizi comuni precaricato al primo avvio (offline e su Supabase)
+- Catalogo di 60 esercizi precaricato al primo avvio (offline e su Supabase), con gruppo muscolare, attrezzatura, difficoltà e nota tecnica; picker per i PT con filtri per gruppo muscolare e ricerca tutorial video
+- Login essenziale (email + password, nessun passaggio extra) e registrazione con ruolo, dati corporali opzionali e onboarding guidato post-registrazione per gli allievi (esperienza, giorni di allenamento, obiettivo, stile di vita, lesioni, alimentazione, note + riepilogo); il profilo resta personalizzabile in ogni momento (bio, obiettivo, altezza, peso)
 - Sincronizzazione bidirezionale: push dei dati registrati offline + pull periodico di fallback; schede, esercizi assegnati e metriche corporee arrivano però **in tempo reale** via Supabase Realtime (come la chat), senza bisogno di riaprire l'app o aspettare il sync — nessuna nuova build richiesta per vedere dati aggiornati, solo per nuove funzionalità/modifiche al codice
 
 ## Architettura
@@ -56,6 +57,11 @@ Un progetto Supabase dedicato (`app-palestra`, org VyrnCore IT) è già stato cr
 1. Copia `local.properties.example` in `local.properties` e imposta `sdk.dir`, `SUPABASE_URL` e `SUPABASE_ANON_KEY` (chiedi le credenziali del progetto `app-palestra` al proprietario, oppure creane uno tuo come descritto sotto).
 2. Apri il progetto in Android Studio (Iguana o successivo) e lascia sincronizzare Gradle.
 3. Esegui l'app su un emulatore/dispositivo con API 26+.
+
+> **Nota build da terminale:** il progetto richiede **JDK 17**. Se il sistema ha una Java più recente
+> (es. 21+), il compilatore Kotlin fallisce con un errore opaco (`IllegalArgumentException: <version>`).
+> Imposta `JAVA_HOME` su una JDK 17 prima di invocare Gradle, oppure lancia da Android Studio che
+> usa il suo JBR configurato per Gradle JVM.
 
 Per usare un **tuo** progetto Supabase invece: crea un progetto su [supabase.com](https://supabase.com), esegui `docs/supabase_schema.sql` nello SQL editor, poi imposta `SUPABASE_URL`/`SUPABASE_ANON_KEY` in `local.properties`.
 

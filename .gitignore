@@ -12,3 +12,6 @@ local.properties
 /app/release
 *.apk
 *.aab
+
+# Local JDK used for builds
+.jdk/

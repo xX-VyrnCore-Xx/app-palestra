@@ -30,7 +30,16 @@ class AuthRepository @Inject constructor(
     val currentUserId: String?
         get() = auth.currentUserOrNull()?.id
 
-    suspend fun signUp(email: String, password: String, fullName: String, role: UserRole, ptId: String?) {
+    suspend fun signUp(
+        email: String,
+        password: String,
+        fullName: String,
+        role: UserRole,
+        ptId: String?,
+        heightCm: Int?,
+        weightKg: Double?,
+        primaryGoal: String?,
+    ) {
         auth.signUpWith(Email) {
             this.email = email
             this.password = password
@@ -42,6 +51,9 @@ class AuthRepository @Inject constructor(
             fullName = fullName,
             role = role,
             ptId = ptId,
+            heightCm = heightCm,
+            weightKg = weightKg,
+            primaryGoal = primaryGoal,
             syncStatus = SyncStatus.PENDING_CREATE,
         )
         userProfileDao.upsert(profile)
@@ -91,6 +103,38 @@ class AuthRepository @Inject constructor(
         userProfileDao.upsert(current.copy(fullName = fullName, syncStatus = SyncStatus.PENDING_UPDATE))
         runCatching {
             postgrest.from("profiles").update(mapOf("full_name" to fullName)) { filter { eq("id", userId) } }
+        }
+    }
+
+    /** Persists the self-declared profile fields (bio, height, weight, goal) locally then remotely. */
+    suspend fun updateProfileExtras(
+        userId: String,
+        bio: String?,
+        heightCm: Int?,
+        weightKg: Double?,
+        primaryGoal: String?,
+    ) {
+        val current = userProfileDao.observeById(userId).firstOrNull() ?: return
+        userProfileDao.upsert(
+            current.copy(
+                bio = bio?.takeIf { it.isNotBlank() },
+                heightCm = heightCm,
+                weightKg = weightKg,
+                primaryGoal = primaryGoal?.takeIf { it.isNotBlank() },
+                syncStatus = SyncStatus.PENDING_UPDATE,
+            ),
+        )
+        runCatching {
+            postgrest.from("profiles").update(
+                mapOf(
+                    "bio" to bio?.takeIf { it.isNotBlank() },
+                    "height_cm" to heightCm,
+                    "weight_kg" to weightKg,
+                    "primary_goal" to primaryGoal?.takeIf { it.isNotBlank() },
+                ),
+            ) {
+                filter { eq("id", userId) }
+            }
         }
     }
 

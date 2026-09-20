@@ -23,11 +23,14 @@ private data class SendPushRequest(
     val body: String,
 )
 
-/** Single-select options shown as chips, in display order. */
+/** Single-select options shown as cards, in display order. */
 val EXPERIENCE_LEVELS = listOf("Principiante", "Intermedio", "Avanzato")
 val TRAINING_DAYS_OPTIONS = listOf("1-2 giorni", "3-4 giorni", "5+ giorni")
 val PRIMARY_GOAL_OPTIONS = listOf("Perdere peso", "Aumentare massa", "Migliorare resistenza", "Tonificare", "Salute generale")
 val ACTIVITY_LEVEL_OPTIONS = listOf("Lavoro sedentario", "Moderatamente attivo", "Molto attivo")
+
+/** Optional body metrics asked during onboarding, pre-filled from registration when present. */
+data class BodyMetricsDraft(val heightCm: Int? = null, val weightKg: Double? = null)
 
 data class WelcomeUiState(
     val experienceLevel: String? = null,
@@ -63,7 +66,8 @@ class WelcomeViewModel @Inject constructor(
     private val _step = MutableStateFlow(0)
     val step: StateFlow<Int> = _step.asStateFlow()
 
-    val stepCount = 7
+    /** 4 select steps + 3 open-text ones + final recap. */
+    val stepCount = 8
 
     fun selectExperienceLevel(value: String) {
         _uiState.value = _uiState.value.copy(experienceLevel = value)

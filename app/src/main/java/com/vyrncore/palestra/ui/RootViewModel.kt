@@ -61,19 +61,36 @@ class RootViewModel @Inject constructor(
 
     private val onboardingCompletedOverride = MutableStateFlow(false)
 
+    /** Set right after a fresh sign-up: forces the Welcome wizard for a brand-new ALLIEVO,
+     * even if their (still empty) profile row would evaluate as "no onboarding needed". */
+    private val forceOnboarding = MutableStateFlow(false)
+
     /** True only while an ALLIEVO is logged in and hasn't finished the private Welcome
-     * questionnaire yet. Never triggers for a PT - their role short-circuits the check. */
-    val needsOnboarding: StateFlow<Boolean> = combine(userId, role, onboardingCompletedOverride) { id, r, override ->
-        Triple(id, r, override)
-    }.flatMapLatest { (id, r, override) ->
+     * questionnaire yet. Never triggers for a PT - their role short-circuits the check - and
+     * a regular login never sets [forceOnboarding], so returning users skip it entirely. */
+    val needsOnboarding: StateFlow<Boolean> = combine(userId, role, onboardingCompletedOverride, forceOnboarding) { id, r, override, forced ->
+        arrayOf(id, r, override, forced)
+    }.flatMapLatest { parts ->
+        val id = parts[0] as String?
+        val r = parts[1] as UserRole?
+        val override = parts[2] as Boolean
+        val forced = parts[3] as Boolean
         when {
-            override || id == null || r != UserRole.ALLIEVO -> flowOf(false)
+            (override && !forced) || id == null || r != UserRole.ALLIEVO -> flowOf(false)
+            forced -> flowOf(true)
             else -> flow { emit(allievoProfileRepository.fetch(id)?.completedOnboarding != true) }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     fun markOnboardingComplete() {
         onboardingCompletedOverride.value = true
+        forceOnboarding.value = false
+    }
+
+    /** Called after a fresh registration so the Welcome wizard shows before the dashboard. */
+    fun requestOnboarding() {
+        onboardingCompletedOverride.value = false
+        forceOnboarding.value = true
     }
 
     fun setLoggedInUser(id: String) {

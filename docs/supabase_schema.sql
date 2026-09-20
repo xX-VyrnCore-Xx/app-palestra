@@ -13,6 +13,14 @@ create table if not exists public.profiles (
     fcm_token text,
     -- Foto profilo scelta dall'utente, caricata nel bucket pubblico "avatars".
     avatar_url text,
+    -- Breve biografia mostrata in testa al profilo (max 200 caratteri, lato app).
+    bio text,
+    -- Altezza in centimetri e peso in kg: precompilano le metriche corporee e i calcoli BMI.
+    height_cm int,
+    weight_kg numeric,
+    -- Obiettivo dichiarato dall'utente in fase di onboarding o dalla sheet profilo
+    -- (es. 'Perdere peso', 'Aumentare massa', ...).
+    primary_goal text,
     created_at timestamptz not null default now()
 );
 
@@ -187,6 +195,15 @@ create table if not exists public.ai_rate_limit_events (
 );
 
 -- Row Level Security --------------------------------------------------------
+
+-- Migrazione incrementale per installazioni esistenti: colonne profilo estese + difficoltà
+-- esercizi aggiunte in seguito al rilascio iniziale. Su un database nuovo le create table
+-- sopra le includono già, quindi questi alter vanno eseguiti solo su schemi preesistenti.
+alter table public.profiles add column if not exists bio text;
+alter table public.profiles add column if not exists height_cm int;
+alter table public.profiles add column if not exists weight_kg numeric;
+alter table public.profiles add column if not exists primary_goal text;
+alter table public.exercises add column if not exists difficulty text;
 
 alter table public.profiles enable row level security;
 alter table public.allievo_private_profiles enable row level security;

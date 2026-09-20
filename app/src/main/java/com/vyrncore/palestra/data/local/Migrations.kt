@@ -79,3 +79,20 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
         db.execSQL("ALTER TABLE plan_exercises ADD COLUMN notes TEXT")
     }
 }
+
+/** Richer self-service profile: bio, height, weight and declared primary goal. */
+val MIGRATION_10_11 = object : Migration(10, 11) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE user_profiles ADD COLUMN bio TEXT")
+        db.execSQL("ALTER TABLE user_profiles ADD COLUMN heightCm INTEGER")
+        db.execSQL("ALTER TABLE user_profiles ADD COLUMN weightKg REAL")
+        db.execSQL("ALTER TABLE user_profiles ADD COLUMN primaryGoal TEXT")
+    }
+}
+
+/** Coarse difficulty tier on catalog + custom exercises, shown in pickers and workout cards. */
+val MIGRATION_11_12 = object : Migration(11, 12) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE exercises ADD COLUMN difficulty TEXT")
+    }
+}
