@@ -52,15 +52,9 @@ import coil.compose.AsyncImage
 import com.vyrncore.palestra.data.local.ExerciseDifficulty
 import com.vyrncore.palestra.data.local.ExerciseCatalogSeed
 import com.vyrncore.palestra.data.local.entity.ExerciseEntity
+import com.vyrncore.palestra.ui.components.DifficultyRank
+import com.vyrncore.palestra.ui.components.MuscleGroupBadge
 import com.vyrncore.palestra.util.youtubeTutorialSearchUrl
-
-/** Difficulty badge colors so PRINCIPIANTE/INTERMEDIO/AVANZATO read at a glance. */
-private fun difficultyColor(difficulty: String?): Color = when (difficulty) {
-    ExerciseDifficulty.PRINCIPIANTE.name -> Color(0xFF4CAF50)
-    ExerciseDifficulty.INTERMEDIO.name -> Color(0xFFFF9800)
-    ExerciseDifficulty.AVANZATO.name -> Color(0xFFF44336)
-    else -> Color(0xFF9E9E9E)
-}
 
 @Composable
 fun ExercisePickerDialog(
@@ -136,31 +130,16 @@ fun ExercisePickerDialog(
                         items(filtered, key = { it.id }) { exercise ->
                             val alreadyAdded = exercise.id in selectedIds
                             ListItem(
-                                leadingContent = if (exercise.imageUrl != null) {
-                                    {
+                                leadingContent = {
+                                    if (exercise.imageUrl != null) {
                                         AsyncImage(
                                             model = exercise.imageUrl,
                                             contentDescription = null,
                                             contentScale = ContentScale.Crop,
-                                            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)),
+                                            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(10.dp)),
                                         )
-                                    }
-                                } else {
-                                    {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(44.dp)
-                                                .clip(RoundedCornerShape(10.dp))
-                                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            Icon(
-                                                Icons.Filled.FitnessCenter,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(22.dp),
-                                            )
-                                        }
+                                    } else {
+                                        MuscleGroupBadge(group = exercise.muscleGroup ?: "", size = 48.dp)
                                     }
                                 },
                                 headlineContent = {
@@ -189,12 +168,7 @@ fun ExercisePickerDialog(
                                 },
                                 trailingContent = {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(10.dp)
-                                                .clip(CircleShape)
-                                                .background(difficultyColor(exercise.difficulty)),
-                                        )
+                                        DifficultyRank(difficulty = exercise.difficulty)
                                         val uriHandler = LocalUriHandler.current
                                         IconButton(onClick = { uriHandler.openUri(youtubeTutorialSearchUrl(exercise.name)) }) {
                                             Icon(Icons.Filled.OndemandVideo, contentDescription = "Cerca tutorial video")
