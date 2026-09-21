@@ -1,9 +1,12 @@
 package com.vyrncore.palestra.ui.home
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,6 +61,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -788,48 +792,118 @@ private fun RankCard(level: Int, rankTitle: String, stars: Int, xpIntoLevel: Int
 private fun WeeklyGoalCard(completed: Int, goal: Int, modifier: Modifier = Modifier) {
     val progress by animateFloatAsState(
         targetValue = (completed.toFloat() / goal).coerceIn(0f, 1f),
-        animationSpec = tween(600),
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
         label = "weeklyGoalProgress",
     )
+    val isComplete = completed >= goal
+
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(48.dp)) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val strokeWidth = 6.dp.toPx()
-                    drawArc(
-                        color = Color.White.copy(alpha = 0.35f),
-                        startAngle = -90f,
-                        sweepAngle = 360f,
-                        useCenter = false,
-                        style = Stroke(width = strokeWidth),
+        Box(
+            modifier = Modifier
+                .background(
+                    Brush.verticalGradient(
+                        colors = if (isComplete) {
+                            listOf(
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                            )
+                        } else {
+                            listOf(
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            )
+                        }
                     )
-                    drawArc(
-                        color = Color.White,
-                        startAngle = -90f,
-                        sweepAngle = 360f * progress,
-                        useCenter = false,
-                        style = Stroke(width = strokeWidth),
+                )
+                .border(
+                    width = 1.dp,
+                    color = if (isComplete) MaterialTheme.colorScheme.primary.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.1f),
+                    shape = MaterialTheme.shapes.large
+                )
+                .padding(20.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            "OBIETTIVO SETTIMANALE",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isComplete) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            if (isComplete) "Missione Compiuta!" else "Ancora $completed su $goal missioni",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isComplete) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Icon(
+                        if (isComplete) Icons.Filled.AutoAwesome else Icons.Filled.CalendarMonth,
+                        contentDescription = null,
+                        tint = if (isComplete) Color(0xFFFFD700) else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(32.dp)
                     )
                 }
-                Text(
-                    "$completed/$goal",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(20.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(progress)
+                            .fillMaxHeight()
+                            .clip(CircleShape)
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = if (isComplete) {
+                                        listOf(Color(0xFFFFD700), Color(0xFFFFA500))
+                                    } else {
+                                        listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary)
+                                    }
+                                )
+                            )
+                            .drawBehind {
+                                if (progress > 0f) {
+                                    drawCircle(
+                                        color = Color.White.copy(alpha = 0.3f),
+                                        radius = 4.dp.toPx(),
+                                        center = center.copy(x = size.width - 10.dp.toPx())
+                                    )
+                                }
+                            }
+                    )
+                }
+                
+                if (isComplete) {
+                    Text(
+                        "Soldato, hai superato le aspettative questa settimana!",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                        modifier = Modifier.padding(top = 12.dp)
+                    )
+                }
             }
-            Text(
-                "OBIETTIVO SETTIMANALE",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
-                modifier = Modifier.padding(top = 8.dp),
-            )
         }
     }
 }

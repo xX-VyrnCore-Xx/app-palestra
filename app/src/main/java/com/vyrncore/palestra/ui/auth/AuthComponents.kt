@@ -12,6 +12,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
@@ -118,6 +119,7 @@ fun AnimatedAuthBackground(modifier: Modifier = Modifier) {
 /**
  * Frosted-glass card floating over [AnimatedAuthBackground]: translucent white surface, rounded
  * 28dp corners and a soft shadow, holding the form controls on top of the vivid hero gradient.
+ * Enhanced with a subtle inner border for a more premium look.
  */
 @Composable
 fun GlassCard(
@@ -127,9 +129,20 @@ fun GlassCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(24.dp, RoundedCornerShape(28.dp), spotColor = Color.Black.copy(alpha = 0.35f)),
+            .shadow(
+                elevation = 24.dp,
+                shape = RoundedCornerShape(28.dp),
+                spotColor = Color.Black.copy(alpha = 0.35f)
+            )
+            .border(
+                width = 1.dp,
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color.White.copy(alpha = 0.3f), Color.White.copy(alpha = 0.05f))
+                ),
+                shape = RoundedCornerShape(28.dp)
+            ),
         shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
         tonalElevation = 2.dp,
     ) {
         content()
@@ -272,12 +285,23 @@ fun GradientButton(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
         modifier = modifier
             .fillMaxWidth()
-            .height(54.dp)
+            .height(56.dp)
             .pressScale(interaction)
-            .shadow(if (enabled) 8.dp else 0.dp, RoundedCornerShape(16.dp), spotColor = Magenta60)
+            .shadow(
+                elevation = if (enabled) 12.dp else 0.dp,
+                shape = RoundedCornerShape(16.dp),
+                spotColor = Magenta60
+            )
             .background(
-                if (enabled) Brush.horizontalGradient(listOf(Orange50, Magenta60)) else Brush.horizontalGradient(listOf(Violet40, Violet40)),
+                if (enabled) Brush.horizontalGradient(
+                    colors = listOf(Orange50, Magenta60),
+                ) else Brush.horizontalGradient(listOf(Violet40, Violet40)),
                 RoundedCornerShape(16.dp),
+            )
+            .border(
+                width = 1.dp,
+                color = if (enabled) Color.White.copy(alpha = 0.2f) else Color.Transparent,
+                shape = RoundedCornerShape(16.dp)
             ),
     ) {
         if (isLoading) {

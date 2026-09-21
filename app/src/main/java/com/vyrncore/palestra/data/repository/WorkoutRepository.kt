@@ -20,7 +20,11 @@ import com.vyrncore.palestra.data.local.entity.WorkoutPlanEntity
 import com.vyrncore.palestra.data.local.entity.WorkoutSessionEntity
 import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.UUID
@@ -44,9 +48,9 @@ class WorkoutRepository @Inject constructor(
     private val programDao: ProgramDao,
     private val postgrest: Postgrest,
 ) {
-    /** Peers sharing the same PT, ranked by workouts completed in the last 7 days. Computed
-     * server-side (a SECURITY DEFINER function) so an allievo never gets broad read access to
-     * other users' rows - only first names and a count come back. */
+    private val scope = CoroutineScope(Dispatchers.IO)
+
+    /** Peers sharing the same PT, ranked by workouts completed in the last 7 days. */
     suspend fun fetchWeeklyRanking(): List<WeeklyRankingEntry> =
         runCatching { postgrest.rpc("get_weekly_ranking").decodeList<WeeklyRankingEntry>() }
             .getOrDefault(emptyList())
@@ -208,7 +212,11 @@ class WorkoutRepository @Inject constructor(
         setEntryDao.observeWeeklyVolume(userId)
 
     fun observePersonalRecords(userId: String): Flow<List<PersonalRecord>> =
-        setEntryDao.observePersonalRecords(userId)
+        setEntryDao.observePersonalRecords(userId).shareIn(
+            scope = scope,
+            started = SharingStarted.WhileSubscribed(5000),
+            replay = 1
+        )
 
     suspend fun startSession(userId: String, planId: String?): String {
         val sessionId = UUID.randomUUID().toString()
