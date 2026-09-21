@@ -3,7 +3,9 @@ package com.vyrncore.palestra.ui.workout
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -33,8 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.OndemandVideo
@@ -68,8 +69,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -487,20 +492,14 @@ private fun ActiveExerciseCard(
                         }
                     }
 
-                    if (isDone) {
-                        Icon(
-                            Icons.Filled.CheckCircle,
-                            contentDescription = "Completato",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    } else {
-                        Icon(
-                            Icons.Filled.ChevronRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                        )
-                    }
+                    // Animated set-progress ring: draws the completed/target ratio, springs a
+                    // celebratory pop on the set that completes the exercise, then rests as a
+                    // steady check badge. Replaces the old static done/chevron icons.
+                    SetProgressRing(
+                        completed = exercise.completedSets,
+                        target = exercise.targetSets,
+                        isDone = isDone,
+                    )
                 }
 
                 if (!isDone) {
@@ -677,6 +676,83 @@ private fun StepperField(
         }
         IconButton(onClick = { onStep(1) }) {
             Icon(Icons.Filled.Add, contentDescription = "Aumenta $label")
+        }
+    }
+}
+
+/** Animated set-progress ring shown on every active-workout exercise card. The arc tracks
+ * completed/target sets; each new set re-springs the scale so the ring visibly "pops", and
+ * when the last set lands the pop is bigger and the check icon appears in the middle.
+ * The completed/total label sits under the ring. */
+@Composable
+private fun SetProgressRing(
+    completed: Int,
+    target: Int,
+    isDone: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val safeTarget = target.coerceAtLeast(1)
+    val ringColor = if (isDone) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
+    val trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+
+    // Scale pops on every logged set (keyed on the count itself, so each new set re-fires);
+    // the pop is bigger and bouncier when the exercise just completed.
+    val scale = remember { Animatable(1f) }
+    LaunchedEffect(completed, isDone) {
+        if (completed > 0) {
+            scale.snapTo(1f)
+            scale.animateTo(
+                if (isDone) 1.22f else 1.12f,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+            )
+            scale.animateTo(1f, animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow))
+        }
+    }
+
+    val animatedFraction by animateFloatAsState(
+        targetValue = (completed.toFloat() / safeTarget).coerceIn(0f, 1f),
+        animationSpec = tween(450),
+        label = "setRingFraction",
+    )
+
+    Box(modifier = modifier.size(44.dp), contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.fillMaxSize().graphicsLayer(scaleX = scale.value, scaleY = scale.value)) {
+            val stroke = 4.dp.toPx()
+            val diameter = size.minDimension - stroke
+            val topLeft = Offset((size.width - diameter) / 2f, (size.height - diameter) / 2f)
+            drawArc(
+                color = trackColor,
+                startAngle = -90f,
+                sweepAngle = 360f,
+                useCenter = false,
+                style = Stroke(width = stroke, cap = StrokeCap.Round),
+                size = Size(diameter, diameter),
+                topLeft = topLeft,
+            )
+            drawArc(
+                color = ringColor,
+                startAngle = -90f,
+                sweepAngle = 360f * animatedFraction,
+                useCenter = false,
+                style = Stroke(width = stroke, cap = StrokeCap.Round),
+                size = Size(diameter, diameter),
+                topLeft = topLeft,
+            )
+        }
+        if (isDone) {
+            Icon(
+                Icons.Filled.Check,
+                contentDescription = "Esercizio completato",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+        } else {
+            Text(
+                "$completed/$safeTarget",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
         }
     }
 }
