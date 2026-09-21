@@ -75,7 +75,7 @@ fun RegisterScreen(
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
-    var ptId by rememberSaveable { mutableStateOf("") }
+    var ptInviteCode by rememberSaveable { mutableStateOf("") }
     var heightText by rememberSaveable { mutableStateOf("") }
     var weightText by rememberSaveable { mutableStateOf("") }
     var role by rememberSaveable { mutableStateOf(UserRole.ALLIEVO) }
@@ -87,7 +87,7 @@ fun RegisterScreen(
             password = password,
             fullName = fullName,
             role = role,
-            ptId = ptId,
+            ptInviteCode = ptInviteCode,
             heightCm = heightText.toIntOrNull(),
             weightKg = weightText.toDoubleOrNull(),
             primaryGoal = null,
@@ -202,9 +202,9 @@ fun RegisterScreen(
                         ) {
                             Column {
                                 AuthTextField(
-                                    value = ptId,
-                                    onValueChange = { ptId = it },
-                                    label = "ID del tuo Personal Trainer (opzionale)",
+                                    value = ptInviteCode,
+                                    onValueChange = { ptInviteCode = it.uppercase().take(6) },
+                                    label = "Codice invito del PT (opzionale)",
                                     leadingIcon = Icons.Filled.Badge,
                                 )
                                 Text(

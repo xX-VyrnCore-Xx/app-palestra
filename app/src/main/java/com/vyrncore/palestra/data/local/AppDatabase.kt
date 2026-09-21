@@ -43,7 +43,7 @@ import com.vyrncore.palestra.data.local.entity.WorkoutSessionEntity
         PlanTemplateEntity::class,
         PlanTemplateExerciseEntity::class,
     ],
-    version = 14,
+    version = 15,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

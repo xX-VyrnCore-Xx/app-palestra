@@ -27,6 +27,9 @@ data class UserProfileEntity(
     val weightKg: Double? = null,
     /** Obiettivo dichiarato dall'utente (es. "Perdere peso"). */
     val primaryGoal: String? = null,
+    /** Solo per i PT: codice breve e condivisibile che un allievo digita per collegarsi, invece
+     * di incollare l'id grezzo. Generato al bisogno da [com.vyrncore.palestra.data.repository.AuthRepository.getOrCreateInviteCode]. */
+    val inviteCode: String? = null,
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 

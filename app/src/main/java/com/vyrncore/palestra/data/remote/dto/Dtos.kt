@@ -16,6 +16,7 @@ data class UserProfileDto(
     @SerialName("height_cm") val heightCm: Int? = null,
     @SerialName("weight_kg") val weightKg: Double? = null,
     @SerialName("primary_goal") val primaryGoal: String? = null,
+    @SerialName("invite_code") val inviteCode: String? = null,
 )
 
 @Serializable

@@ -13,7 +13,10 @@ import com.vyrncore.palestra.util.CsvExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -137,4 +140,34 @@ class ProfileViewModel @Inject constructor(
             onSignedOut()
         }
     }
+
+    private val _inviteCode = MutableStateFlow<String?>(null)
+
+    /** A PT's shareable code, generated lazily the first time the profile screen loads it. */
+    val inviteCode: StateFlow<String?> = _inviteCode.asStateFlow()
+
+    fun loadInviteCode() {
+        viewModelScope.launch { _inviteCode.value = authRepository.getOrCreateInviteCode(userId) }
+    }
+
+    private val _linkPtResult = MutableStateFlow<LinkPtResult?>(null)
+    val linkPtResult: StateFlow<LinkPtResult?> = _linkPtResult.asStateFlow()
+
+    /** Allievo-side "Collega il tuo PT" from the profile screen, for whoever skipped it (or
+     * didn't have a code yet) at registration - same lookup, just later. */
+    fun linkToPt(code: String) {
+        viewModelScope.launch {
+            val ptName = authRepository.linkToPtByInviteCode(userId, code)
+            _linkPtResult.value = if (ptName != null) LinkPtResult.Success(ptName) else LinkPtResult.NotFound
+        }
+    }
+
+    fun clearLinkPtResult() {
+        _linkPtResult.value = null
+    }
+}
+
+sealed interface LinkPtResult {
+    data class Success(val ptName: String) : LinkPtResult
+    data object NotFound : LinkPtResult
 }

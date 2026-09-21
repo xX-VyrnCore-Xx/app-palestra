@@ -154,3 +154,10 @@ val MIGRATION_13_14 = object : Migration(13, 14) {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_plan_template_exercises_exerciseId ON plan_template_exercises(exerciseId)")
     }
 }
+
+/** Short shareable invite code a PT can hand an allievo instead of a raw UUID to link accounts. */
+val MIGRATION_14_15 = object : Migration(14, 15) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE user_profiles ADD COLUMN inviteCode TEXT")
+    }
+}

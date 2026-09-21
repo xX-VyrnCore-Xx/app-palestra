@@ -21,6 +21,9 @@ create table if not exists public.profiles (
     -- Obiettivo dichiarato dall'utente in fase di onboarding o dalla sheet profilo
     -- (es. 'Perdere peso', 'Aumentare massa', ...).
     primary_goal text,
+    -- Codice breve e condivisibile per collegare un allievo al PT senza incollare l'id grezzo.
+    -- Solo i PT ne hanno uno, generato al bisogno lato app.
+    invite_code text unique,
     created_at timestamptz not null default now()
 );
 
@@ -204,6 +207,7 @@ alter table public.profiles add column if not exists height_cm int;
 alter table public.profiles add column if not exists weight_kg numeric;
 alter table public.profiles add column if not exists primary_goal text;
 alter table public.exercises add column if not exists difficulty text;
+alter table public.profiles add column if not exists invite_code text unique;
 
 alter table public.profiles enable row level security;
 alter table public.allievo_private_profiles enable row level security;
@@ -398,6 +402,24 @@ as $$
 $$;
 
 grant execute on function public.get_weekly_ranking() to authenticated;
+
+-- PT invite codes -------------------------------------------------------------
+-- SECURITY DEFINER so any signed-in user can resolve a PT's short invite code to their id/name
+-- (to link during registration or later from the profile screen) without being granted broad RLS
+-- read access to other users' profiles - only ever returns id/name for an exact code match on a PT.
+create or replace function public.resolve_pt_invite_code(code text)
+returns table(id uuid, full_name text)
+language sql
+security definer
+set search_path = public
+as $$
+  select p.id, p.full_name
+  from public.profiles p
+  where p.invite_code = upper(code) and p.role = 'PT'
+  limit 1;
+$$;
+
+grant execute on function public.resolve_pt_invite_code(text) to authenticated;
 
 -- Chat attachments storage ---------------------------------------------------
 -- Public bucket (object names are random UUIDs, so effectively unguessable) keeps
