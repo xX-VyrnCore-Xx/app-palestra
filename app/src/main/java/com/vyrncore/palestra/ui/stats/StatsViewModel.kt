@@ -18,7 +18,13 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
-data class ExerciseProgressPoint(val epochMs: Long, val maxWeightKg: Double, val volumeKg: Double)
+data class ExerciseProgressPoint(
+    val epochMs: Long,
+    val maxWeightKg: Double,
+    val volumeKg: Double,
+    /** Best estimated 1RM (Epley) logged that day - the trend the e1RM chart plots. */
+    val e1rmKg: Double,
+)
 
 data class StatsUiState(
     val exerciseOptions: List<Pair<String, String>> = emptyList(), // id to name
@@ -63,6 +69,7 @@ class StatsViewModel @Inject constructor(
                             epochMs = daySets.first().completedAtEpochMs,
                             maxWeightKg = daySets.maxOf { it.weightKg },
                             volumeKg = daySets.sumOf { it.weightKg * it.reps },
+                            e1rmKg = daySets.maxOf { it.weightKg * (1 + it.reps / 30.0) },
                         )
                     }
                     .sortedBy { it.epochMs }
@@ -70,7 +77,9 @@ class StatsViewModel @Inject constructor(
                     exerciseOptions = exs.map { it.id to it.name },
                     selectedExerciseId = selectedId,
                     history = points,
-                    personalRecordKg = points.maxOfOrNull { it.maxWeightKg } ?: 0.0,
+                    // Same metric as the "RECORD PERSONALI (1RM STIMATO)" card below: the best
+                    // estimated 1RM ever logged for this exercise, not the raw top weight.
+                    personalRecordKg = points.maxOfOrNull { it.e1rmKg } ?: 0.0,
                 )
             }
         }

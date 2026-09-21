@@ -25,6 +25,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -34,6 +36,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import com.vyrncore.palestra.ui.components.BarChartEntry
 import com.vyrncore.palestra.ui.components.MetricCard
 import com.vyrncore.palestra.ui.components.PersonalRecordsCard
@@ -130,6 +135,56 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
                         modifier = Modifier.padding(16.dp),
                         lineColor = MaterialTheme.colorScheme.primary
                     )
+                }
+
+                // Estimated 1RM trend for the same exercise: Epley formula (weight × (1 + reps/30)),
+                // so heavier low-rep sets and lighter high-rep sets compare on one scale.
+                val e1rmValues = uiState.history.map { it.e1rmKg }
+                val e1rmDelta = e1rmValues.last() - e1rmValues.first()
+                Text(
+                    "ANDAMENTO 1RM STIMATO",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+                    letterSpacing = 1.sp
+                )
+                PremiumChartCard {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "≈ ${"%.1f".format(e1rmValues.last())} kg",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Spacer(modifier = Modifier.padding(start = 8.dp))
+                            val (deltaLabel, deltaColor) = when {
+                                e1rmDelta > 0.05 -> "+${"%.1f".format(e1rmDelta)} kg" to MaterialTheme.colorScheme.tertiary
+                                e1rmDelta < -0.05 -> "${"%.1f".format(e1rmDelta)} kg" to MaterialTheme.colorScheme.error
+                                else -> "stabile" to MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                            Text(
+                                deltaLabel,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = deltaColor,
+                            )
+                        }
+                        Text(
+                            "dal primo allenamento registrato",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        // Date labels under the e1RM points: short "12 gen" format, thinned
+                        // automatically by the chart when the series is long.
+                        val dateFormat = remember { SimpleDateFormat("d MMM", Locale.ITALY) }
+                        SimpleLineChart(
+                            values = e1rmValues,
+                            modifier = Modifier.padding(top = 12.dp),
+                            lineColor = MaterialTheme.colorScheme.tertiary,
+                            pointLabels = uiState.history.map { dateFormat.format(Date(it.epochMs)) },
+                        )
+                    }
                 }
             }
 
