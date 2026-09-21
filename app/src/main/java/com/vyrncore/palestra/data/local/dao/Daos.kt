@@ -46,6 +46,9 @@ interface ExerciseDao {
     @Query("SELECT * FROM exercises ORDER BY name ASC")
     fun observeAll(): Flow<List<ExerciseEntity>>
 
+    @Query("SELECT * FROM exercises WHERE id = :id LIMIT 1")
+    suspend fun getById(id: String): ExerciseEntity?
+
     @Query("SELECT * FROM exercises WHERE syncStatus != 'SYNCED'")
     suspend fun getPendingSync(): List<ExerciseEntity>
 
@@ -216,6 +219,21 @@ interface SetEntryDao {
         """,
     )
     suspend fun bestEstimatedOneRepMax(sessionId: String, exerciseId: String): Double?
+
+    /** Best estimated 1RM for this exercise across ALL the user's other sessions (the workout
+     * being summarized excluded), so the summary can compare "this session vs everything
+     * before it" and show a positive delta when a record was just set. */
+    @Query(
+        """
+        SELECT MAX(se.weightKg * (1 + se.reps / 30.0))
+        FROM set_entries se
+        JOIN workout_sessions ws ON ws.id = se.sessionId
+        WHERE ws.userId = (SELECT userId FROM workout_sessions WHERE id = :sessionId)
+          AND se.exerciseId = :exerciseId
+          AND ws.id != :sessionId
+        """,
+    )
+    suspend fun bestEstimatedOneRepMaxExcludingSession(sessionId: String, exerciseId: String): Double?
 }
 
 data class MuscleGroupVolume(val muscleGroup: String, val totalVolumeKg: Double)

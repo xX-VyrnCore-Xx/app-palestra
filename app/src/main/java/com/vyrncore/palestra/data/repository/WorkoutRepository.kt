@@ -88,6 +88,8 @@ class WorkoutRepository @Inject constructor(
 
     suspend fun getPlanById(planId: String): WorkoutPlanEntity? = workoutPlanDao.getById(planId)
 
+    suspend fun getExerciseById(exerciseId: String): ExerciseEntity? = exerciseDao.getById(exerciseId)
+
     fun observePlanExerciseCount(planId: String): Flow<Int> = planExerciseDao.observeExerciseCount(planId)
 
     suspend fun createPlan(
@@ -246,6 +248,11 @@ class WorkoutRepository @Inject constructor(
             )
         )
     }
+
+    /** Best estimated 1RM for [exerciseId] across every session of this user EXCEPT [sessionId]
+     * - the "previous personal best" baseline the workout summary compares against. */
+    suspend fun bestPreviousE1rm(sessionId: String, exerciseId: String): Double? =
+        setEntryDao.bestEstimatedOneRepMaxExcludingSession(sessionId, exerciseId)
 
     /** Logs a set and returns true if it beats every previous set logged for this exercise - an
      * estimated 1RM (Epley) new personal record, used to trigger a celebratory notification. */
