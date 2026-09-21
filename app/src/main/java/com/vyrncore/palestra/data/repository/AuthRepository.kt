@@ -80,7 +80,18 @@ class AuthRepository @Inject constructor(
         }.onSuccess { dto -> userProfileDao.upsert(dto.toEntity()) }
     }
 
+    /** Clears this device's FCM token from the outgoing user's profile before signing out - without
+     * this, a device shared between accounts (PT signs out, allievo signs in) keeps delivering push
+     * notifications for BOTH accounts, since the token would otherwise stay registered on the old
+     * profile row until it happens to be overwritten by a future login. */
     suspend fun signOut() {
+        currentUserId?.let { userId ->
+            runCatching {
+                postgrest.from("profiles").update(mapOf("fcm_token" to null)) {
+                    filter { eq("id", userId) }
+                }
+            }
+        }
         auth.signOut()
     }
 

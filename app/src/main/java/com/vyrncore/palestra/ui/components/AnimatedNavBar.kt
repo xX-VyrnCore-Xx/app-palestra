@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -70,12 +70,16 @@ fun AnimatedNavBar(
                 )
                 .padding(top = 1.dp) // Space for the top border
                 .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)) // Thin top border effect
+                // Reserves space for Android's own gesture pill / 3-button bar below the tab
+                // labels, on the outer layer so the background tint extends behind it too -
+                // a fixed .height() on the inner Row used to fight this padding and let the
+                // system bar clip or overlap the last few dp of icons/labels.
+                .navigationBarsPadding()
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .height(72.dp)
+                    .heightIn(min = 72.dp)
                     .padding(horizontal = 4.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
