@@ -153,7 +153,7 @@ private fun PtPlansScreen(
         if (overviews.isEmpty()) {
             EmptyState(
                 icon = Icons.Filled.FitnessCenter,
-                message = "Nessuna recluta arruolata ancora.",
+                message = "Nessun cliente ancora.",
                 modifier = Modifier.padding(padding).fillMaxSize(),
             )
         } else {
@@ -223,6 +223,7 @@ private fun PtClientListScreen(
     val isSyncing by viewModel.isSyncing.collectAsStateWithLifecycle()
     val weeklyRanking by viewModel.weeklyRanking.collectAsStateWithLifecycle()
     val feed by viewModel.feed.collectAsStateWithLifecycle()
+    val inviteCode by viewModel.inviteCode.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -246,8 +247,9 @@ private fun PtClientListScreen(
                 Column {
                     ConnectionStatusBar(isOnline = isOnline, isSyncing = isSyncing)
                     GradientHeader(
-                        title = "${clients.size} reclute",
-                        subtitle = "ID PT: ${viewModel.ptId.take(8)}… — condividilo per arruolare nuove reclute",
+                        title = "${clients.size} client${if (clients.size == 1) "e" else "i"}",
+                        subtitle = inviteCode?.let { "Codice invito: $it — condividilo per collegare un nuovo cliente" }
+                            ?: "Generazione codice invito…",
                         modifier = Modifier.padding(16.dp),
                         shape = RoundedCornerShape(24.dp),
                     )
@@ -285,7 +287,7 @@ private fun PtClientListScreen(
                         OutlinedTextField(
                             value = searchQuery,
                             onValueChange = viewModel::setSearchQuery,
-                            placeholder = { Text("Cerca recluta per nome o email") },
+                            placeholder = { Text("Cerca cliente per nome o email") },
                             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -312,11 +314,11 @@ private fun PtClientListScreen(
 
             if (clients.isEmpty()) {
                 item {
-                    EmptyState(icon = Icons.Filled.People, message = "Nessuna recluta arruolata ancora.")
+                    EmptyState(icon = Icons.Filled.People, message = "Nessun cliente ancora.")
                 }
             } else if (visibleClients.isEmpty()) {
                 item {
-                    EmptyState(icon = Icons.Filled.Search, message = "Nessuna recluta corrisponde alla ricerca.")
+                    EmptyState(icon = Icons.Filled.Search, message = "Nessun cliente corrisponde alla ricerca.")
                 }
             } else {
                 items(visibleClients, key = { it.clientId }) { client ->

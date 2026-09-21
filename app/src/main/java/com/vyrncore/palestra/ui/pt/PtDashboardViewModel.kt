@@ -79,8 +79,16 @@ class PtDashboardViewModel @Inject constructor(
         _sortMode.value = mode
     }
 
+    private val _inviteCode = MutableStateFlow<String?>(null)
+
+    /** The PT's shareable code, generating one the first time it's needed - the dashboard header
+     * used to show a truncated raw user id here, which stopped working the moment registration
+     * switched to the 6-character invite code instead of a pasted UUID. */
+    val inviteCode: StateFlow<String?> = _inviteCode.asStateFlow()
+
     init {
         viewModelScope.launch { _feed.value = plotoneFeedRepository.fetchFeed(ptId) }
+        viewModelScope.launch { _inviteCode.value = authRepository.getOrCreateInviteCode(ptId) }
     }
 
     val clients = authRepository.observeClients(ptId)
