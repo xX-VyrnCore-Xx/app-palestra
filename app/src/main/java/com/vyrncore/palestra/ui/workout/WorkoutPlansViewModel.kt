@@ -39,6 +39,22 @@ class WorkoutPlansViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
+    /** The plan to highlight as "up next": the one right after whichever plan the allievo's most
+     * recent completed session was for, cycling back to the first once the rotation is done. Null
+     * until there's at least one completed session to react to, so a first-time user just sees the
+     * plain list instead of an arbitrary pick. This is what makes the plan screen "reattivo": no
+     * manual re-selection needed after finishing a workout, the next one in the rotation is already
+     * front and center next time they open the tab. */
+    val suggestedPlanId = combine(plansFlow, workoutRepository.observeSessionsForUser(userId)) { plans, sessions ->
+        if (plans.size < 2) return@combine null
+        val lastCompletedPlanId = sessions.filter { it.endedAtEpochMs != null }
+            .maxByOrNull { it.endedAtEpochMs!! }
+            ?.planId ?: return@combine null
+        val orderedByAge = plans.sortedBy { it.createdAtEpochMs }
+        val lastIndex = orderedByAge.indexOfFirst { it.id == lastCompletedPlanId }
+        if (lastIndex == -1) null else orderedByAge[(lastIndex + 1) % orderedByAge.size].id
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     fun startSession(planId: String, onStarted: (String) -> Unit) {
         viewModelScope.launch {
             val sessionId = workoutRepository.startSession(userId, planId)

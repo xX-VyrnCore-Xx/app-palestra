@@ -66,6 +66,19 @@ class NotificationHelper @Inject constructor(
                     NotificationManager.IMPORTANCE_DEFAULT,
                 )
             )
+            manager?.createNotificationChannel(
+                NotificationChannel(
+                    REST_TIMER_CHANNEL_ID,
+                    "Timer di recupero",
+                    NotificationManager.IMPORTANCE_HIGH,
+                ).apply {
+                    // Vibration lives on the channel itself, not just the notification, so the
+                    // buzz still fires when this is delivered by the background worker while the
+                    // Compose screen (and its own foreground-only vibrate() call) isn't running.
+                    enableVibration(true)
+                    vibrationPattern = longArrayOf(0, 400, 200, 400)
+                }
+            )
         }
     }
 
@@ -135,6 +148,22 @@ class NotificationHelper @Inject constructor(
         NotificationManagerCompat.from(context).notify(clientName.hashCode(), notification)
     }
 
+    /** Fires when a rest timer set via [com.vyrncore.palestra.data.notification.ReminderScheduler.scheduleRestTimerEnd]
+     * elapses - covers the case where the allievo left the Rest Timer screen (or backgrounded the
+     * app) before the countdown finished, so the in-screen vibrate-on-finish never got to run. */
+    fun showRestTimerFinished(exerciseName: String?) {
+        if (!hasNotificationPermission()) return
+
+        val notification = NotificationCompat.Builder(context, REST_TIMER_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Recupero terminato ⏱️")
+            .setContentText(if (exerciseName != null) "Pronto per: $exerciseName" else "Si riparte!")
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+        NotificationManagerCompat.from(context).notify(REST_TIMER_NOTIFICATION_ID, notification)
+    }
+
     fun showWeeklyDigest(title: String, message: String) {
         if (!hasNotificationPermission()) return
 
@@ -158,5 +187,7 @@ class NotificationHelper @Inject constructor(
         const val PT_REMINDER_CHANNEL_ID = "pt_note_reminders"
         const val DIGEST_CHANNEL_ID = "weekly_digest"
         const val DIGEST_NOTIFICATION_ID = 1003
+        const val REST_TIMER_CHANNEL_ID = "rest_timer"
+        const val REST_TIMER_NOTIFICATION_ID = 1004
     }
 }
