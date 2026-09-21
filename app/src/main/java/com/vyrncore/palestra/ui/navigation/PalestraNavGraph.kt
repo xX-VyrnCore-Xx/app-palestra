@@ -45,8 +45,20 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
     val navController = rememberNavController()
     val role by rootViewModel.role.collectAsStateWithLifecycle()
     val needsOnboarding by rootViewModel.needsOnboarding.collectAsStateWithLifecycle()
+    val pendingChatPeerId by rootViewModel.pendingChatPeerId.collectAsStateWithLifecycle()
 
     val startDestination = if (rootViewModel.startUserId != null) "home" else Routes.LOGIN
+
+    // Tapping a chat notification deep-links straight into that thread - only meaningful for a
+    // PT, who has one CHAT_THREAD destination per client; an allievo's chat is a fixed bottom-nav
+    // tab on Home (single conversation, their own PT) reachable as soon as they land there.
+    androidx.compose.runtime.LaunchedEffect(pendingChatPeerId, role) {
+        val peerId = pendingChatPeerId ?: return@LaunchedEffect
+        if (role == UserRole.PT) {
+            navController.navigate(Routes.chatThread(peerId))
+        }
+        if (role != null) rootViewModel.consumeChatDeepLink()
+    }
 
     NavHost(
         navController = navController,

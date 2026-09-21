@@ -57,13 +57,13 @@ import com.vyrncore.palestra.ui.components.VibeWordmark
 fun LoginScreen(
     onLoggedIn: (String) -> Unit,
     onNavigateToRegister: () -> Unit,
-    onForgotPassword: () -> Unit = {},
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    var showForgotPasswordDialog by rememberSaveable { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(uiState.loggedInUserId) {
@@ -169,7 +169,7 @@ fun LoginScreen(
                         )
 
                         TextButton(
-                            onClick = onForgotPassword,
+                            onClick = { showForgotPasswordDialog = true },
                             modifier = Modifier.align(Alignment.CenterHorizontally),
                         ) {
                             Text(
@@ -191,4 +191,67 @@ fun LoginScreen(
             Spacer(Modifier.height(24.dp))
         }
     }
+
+    if (showForgotPasswordDialog) {
+        ForgotPasswordDialog(
+            initialEmail = email,
+            viewModel = viewModel,
+            onDismiss = { showForgotPasswordDialog = false; viewModel.resetPasswordResetState() },
+        )
+    }
+}
+
+@Composable
+private fun ForgotPasswordDialog(
+    initialEmail: String,
+    viewModel: AuthViewModel,
+    onDismiss: () -> Unit,
+) {
+    var resetEmail by remember { mutableStateOf(initialEmail) }
+    val resetState by viewModel.passwordResetState.collectAsStateWithLifecycle()
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Password dimenticata?") },
+        text = {
+            Column {
+                Text(
+                    "Ti inviamo un link per reimpostarla via email.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                AuthTextField(
+                    value = resetEmail,
+                    onValueChange = { resetEmail = it },
+                    label = "Email",
+                    leadingIcon = Icons.Filled.Email,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+                when (val state = resetState) {
+                    is PasswordResetState.Sent -> Text(
+                        "Email inviata! Controlla la posta in arrivo.",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                    is PasswordResetState.Error -> Text(
+                        state.message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                    else -> {}
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { viewModel.sendPasswordResetEmail(resetEmail) },
+                enabled = resetEmail.isNotBlank() && resetState != PasswordResetState.Sending,
+            ) { Text("Invia") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Chiudi") }
+        },
+    )
 }

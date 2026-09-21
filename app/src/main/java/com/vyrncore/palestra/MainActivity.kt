@@ -1,6 +1,7 @@
 package com.vyrncore.palestra
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -27,13 +28,15 @@ class MainActivity : ComponentActivity() {
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* no-op either way */ }
 
+    private lateinit var rootViewModel: RootViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         requestNotificationPermissionIfNeeded()
         setContent {
-            val rootViewModel: RootViewModel = hiltViewModel()
+            rootViewModel = hiltViewModel()
             val themeMode by rootViewModel.themeMode.collectAsStateWithLifecycle()
             val role by rootViewModel.role.collectAsStateWithLifecycle()
             PalestraTheme(themeMode = themeMode, role = role) {
@@ -41,6 +44,22 @@ class MainActivity : ComponentActivity() {
                     PalestraNavGraph(rootViewModel = rootViewModel)
                 }
             }
+        }
+        consumeChatDeepLink(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // The app was already running (warm start) when a chat notification was tapped -
+        // onCreate's setContent already ran, so rootViewModel is ready to receive this directly.
+        consumeChatDeepLink(intent)
+    }
+
+    /** Tapping a chat-message notification should open straight into that conversation, not just
+     * bring the app to whatever screen it was last on - see [NotificationHelper.openAppPendingIntent]. */
+    private fun consumeChatDeepLink(intent: Intent) {
+        intent.getStringExtra(EXTRA_OPEN_CHAT_PEER_ID)?.let { peerId ->
+            if (::rootViewModel.isInitialized) rootViewModel.requestOpenChat(peerId)
         }
     }
 
@@ -51,5 +70,9 @@ class MainActivity : ComponentActivity() {
         if (!granted) {
             requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+    }
+
+    companion object {
+        const val EXTRA_OPEN_CHAT_PEER_ID = "open_chat_peer_id"
     }
 }

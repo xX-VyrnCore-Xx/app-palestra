@@ -1,7 +1,9 @@
 package com.vyrncore.palestra.ui.chat
 
 import android.content.ContentResolver
+import android.media.MediaRecorder
 import android.net.Uri
+import android.os.Build
 import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,6 +19,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
@@ -105,6 +108,86 @@ class ChatThreadViewModel @Inject constructor(
         }
     }
 
+    private var recorder: MediaRecorder? = null
+    private var recordingFile: java.io.File? = null
+    private var recordingStartMs = 0L
+
+    private val _isRecording = MutableStateFlow(false)
+    val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
+
+    private val _recordingSeconds = MutableStateFlow(0)
+    val recordingSeconds: StateFlow<Int> = _recordingSeconds.asStateFlow()
+
+    private var recordingTickJob: Job? = null
+
+    /** Starts recording a voice message to a private cache file - call only after RECORD_AUDIO
+     * has been granted (the screen requests it first). */
+    fun startRecording() {
+        if (_isRecording.value) return
+        val file = java.io.File(context.cacheDir, "voice_${System.currentTimeMillis()}.m4a")
+        val rec = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            MediaRecorder(context)
+        } else {
+            @Suppress("DEPRECATION") MediaRecorder()
+        }
+        runCatching {
+            rec.apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setOutputFile(file.absolutePath)
+                prepare()
+                start()
+            }
+        }.onSuccess {
+            recorder = rec
+            recordingFile = file
+            recordingStartMs = System.currentTimeMillis()
+            _isRecording.value = true
+            _recordingSeconds.value = 0
+            recordingTickJob = viewModelScope.launch {
+                while (true) {
+                    delay(1000)
+                    _recordingSeconds.value = ((System.currentTimeMillis() - recordingStartMs) / 1000).toInt()
+                }
+            }
+        }.onFailure { rec.release() }
+    }
+
+    /** Stops recording and sends the clip as a VOICE attachment - a tap under 1s is treated as an
+     * accidental press and discarded instead of sending a near-silent blip. */
+    fun stopRecordingAndSend() {
+        val peer = peerId.value
+        val file = recordingFile
+        recordingTickJob?.cancel()
+        val durationMs = System.currentTimeMillis() - recordingStartMs
+        runCatching { recorder?.stop() }
+        recorder?.release()
+        recorder = null
+        _isRecording.value = false
+        _recordingSeconds.value = 0
+        if (peer == null || file == null || durationMs < 1000) {
+            file?.delete()
+            return
+        }
+        viewModelScope.launch {
+            val bytes = withContext(Dispatchers.IO) { file.readBytes() }
+            file.delete()
+            chatRepository.sendAttachment(userId, peer, "voice.m4a", bytes, ChatAttachmentType.VOICE)
+        }
+    }
+
+    fun cancelRecording() {
+        recordingTickJob?.cancel()
+        runCatching { recorder?.stop() }
+        recorder?.release()
+        recorder = null
+        _isRecording.value = false
+        _recordingSeconds.value = 0
+        recordingFile?.delete()
+        recordingFile = null
+    }
+
     private fun queryFileName(resolver: ContentResolver, uri: Uri): String? {
         resolver.query(uri, null, null, null, null)?.use { cursor ->
             val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
@@ -119,5 +202,6 @@ class ChatThreadViewModel @Inject constructor(
         super.onCleared()
         chatRepository.setActiveConversation(null)
         chatRepository.stopTypingChannel()
+        if (_isRecording.value) cancelRecording()
     }
 }

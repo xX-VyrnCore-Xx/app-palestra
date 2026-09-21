@@ -318,6 +318,9 @@ interface PlanTemplateDao {
     @Query("SELECT * FROM plan_templates WHERE ptId = :ptId ORDER BY createdAtEpochMs DESC")
     fun observeForPt(ptId: String): Flow<List<PlanTemplateEntity>>
 
+    @Query("SELECT * FROM plan_templates WHERE syncStatus != 'SYNCED'")
+    suspend fun getPendingSync(): List<PlanTemplateEntity>
+
     @Delete
     suspend fun delete(template: PlanTemplateEntity)
 }
@@ -329,4 +332,7 @@ interface PlanTemplateExerciseDao {
 
     @Query("SELECT * FROM plan_template_exercises WHERE templateId = :templateId ORDER BY orderIndex ASC")
     fun observeForTemplate(templateId: String): Flow<List<PlanTemplateExerciseEntity>>
+
+    @Query("SELECT * FROM plan_template_exercises WHERE syncStatus != 'SYNCED'")
+    suspend fun getPendingSync(): List<PlanTemplateExerciseEntity>
 }

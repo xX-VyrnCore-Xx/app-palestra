@@ -80,7 +80,7 @@ fun PtClientDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Scheda recluta") },
+                title = { Text("Scheda cliente") },
                 actions = {
                     IconButton(onClick = { viewModel.exportPdfReport() }) {
                         Icon(Icons.Filled.PictureAsPdf, contentDescription = "Esporta report PDF")
@@ -343,7 +343,7 @@ private fun AllievoProfileCard(
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Icon(Icons.Filled.MilitaryTech, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Text(
-                    "Profilo recluta",
+                    "Profilo cliente",
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(start = 8.dp),
                 )

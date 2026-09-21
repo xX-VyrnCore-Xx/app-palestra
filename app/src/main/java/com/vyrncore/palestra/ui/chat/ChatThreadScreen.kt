@@ -32,7 +32,11 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -77,6 +81,7 @@ fun ChatThreadScreen(
     viewModel: ChatThreadViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(peerId) { viewModel.setPeer(peerId) }
+    val context = LocalContext.current
 
     val messages by viewModel.messages.collectAsStateWithLifecycle()
     val peerName by viewModel.peerName.collectAsStateWithLifecycle()
@@ -90,6 +95,12 @@ fun ChatThreadScreen(
     val attachmentPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
     ) { uri -> uri?.let { viewModel.sendAttachment(it) } }
+
+    val isRecording by viewModel.isRecording.collectAsStateWithLifecycle()
+    val recordingSeconds by viewModel.recordingSeconds.collectAsStateWithLifecycle()
+    val micPermission = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted -> if (granted) viewModel.startRecording() }
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
@@ -125,15 +136,50 @@ fun ChatThreadScreen(
                 modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = { attachmentPicker.launch(arrayOf("*/*")) }) {
+                IconButton(onClick = { attachmentPicker.launch(arrayOf("*/*")) }, enabled = !isRecording) {
                     Icon(Icons.Filled.AttachFile, contentDescription = "Allega file")
                 }
-                OutlinedTextField(
-                    value = draft,
-                    onValueChange = { draft = it; viewModel.notifyTyping() },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Scrivi un messaggio…") },
-                )
+                if (isRecording) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Filled.Mic, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                        Text(
+                            "Registrazione… %d:%02d".format(recordingSeconds / 60, recordingSeconds % 60),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = draft,
+                        onValueChange = { draft = it; viewModel.notifyTyping() },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Scrivi un messaggio…") },
+                    )
+                }
+                if (draft.isBlank() && !isRecording) {
+                    IconButton(
+                        onClick = {
+                            val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+                                context, android.Manifest.permission.RECORD_AUDIO,
+                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                            if (granted) viewModel.startRecording() else micPermission.launch(android.Manifest.permission.RECORD_AUDIO)
+                        },
+                        modifier = Modifier.padding(start = 8.dp),
+                    ) {
+                        Icon(Icons.Filled.Mic, contentDescription = "Registra messaggio vocale")
+                    }
+                } else if (isRecording) {
+                    IconButton(
+                        onClick = { viewModel.stopRecordingAndSend() },
+                        modifier = Modifier.padding(start = 8.dp),
+                    ) {
+                        Icon(Icons.Filled.Stop, contentDescription = "Ferma e invia", tint = MaterialTheme.colorScheme.error)
+                    }
+                }
                 IconButton(
                     onClick = {
                         viewModel.sendMessage(draft.trim())
@@ -272,6 +318,10 @@ private fun MessageContent(message: ChatMessageEntity, isMine: Boolean) {
             )
             return
         }
+        if (message.attachmentType == ChatAttachmentType.VOICE) {
+            VoiceMessagePlayer(url = message.attachmentUrl, textColor = textColor)
+            return
+        }
         Row(
             modifier = Modifier
                 .padding(horizontal = 14.dp, vertical = 10.dp)
@@ -338,4 +388,80 @@ private fun linkify(
         lastEnd = matcher.end()
     }
     withStyle(SpanStyle(color = textColor)) { append(content.substring(lastEnd)) }
+}
+
+/** Play/pause row for a voice message: streams straight from the attachment's public URL via
+ * MediaPlayer rather than downloading first, since chat-attachments is already a public bucket. */
+@Composable
+private fun VoiceMessagePlayer(url: String?, textColor: androidx.compose.ui.graphics.Color) {
+    if (url == null) return
+    val context = LocalContext.current
+    var player by remember { mutableStateOf<android.media.MediaPlayer?>(null) }
+    var isPlaying by remember { mutableStateOf(false) }
+    var progress by remember { mutableStateOf(0f) }
+    var durationMs by remember { mutableStateOf(0) }
+
+    androidx.compose.runtime.DisposableEffect(url) {
+        onDispose { player?.release(); player = null }
+    }
+
+    LaunchedEffect(isPlaying) {
+        while (isPlaying) {
+            val p = player ?: break
+            val dur = p.duration.coerceAtLeast(1)
+            progress = (p.currentPosition.toFloat() / dur).coerceIn(0f, 1f)
+            kotlinx.coroutines.delay(200)
+        }
+    }
+
+    Row(
+        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp).widthIn(min = 160.dp, max = 220.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(
+            onClick = {
+                val current = player
+                if (current == null) {
+                    val mp = android.media.MediaPlayer()
+                    runCatching {
+                        mp.setDataSource(url)
+                        mp.setOnCompletionListener {
+                            isPlaying = false
+                            progress = 0f
+                        }
+                        mp.setOnPreparedListener {
+                            durationMs = it.duration
+                            it.start()
+                            isPlaying = true
+                        }
+                        mp.prepareAsync()
+                    }
+                    player = mp
+                } else if (current.isPlaying) {
+                    current.pause()
+                    isPlaying = false
+                } else {
+                    current.start()
+                    isPlaying = true
+                }
+            },
+        ) {
+            Icon(
+                if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                contentDescription = if (isPlaying) "Pausa" else "Riproduci",
+                tint = textColor,
+            )
+        }
+        androidx.compose.material3.LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+            color = textColor,
+            trackColor = textColor.copy(alpha = 0.25f),
+        )
+        Text(
+            "${durationMs / 1000}s",
+            color = textColor,
+            style = MaterialTheme.typography.labelSmall,
+        )
+    }
 }
