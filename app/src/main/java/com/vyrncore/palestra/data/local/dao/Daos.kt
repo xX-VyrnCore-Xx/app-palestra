@@ -330,6 +330,9 @@ interface PlanTemplateExerciseDao {
     @Upsert
     suspend fun upsertAll(exercises: List<PlanTemplateExerciseEntity>)
 
+    @Upsert
+    suspend fun upsert(exercise: PlanTemplateExerciseEntity)
+
     @Query("SELECT * FROM plan_template_exercises WHERE templateId = :templateId ORDER BY orderIndex ASC")
     fun observeForTemplate(templateId: String): Flow<List<PlanTemplateExerciseEntity>>
 
