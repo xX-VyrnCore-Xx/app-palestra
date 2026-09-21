@@ -8,7 +8,9 @@ import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.PlotoneFeedRepository
 import com.vyrncore.palestra.data.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -27,6 +29,16 @@ class ActiveWorkoutViewModel @Inject constructor(
     val sessionId: String = checkNotNull(savedStateHandle["sessionId"])
     val planId: String = checkNotNull(savedStateHandle["planId"])
 
+    /** In-app celebration for a fresh personal record: shown once, dismissed by the user or a
+     * timeout. Complements (not replaces) the system notification, which also works when the
+     * app is in background. */
+    private val _prCelebration = MutableStateFlow<PrCelebration?>(null)
+    val prCelebration = _prCelebration.asStateFlow()
+
+    fun dismissPrCelebration() {
+        _prCelebration.value = null
+    }
+
     val uiState = combine(
         workoutRepository.observePlanExercises(planId),
         workoutRepository.observeExercises(),
@@ -43,6 +55,7 @@ class ActiveWorkoutViewModel @Inject constructor(
                     difficulty = exercises.firstOrNull { it.id == planExercise.exerciseId }?.difficulty,
                     targetSets = planExercise.targetSets,
                     targetReps = planExercise.targetReps,
+                    targetWeightKg = planExercise.targetWeightKg,
                     restSeconds = planExercise.restSeconds,
                     completedSets = loggedSets.count { it.exerciseId == planExercise.exerciseId },
                     notes = planExercise.notes,
@@ -58,6 +71,7 @@ class ActiveWorkoutViewModel @Inject constructor(
                 val exerciseName = uiState.value.exercises.firstOrNull { it.exerciseId == exerciseId }?.name ?: return@launch
                 val estimatedOneRepMaxKg = weightKg * (1 + reps / 30.0)
                 notificationHelper.showPersonalRecordNotification(exerciseName, estimatedOneRepMaxKg)
+                _prCelebration.value = PrCelebration(exerciseName, estimatedOneRepMaxKg)
             }
         }
     }
@@ -95,7 +109,14 @@ data class ActiveExerciseUi(
     val difficulty: String? = null,
     val targetSets: Int,
     val targetReps: Int,
+    val targetWeightKg: Double? = null,
     val restSeconds: Int,
     val completedSets: Int,
     val notes: String? = null,
+)
+
+/** A just-achieved personal record, surfaced as an in-app celebration overlay. */
+data class PrCelebration(
+    val exerciseName: String,
+    val estimatedOneRepMaxKg: Double,
 )

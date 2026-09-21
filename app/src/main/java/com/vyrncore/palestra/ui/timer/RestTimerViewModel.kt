@@ -58,6 +58,13 @@ class RestTimerViewModel @Inject constructor(
         }
     }
 
+    /** Back to the original duration and running again - used by the "Ricomincia" button
+     * shown once the timer has finished. */
+    fun restart() {
+        _uiState.value = RestTimerUiState(totalSeconds, totalSeconds)
+        start()
+    }
+
     fun addSeconds(delta: Int) {
         val newRemaining = (_uiState.value.remainingSeconds + delta).coerceAtLeast(0)
         _uiState.value = _uiState.value.copy(remainingSeconds = newRemaining, isFinished = newRemaining == 0)
