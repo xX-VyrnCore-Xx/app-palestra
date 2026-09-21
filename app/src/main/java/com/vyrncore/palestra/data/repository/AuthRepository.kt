@@ -96,6 +96,12 @@ class AuthRepository @Inject constructor(
         }.onSuccess { dto -> userProfileDao.upsert(dto.toEntity()) }
     }
 
+    /** Sends the Supabase Auth password-reset email - "Password dimenticata?" on the Login screen
+     * used to call a default no-op callback that wasn't wired to anything. */
+    suspend fun sendPasswordResetEmail(email: String) {
+        auth.resetPasswordForEmail(email)
+    }
+
     /** Clears this device's FCM token from the outgoing user's profile before signing out - without
      * this, a device shared between accounts (PT signs out, allievo signs in) keeps delivering push
      * notifications for BOTH accounts, since the token would otherwise stay registered on the old

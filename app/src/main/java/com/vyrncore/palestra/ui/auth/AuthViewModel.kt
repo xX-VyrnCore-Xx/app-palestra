@@ -130,4 +130,31 @@ class AuthViewModel @Inject constructor(
             errorMessage = null, emailError = null, passwordError = null, nameError = null,
         )
     }
+
+    private val _passwordResetState = MutableStateFlow<PasswordResetState>(PasswordResetState.Idle)
+    val passwordResetState: StateFlow<PasswordResetState> = _passwordResetState.asStateFlow()
+
+    fun sendPasswordResetEmail(email: String) {
+        if (email.isBlank() || !isValidEmail(email)) {
+            _passwordResetState.value = PasswordResetState.Error("Inserisci un'email valida")
+            return
+        }
+        _passwordResetState.value = PasswordResetState.Sending
+        viewModelScope.launch {
+            runCatching { authRepository.sendPasswordResetEmail(email.trim()) }
+                .onSuccess { _passwordResetState.value = PasswordResetState.Sent }
+                .onFailure { e -> _passwordResetState.value = PasswordResetState.Error(friendlyError(e)) }
+        }
+    }
+
+    fun resetPasswordResetState() {
+        _passwordResetState.value = PasswordResetState.Idle
+    }
+}
+
+sealed interface PasswordResetState {
+    data object Idle : PasswordResetState
+    data object Sending : PasswordResetState
+    data object Sent : PasswordResetState
+    data class Error(val message: String) : PasswordResetState
 }
