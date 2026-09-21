@@ -71,6 +71,28 @@ data class PlanExerciseDto(
 )
 
 @Serializable
+data class PlanTemplateDto(
+    val id: String,
+    @SerialName("pt_id") val ptId: String,
+    val name: String,
+    val category: String? = null,
+    @SerialName("created_at") val createdAt: String,
+)
+
+@Serializable
+data class PlanTemplateExerciseDto(
+    val id: String,
+    @SerialName("template_id") val templateId: String,
+    @SerialName("exercise_id") val exerciseId: String,
+    @SerialName("order_index") val orderIndex: Int,
+    @SerialName("target_sets") val targetSets: Int,
+    @SerialName("target_reps") val targetReps: Int,
+    @SerialName("target_weight_kg") val targetWeightKg: Double? = null,
+    @SerialName("rest_seconds") val restSeconds: Int = 90,
+    val notes: String? = null,
+)
+
+@Serializable
 data class WorkoutSessionDto(
     val id: String,
     @SerialName("plan_id") val planId: String? = null,

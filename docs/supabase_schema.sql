@@ -401,7 +401,54 @@ as $$
   limit 10;
 $$;
 
+revoke execute on function public.get_weekly_ranking() from anon;
+revoke execute on function public.get_weekly_ranking() from public;
 grant execute on function public.get_weekly_ranking() to authenticated;
+
+-- Plan templates (PT's reusable exercise-list library) ------------------------
+create table if not exists public.plan_templates (
+    id uuid primary key,
+    pt_id uuid not null references public.profiles (id) on delete cascade,
+    name text not null,
+    category text,
+    created_at timestamptz not null default now()
+);
+
+create table if not exists public.plan_template_exercises (
+    id uuid primary key,
+    template_id uuid not null references public.plan_templates (id) on delete cascade,
+    exercise_id uuid not null references public.exercises (id) on delete cascade,
+    order_index int not null default 0,
+    target_sets int not null,
+    target_reps int not null,
+    target_weight_kg numeric,
+    rest_seconds int not null default 90,
+    notes text
+);
+
+create index if not exists idx_plan_templates_pt_id on public.plan_templates (pt_id);
+create index if not exists idx_plan_template_exercises_template_id on public.plan_template_exercises (template_id);
+
+alter table public.plan_templates enable row level security;
+alter table public.plan_template_exercises enable row level security;
+
+create policy "plan_templates_select" on public.plan_templates
+    for select using (auth.uid() = pt_id);
+create policy "plan_templates_insert" on public.plan_templates
+    for insert with check (auth.uid() = pt_id);
+create policy "plan_templates_update" on public.plan_templates
+    for update using (auth.uid() = pt_id);
+create policy "plan_templates_delete" on public.plan_templates
+    for delete using (auth.uid() = pt_id);
+
+create policy "plan_template_exercises_select" on public.plan_template_exercises
+    for select using (exists (select 1 from public.plan_templates t where t.id = template_id and t.pt_id = auth.uid()));
+create policy "plan_template_exercises_insert" on public.plan_template_exercises
+    for insert with check (exists (select 1 from public.plan_templates t where t.id = template_id and t.pt_id = auth.uid()));
+create policy "plan_template_exercises_update" on public.plan_template_exercises
+    for update using (exists (select 1 from public.plan_templates t where t.id = template_id and t.pt_id = auth.uid()));
+create policy "plan_template_exercises_delete" on public.plan_template_exercises
+    for delete using (exists (select 1 from public.plan_templates t where t.id = template_id and t.pt_id = auth.uid()));
 
 -- PT invite codes -------------------------------------------------------------
 -- SECURITY DEFINER so any signed-in user can resolve a PT's short invite code to their id/name
@@ -419,6 +466,8 @@ as $$
   limit 1;
 $$;
 
+revoke execute on function public.resolve_pt_invite_code(text) from anon;
+revoke execute on function public.resolve_pt_invite_code(text) from public;
 grant execute on function public.resolve_pt_invite_code(text) to authenticated;
 
 -- Chat attachments storage ---------------------------------------------------
