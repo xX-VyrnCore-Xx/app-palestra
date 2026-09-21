@@ -19,10 +19,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.WarningAmber
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -49,11 +51,14 @@ fun PlanEditorScreen(
     val draft by viewModel.draftExercises.collectAsStateWithLifecycle()
     val clientInjuries by viewModel.clientInjuries.collectAsStateWithLifecycle()
     val templates by viewModel.templates.collectAsStateWithLifecycle()
+    val aiGenerating by viewModel.aiGenerating.collectAsStateWithLifecycle()
+    val aiError by viewModel.aiError.collectAsStateWithLifecycle()
     var planName by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var showPicker by remember { mutableStateOf(false) }
     var showTemplatePicker by remember { mutableStateOf(false) }
     var showSaveTemplateDialog by remember { mutableStateOf(false) }
+    var showAiDialog by remember { mutableStateOf(false) }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Nuova scheda") }) }) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
@@ -114,6 +119,14 @@ fun PlanEditorScreen(
                     Icon(Icons.Filled.Bookmark, contentDescription = null)
                     Text("Usa modello", modifier = Modifier.padding(start = 4.dp))
                 }
+            }
+
+            OutlinedButton(
+                onClick = { showAiDialog = true },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            ) {
+                Icon(Icons.Filled.AutoAwesome, contentDescription = null)
+                Text("Crea con AI", modifier = Modifier.padding(start = 4.dp))
             }
 
             if (draft.isNotEmpty()) {
@@ -233,6 +246,64 @@ fun PlanEditorScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showTemplatePicker = false }) { Text("Chiudi") }
+            },
+        )
+    }
+
+    if (showAiDialog) {
+        var goal by remember { mutableStateOf("") }
+        // Auto-closes once generation finishes successfully, so the PT lands straight on the
+        // populated draft instead of having to dismiss the dialog by hand.
+        androidx.compose.runtime.LaunchedEffect(aiGenerating) {
+            if (!aiGenerating && draft.isNotEmpty() && aiError == null && goal.isNotBlank()) {
+                showAiDialog = false
+            }
+        }
+        AlertDialog(
+            onDismissRequest = { if (!aiGenerating) { showAiDialog = false; viewModel.clearAiError() } },
+            title = { Text("Crea scheda con AI") },
+            text = {
+                Column {
+                    Text(
+                        "Descrivi l'obiettivo (es. \"push/pull/legs, 4 giorni a settimana, ipertrofia, livello intermedio\"). " +
+                            "L'AI propone gli esercizi dal catalogo, che potrai comunque modificare prima di salvare.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedTextField(
+                        value = goal,
+                        onValueChange = { goal = it },
+                        label = { Text("Obiettivo") },
+                        enabled = !aiGenerating,
+                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    )
+                    if (aiGenerating) {
+                        Row(modifier = Modifier.padding(top = 12.dp)) {
+                            CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
+                            Text("Generazione in corso…", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                    aiError?.let {
+                        Text(
+                            it,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.generateWithAi(goal) },
+                    enabled = goal.isNotBlank() && !aiGenerating,
+                ) { Text("Genera") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showAiDialog = false; viewModel.clearAiError() },
+                    enabled = !aiGenerating,
+                ) { Text("Chiudi") }
             },
         )
     }

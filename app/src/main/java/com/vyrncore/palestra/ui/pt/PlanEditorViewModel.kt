@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.vyrncore.palestra.data.local.SyncStatus
 import com.vyrncore.palestra.data.local.entity.PlanExerciseEntity
 import com.vyrncore.palestra.data.local.entity.PlanTemplateExerciseEntity
+import com.vyrncore.palestra.data.repository.AiPlanBuilderRepository
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.PlanTemplateRepository
 import com.vyrncore.palestra.data.repository.WorkoutRepository
@@ -40,6 +41,7 @@ class PlanEditorViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val syncScheduler: SyncScheduler,
     private val planTemplateRepository: PlanTemplateRepository,
+    private val aiPlanBuilderRepository: AiPlanBuilderRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -131,6 +133,42 @@ class PlanEditorViewModel @Inject constructor(
                 },
             )
         }
+    }
+
+    private val _aiGenerating = MutableStateFlow(false)
+    val aiGenerating: StateFlow<Boolean> = _aiGenerating.asStateFlow()
+
+    private val _aiError = MutableStateFlow<String?>(null)
+    val aiError: StateFlow<String?> = _aiError.asStateFlow()
+
+    /** Replaces the draft with exercises the AI proposed for [goal] - always still just a draft
+     * the PT reviews (sets/reps/rest are editable, nothing is saved until "Salva scheda"). */
+    fun generateWithAi(goal: String) {
+        if (goal.isBlank()) return
+        _aiError.value = null
+        _aiGenerating.value = true
+        viewModelScope.launch {
+            runCatching { aiPlanBuilderRepository.generatePlan(goal, clientId) }
+                .onSuccess { suggestion ->
+                    val catalog = exerciseCatalog.value
+                    _draftExercises.value = suggestion.exercises.mapNotNull { suggested ->
+                        val name = catalog.firstOrNull { it.id == suggested.exerciseId }?.name ?: return@mapNotNull null
+                        DraftPlanExercise(
+                            exerciseId = suggested.exerciseId,
+                            exerciseName = name,
+                            targetSets = suggested.sets,
+                            targetReps = suggested.reps,
+                            restSeconds = suggested.restSeconds,
+                        )
+                    }
+                }
+                .onFailure { e -> _aiError.value = e.message ?: "Errore durante la generazione della scheda." }
+            _aiGenerating.value = false
+        }
+    }
+
+    fun clearAiError() {
+        _aiError.value = null
     }
 
     fun savePlan(name: String, description: String?, category: String?, onSaved: () -> Unit) {
