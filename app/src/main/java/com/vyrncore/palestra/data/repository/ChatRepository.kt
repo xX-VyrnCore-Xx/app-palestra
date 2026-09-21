@@ -198,7 +198,11 @@ class ChatRepository @Inject constructor(
             id = UUID.randomUUID().toString(),
             senderId = senderId,
             recipientId = recipientId,
-            content = if (type == ChatAttachmentType.IMAGE) "📷 Immagine" else "📎 $fileName",
+            content = when (type) {
+                ChatAttachmentType.IMAGE -> "📷 Immagine"
+                ChatAttachmentType.VOICE -> "🎤 Messaggio vocale"
+                ChatAttachmentType.FILE -> "📎 $fileName"
+            },
             createdAtEpochMs = System.currentTimeMillis(),
             readAtEpochMs = null,
             attachmentUrl = url,
