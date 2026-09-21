@@ -24,7 +24,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +56,11 @@ fun ExerciseDetailSheet(
         exerciseMedia(exercise.name, exercise.equipment)
     }
     val uriHandler = LocalUriHandler.current
+    var showVideo by remember { mutableStateOf(false) }
+
+    if (showVideo) {
+        InAppVideoDialog(url = media.videoUrl, onDismiss = { showVideo = false })
+    }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp)) {
@@ -64,7 +72,7 @@ fun ExerciseDetailSheet(
                     .fillMaxWidth()
                     .height(180.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .clickable { uriHandler.openUri(media.videoUrl) },
+                    .clickable { showVideo = true },
             ) {
                 val thumbnail = remember(media.videoUrl) { youtubeThumbnailUrl(media.videoUrl) }
                 when {
