@@ -10,11 +10,11 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -43,9 +43,9 @@ private const val CHAT_TAB_INDEX = 2
 private val tabs = listOf(
     AllievoTab("Home", Icons.Filled.Home),
     AllievoTab("Schede", Icons.Filled.FitnessCenter),
-    AllievoTab("Chat", Icons.Filled.Forum),
-    AllievoTab("Assistente", Icons.Filled.AutoAwesome),
-    AllievoTab("Profilo", Icons.Filled.Person),
+    AllievoTab("Chat", Icons.AutoMirrored.Filled.Chat),
+    AllievoTab("Assistente", Icons.Filled.Psychology),
+    AllievoTab("Profilo", Icons.Filled.AccountCircle),
 )
 
 @Composable

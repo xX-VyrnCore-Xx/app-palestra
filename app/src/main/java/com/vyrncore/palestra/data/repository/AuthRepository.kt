@@ -40,11 +40,16 @@ class AuthRepository @Inject constructor(
         weightKg: Double?,
         primaryGoal: String?,
     ) {
-        auth.signUpWith(Email) {
-            this.email = email
-            this.password = password
-        }
-        val userId = auth.currentUserOrNull()?.id ?: error("Sign up did not return a user")
+        if (password.length < 8) throw IllegalArgumentException("La password deve essere di almeno 8 caratteri.")
+        
+        runCatching {
+            auth.signUpWith(Email) {
+                this.email = email
+                this.password = password
+            }
+        }.onFailure { throw it }
+
+        val userId = auth.currentUserOrNull()?.id ?: throw IllegalStateException("Registrazione fallita: utente non trovato.")
         val profile = UserProfileEntity(
             id = userId,
             email = email,
@@ -60,10 +65,13 @@ class AuthRepository @Inject constructor(
     }
 
     suspend fun signIn(email: String, password: String) {
-        auth.signInWith(Email) {
-            this.email = email
-            this.password = password
-        }
+        runCatching {
+            auth.signInWith(Email) {
+                this.email = email
+                this.password = password
+            }
+        }.onFailure { throw it }
+
         val userId = auth.currentUserOrNull()?.id ?: return
         runCatching {
             postgrest.from("profiles").select {

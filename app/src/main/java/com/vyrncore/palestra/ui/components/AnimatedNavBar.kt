@@ -29,6 +29,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -50,40 +52,50 @@ fun AnimatedNavBar(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    /** Index of the tab to render as a permanently-filled circular "hub" (e.g. Chat), instead of
-     * the usual pill-on-select treatment - a light way to give it visual priority without the
-     * layout risk of a true floating notch that pops out of the bar's own bounds. */
     emphasizedIndex: Int? = null,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 3.dp,
-        shadowElevation = 8.dp,
+        color = Color.Transparent,
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .height(72.dp)
-                .padding(horizontal = 4.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+                        )
+                    )
+                )
+                .padding(top = 1.dp) // Space for the top border
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)) // Thin top border effect
         ) {
-            items.forEachIndexed { index, item ->
-                if (index == emphasizedIndex) {
-                    EmphasizedNavBarTab(
-                        item = item,
-                        selected = index == selectedIndex,
-                        onClick = { onSelect(index) },
-                        modifier = Modifier.weight(1f),
-                    )
-                } else {
-                    NavBarTab(
-                        item = item,
-                        selected = index == selectedIndex,
-                        onClick = { onSelect(index) },
-                        modifier = Modifier.weight(1f),
-                    )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .height(72.dp)
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                items.forEachIndexed { index, item ->
+                    if (index == emphasizedIndex) {
+                        EmphasizedNavBarTab(
+                            item = item,
+                            selected = index == selectedIndex,
+                            onClick = { onSelect(index) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    } else {
+                        NavBarTab(
+                            item = item,
+                            selected = index == selectedIndex,
+                            onClick = { onSelect(index) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
         }
