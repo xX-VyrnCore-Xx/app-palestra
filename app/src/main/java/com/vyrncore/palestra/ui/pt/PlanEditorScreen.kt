@@ -1,5 +1,6 @@
 package com.vyrncore.palestra.ui.pt
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -17,12 +19,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,9 +48,12 @@ fun PlanEditorScreen(
     val catalog by viewModel.exerciseCatalog.collectAsStateWithLifecycle()
     val draft by viewModel.draftExercises.collectAsStateWithLifecycle()
     val clientInjuries by viewModel.clientInjuries.collectAsStateWithLifecycle()
+    val templates by viewModel.templates.collectAsStateWithLifecycle()
     var planName by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var showPicker by remember { mutableStateOf(false) }
+    var showTemplatePicker by remember { mutableStateOf(false) }
+    var showSaveTemplateDialog by remember { mutableStateOf(false) }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Nuova scheda") }) }) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
@@ -96,9 +105,25 @@ fun PlanEditorScreen(
                 }
             }
 
-            Button(onClick = { showPicker = true }, modifier = Modifier.padding(top = 12.dp)) {
-                Icon(Icons.Filled.Add, contentDescription = null)
-                Text("Aggiungi esercizio", modifier = Modifier.padding(start = 4.dp))
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+                Button(onClick = { showPicker = true }) {
+                    Icon(Icons.Filled.Add, contentDescription = null)
+                    Text("Aggiungi esercizio", modifier = Modifier.padding(start = 4.dp))
+                }
+                OutlinedButton(onClick = { showTemplatePicker = true }, modifier = Modifier.padding(start = 8.dp)) {
+                    Icon(Icons.Filled.Bookmark, contentDescription = null)
+                    Text("Usa modello", modifier = Modifier.padding(start = 4.dp))
+                }
+            }
+
+            if (draft.isNotEmpty()) {
+                TextButton(
+                    onClick = { showSaveTemplateDialog = true },
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    Icon(Icons.Filled.BookmarkAdd, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
+                    Text("Salva come modello riutilizzabile")
+                }
             }
 
             LazyColumn(modifier = Modifier.weight(1f).padding(top = 8.dp)) {
@@ -177,6 +202,66 @@ fun PlanEditorScreen(
             onCreateCustom = { name, muscleGroup, imageUrl ->
                 viewModel.createCustomExercise(name, muscleGroup, imageUrl)
                 showPicker = false
+            },
+        )
+    }
+
+    if (showTemplatePicker) {
+        AlertDialog(
+            onDismissRequest = { showTemplatePicker = false },
+            title = { Text("Usa un modello") },
+            text = {
+                if (templates.isEmpty()) {
+                    Text("Nessun modello salvato ancora. Costruisci una scheda e salvala come modello per riusarla.")
+                } else {
+                    Column {
+                        templates.forEach { template ->
+                            Text(
+                                template.name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        viewModel.applyTemplate(template.id)
+                                        showTemplatePicker = false
+                                    }
+                                    .padding(vertical = 12.dp),
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showTemplatePicker = false }) { Text("Chiudi") }
+            },
+        )
+    }
+
+    if (showSaveTemplateDialog) {
+        var templateName by remember { mutableStateOf(planName) }
+        AlertDialog(
+            onDismissRequest = { showSaveTemplateDialog = false },
+            title = { Text("Salva come modello") },
+            text = {
+                OutlinedTextField(
+                    value = templateName,
+                    onValueChange = { templateName = it },
+                    label = { Text("Nome modello") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.saveAsTemplate(templateName, selectedCategory)
+                        showSaveTemplateDialog = false
+                    },
+                    enabled = templateName.isNotBlank(),
+                ) { Text("Salva") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSaveTemplateDialog = false }) { Text("Annulla") }
             },
         )
     }

@@ -7,6 +7,8 @@ import com.vyrncore.palestra.data.local.dao.BodyMetricDao
 import com.vyrncore.palestra.data.local.dao.ChatMessageDao
 import com.vyrncore.palestra.data.local.dao.ExerciseDao
 import com.vyrncore.palestra.data.local.dao.PlanExerciseDao
+import com.vyrncore.palestra.data.local.dao.PlanTemplateDao
+import com.vyrncore.palestra.data.local.dao.PlanTemplateExerciseDao
 import com.vyrncore.palestra.data.local.dao.ProgramDao
 import com.vyrncore.palestra.data.local.dao.PtNoteDao
 import com.vyrncore.palestra.data.local.dao.SetEntryDao
@@ -17,6 +19,8 @@ import com.vyrncore.palestra.data.local.entity.BodyMetricEntity
 import com.vyrncore.palestra.data.local.entity.ChatMessageEntity
 import com.vyrncore.palestra.data.local.entity.ExerciseEntity
 import com.vyrncore.palestra.data.local.entity.PlanExerciseEntity
+import com.vyrncore.palestra.data.local.entity.PlanTemplateEntity
+import com.vyrncore.palestra.data.local.entity.PlanTemplateExerciseEntity
 import com.vyrncore.palestra.data.local.entity.ProgramEntity
 import com.vyrncore.palestra.data.local.entity.PtNoteEntity
 import com.vyrncore.palestra.data.local.entity.SetEntryEntity
@@ -36,8 +40,10 @@ import com.vyrncore.palestra.data.local.entity.WorkoutSessionEntity
         ChatMessageEntity::class,
         PtNoteEntity::class,
         ProgramEntity::class,
+        PlanTemplateEntity::class,
+        PlanTemplateExerciseEntity::class,
     ],
-    version = 13,
+    version = 14,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -52,6 +58,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun chatMessageDao(): ChatMessageDao
     abstract fun ptNoteDao(): PtNoteDao
     abstract fun programDao(): ProgramDao
+    abstract fun planTemplateDao(): PlanTemplateDao
+    abstract fun planTemplateExerciseDao(): PlanTemplateExerciseDao
 
     companion object {
         const val DATABASE_NAME = "palestra.db"

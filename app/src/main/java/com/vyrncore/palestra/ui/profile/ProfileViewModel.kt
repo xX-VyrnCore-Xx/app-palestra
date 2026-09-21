@@ -4,13 +4,17 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vyrncore.palestra.data.repository.AuthRepository
+import com.vyrncore.palestra.data.repository.BodyMetricsRepository
 import com.vyrncore.palestra.data.repository.DEFAULT_REMINDER_THRESHOLD_DAYS
 import com.vyrncore.palestra.data.repository.ThemeMode
 import com.vyrncore.palestra.data.repository.ThemeRepository
+import com.vyrncore.palestra.data.repository.WorkoutRepository
+import com.vyrncore.palestra.util.CsvExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -20,6 +24,8 @@ import javax.inject.Inject
 class ProfileViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val themeRepository: ThemeRepository,
+    private val workoutRepository: WorkoutRepository,
+    private val bodyMetricsRepository: BodyMetricsRepository,
     @ApplicationContext private val context: android.content.Context,
 ) : ViewModel() {
 
@@ -102,6 +108,27 @@ class ProfileViewModel @Inject constructor(
 
     fun setReminderCustomMessage(message: String) {
         viewModelScope.launch { themeRepository.setReminderCustomMessage(message) }
+    }
+
+    /** Every session, logged set, and body-metric entry the allievo has recorded, as one CSV -
+     * the honest "take your data and leave" export, not just the workout summaries. */
+    fun exportAllData() {
+        viewModelScope.launch {
+            val summaries = workoutRepository.observeSessionSummaries(userId).first()
+            val plans = workoutRepository.observePlansForUser(userId).first()
+            val history = summaries.filter { it.endedAtEpochMs != null }.map { summary ->
+                com.vyrncore.palestra.ui.history.HistoryItemUi(
+                    sessionId = summary.sessionId,
+                    planName = plans.firstOrNull { it.id == summary.planId }?.name ?: "Allenamento libero",
+                    startedAtEpochMs = summary.startedAtEpochMs,
+                    durationMinutes = summary.endedAtEpochMs?.let { (it - summary.startedAtEpochMs) / 60_000 },
+                    setCount = summary.setCount,
+                    totalVolumeKg = summary.totalVolumeKg,
+                )
+            }
+            val bodyMetrics = bodyMetricsRepository.observeForUser(userId).first()
+            CsvExporter.shareFullExport(context, history, bodyMetrics)
+        }
     }
 
     fun signOut(onSignedOut: () -> Unit) {

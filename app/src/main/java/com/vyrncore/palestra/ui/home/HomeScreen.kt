@@ -78,6 +78,7 @@ import com.vyrncore.palestra.ui.components.ConnectionStatusBar
 import com.vyrncore.palestra.ui.components.GradientHeader
 import com.vyrncore.palestra.ui.components.MetricCard
 import com.vyrncore.palestra.ui.components.PersonalRecordsCard
+import com.vyrncore.palestra.ui.components.ProgressTrendCard
 import com.vyrncore.palestra.ui.components.RealisticBadge
 import com.vyrncore.palestra.ui.components.pressScale
 import com.vyrncore.palestra.ui.components.SimpleBarChart
@@ -295,6 +296,13 @@ fun HomeScreen(
                     previousVolumeKg = previous.totalVolumeKg,
                     currentVolumeKg = current.totalVolumeKg,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
+
+            if (weeklyVolume.size >= 3) {
+                ProgressTrendCard(
+                    weeklyVolume = weeklyVolume,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                 )
             }
 

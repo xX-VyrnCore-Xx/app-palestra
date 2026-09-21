@@ -12,6 +12,8 @@ import com.vyrncore.palestra.data.local.entity.BodyMetricEntity
 import com.vyrncore.palestra.data.local.entity.ChatMessageEntity
 import com.vyrncore.palestra.data.local.entity.ExerciseEntity
 import com.vyrncore.palestra.data.local.entity.PlanExerciseEntity
+import com.vyrncore.palestra.data.local.entity.PlanTemplateEntity
+import com.vyrncore.palestra.data.local.entity.PlanTemplateExerciseEntity
 import com.vyrncore.palestra.data.local.entity.ProgramEntity
 import com.vyrncore.palestra.data.local.entity.PtNoteEntity
 import com.vyrncore.palestra.data.local.entity.SetEntryEntity
@@ -303,4 +305,28 @@ interface PtNoteDao {
 
     @Query("SELECT * FROM pt_notes WHERE syncStatus != 'SYNCED'")
     suspend fun getPendingSync(): List<PtNoteEntity>
+
+    @Query("SELECT * FROM pt_notes WHERE reminderAtEpochMs IS NOT NULL")
+    suspend fun getAllWithReminder(): List<PtNoteEntity>
+}
+
+@Dao
+interface PlanTemplateDao {
+    @Upsert
+    suspend fun upsert(template: PlanTemplateEntity)
+
+    @Query("SELECT * FROM plan_templates WHERE ptId = :ptId ORDER BY createdAtEpochMs DESC")
+    fun observeForPt(ptId: String): Flow<List<PlanTemplateEntity>>
+
+    @Delete
+    suspend fun delete(template: PlanTemplateEntity)
+}
+
+@Dao
+interface PlanTemplateExerciseDao {
+    @Upsert
+    suspend fun upsertAll(exercises: List<PlanTemplateExerciseEntity>)
+
+    @Query("SELECT * FROM plan_template_exercises WHERE templateId = :templateId ORDER BY orderIndex ASC")
+    fun observeForTemplate(templateId: String): Flow<List<PlanTemplateExerciseEntity>>
 }

@@ -307,6 +307,13 @@ fun ProfileScreen(
                         }
                     }
                 }
+
+                OutlinedButton(
+                    onClick = { viewModel.exportAllData() },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                ) {
+                    Text("Esporta tutti i dati")
+                }
             }
 
             TextButton(

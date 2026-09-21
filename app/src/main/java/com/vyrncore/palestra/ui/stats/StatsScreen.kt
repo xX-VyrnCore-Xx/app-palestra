@@ -42,6 +42,7 @@ import java.util.Locale
 import com.vyrncore.palestra.ui.components.BarChartEntry
 import com.vyrncore.palestra.ui.components.MetricCard
 import com.vyrncore.palestra.ui.components.PersonalRecordsCard
+import com.vyrncore.palestra.ui.components.ProgressTrendCard
 import com.vyrncore.palestra.ui.components.SimpleBarChart
 import com.vyrncore.palestra.ui.components.SimpleLineChart
 import com.vyrncore.palestra.ui.components.WeekOverWeekCard
@@ -241,6 +242,8 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
                         lineColor = MaterialTheme.colorScheme.secondary,
                     )
                 }
+
+                ProgressTrendCard(weeklyVolume = weeklyVolume, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
             }
 
             Spacer(modifier = Modifier.padding(bottom = 32.dp))

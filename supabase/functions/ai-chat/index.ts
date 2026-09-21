@@ -7,10 +7,31 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
+// Reverted from an unverified 405B model slug that broke every request (NIM rejected it
+// outright - there is no safe way to confirm a NIM catalog model id from this environment,
+// so "bigger model" needs a slug the account owner has actually confirmed in their NVIDIA
+// console rather than a guess). This 70B id is the one previously confirmed working.
 const NIM_MODEL = "meta/llama-3.3-70b-instruct";
 const NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 const RATE_LIMIT_PER_MINUTE = 40;
 const MAX_HISTORY_MESSAGES = 20;
+
+// The one tool the assistant can call: re-fetch the caller's own real, current stats mid-
+// conversation (e.g. after several turns, when the context injected at the start has scrolled
+// out of relevance) instead of relying only on what was preloaded into the system prompt.
+const TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "get_my_stats",
+      description:
+        "Restituisce statistiche reali e aggiornate sull'utente che sta chattando (allievo o PT): " +
+        "allenamenti recenti, aderenza, o stato del plotone. Usalo se hai bisogno di dati più " +
+        "aggiornati di quelli già forniti all'inizio della conversazione.",
+      parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
+];
 
 const PT_SYSTEM_PROMPT = `Sei l'assistente AI per Personal Trainer di Vibe Fitness, un'app di gestione allenamenti.
 Aiuti il PT a progettare e adattare schede di allenamento, interpretare i progressi degli allievi,
@@ -225,35 +246,76 @@ Deno.serve(async (req: Request) => {
     ? await buildPtContext(userClient, userId)
     : await buildAllievoContext(userClient, userId);
 
-  const nimMessages = [
+  // deno-lint-ignore no-explicit-any
+  const nimMessages: any[] = [
     { role: "system", content: systemPrompt },
     ...(contextBlock ? [{ role: "system", content: contextBlock }] : []),
     ...orderedHistory.map((m) => ({ role: m.role, content: m.content })),
     { role: "user", content: message },
   ];
 
-  const nimResponse = await fetch(NIM_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${nimApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: NIM_MODEL,
-      messages: nimMessages,
-      temperature: 0.6,
-      max_tokens: 1024,
-    }),
-  });
-
-  if (!nimResponse.ok) {
-    const detail = await nimResponse.text();
-    console.error("NIM error", nimResponse.status, detail);
-    return jsonResponse({ error: "L'assistente AI non è al momento disponibile." }, 502);
+  // deno-lint-ignore no-explicit-any
+  async function callNim(withTools: boolean): Promise<any> {
+    const res = await fetch(NIM_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${nimApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: NIM_MODEL,
+        messages: nimMessages,
+        temperature: 0.6,
+        max_tokens: 1024,
+        ...(withTools ? { tools: TOOLS, tool_choice: "auto" } : {}),
+      }),
+    });
+    if (!res.ok) {
+      const detail = await res.text();
+      console.error("NIM error", res.status, detail);
+      throw new Error("NIM request failed");
+    }
+    return await res.json();
   }
 
-  const nimJson = await nimResponse.json();
-  const reply: string | undefined = nimJson.choices?.[0]?.message?.content;
+  // Some NIM-hosted models reject the "tools" param outright rather than just ignoring it, so a
+  // failure here retries once without tools instead of failing the whole request - the assistant
+  // degrades to "no live re-fetch of stats mid-chat" rather than refusing to answer at all.
+  let nimJson;
+  try {
+    nimJson = await callNim(true);
+  } catch {
+    try {
+      nimJson = await callNim(false);
+    } catch {
+      return jsonResponse({ error: "L'assistente AI non è al momento disponibile." }, 502);
+    }
+  }
+
+  let choice = nimJson.choices?.[0];
+  const toolCalls = choice?.message?.tool_calls as
+    | { id: string; function: { name: string } }[]
+    | undefined;
+
+  if (toolCalls && toolCalls.length > 0) {
+    nimMessages.push(choice.message);
+    for (const toolCall of toolCalls) {
+      const result = toolCall.function.name === "get_my_stats"
+        ? (profile.role === "PT"
+          ? await buildPtContext(userClient, userId)
+          : await buildAllievoContext(userClient, userId)) ?? "Nessun dato disponibile."
+        : "Strumento non disponibile.";
+      nimMessages.push({ role: "tool", tool_call_id: toolCall.id, content: result });
+    }
+    try {
+      nimJson = await callNim(false);
+      choice = nimJson.choices?.[0];
+    } catch {
+      return jsonResponse({ error: "L'assistente AI non è al momento disponibile." }, 502);
+    }
+  }
+
+  const reply: string | undefined = choice?.message?.content;
   if (!reply) return jsonResponse({ error: "Risposta AI vuota" }, 502);
 
   await userClient.from("ai_messages").insert([
@@ -261,5 +323,24 @@ Deno.serve(async (req: Request) => {
     { user_id: userId, role: "assistant", content: reply },
   ]);
 
-  return jsonResponse({ reply });
+  // Drip-feeds the already-complete reply word by word over SSE, so the app can show it typing
+  // out live instead of popping in all at once - the perceived-speed win the streaming ask was
+  // after, without the added fragility of piping NIM's raw token stream through a tool-calling
+  // round trip.
+  const encoder = new TextEncoder();
+  const words = reply.split(/(\s+)/).filter((w) => w.length > 0);
+  const stream = new ReadableStream({
+    async start(controller) {
+      for (const word of words) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: word })}\n\n`));
+        await new Promise((resolve) => setTimeout(resolve, 12));
+      }
+      controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+      controller.close();
+    },
+  });
+
+  return new Response(stream, {
+    headers: { ...corsHeaders(), "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
+  });
 });

@@ -83,9 +83,8 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
         composable(Routes.REGISTER) {
             RegisterScreen(
                 onRegistered = { userId ->
-                    rootViewModel.setLoggedInUser(userId)
                     // A fresh ALLIEVO lands on the Welcome wizard; a PT lands on their dashboard.
-                    rootViewModel.requestOnboarding()
+                    rootViewModel.setNewlyRegisteredUser(userId)
                     navController.navigate("home") { popUpTo(Routes.LOGIN) { inclusive = true } }
                 },
                 onNavigateToLogin = { navController.popBackStack() },

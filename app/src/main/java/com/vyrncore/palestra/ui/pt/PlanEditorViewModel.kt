@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vyrncore.palestra.data.local.SyncStatus
 import com.vyrncore.palestra.data.local.entity.PlanExerciseEntity
+import com.vyrncore.palestra.data.local.entity.PlanTemplateExerciseEntity
 import com.vyrncore.palestra.data.repository.AuthRepository
+import com.vyrncore.palestra.data.repository.PlanTemplateRepository
 import com.vyrncore.palestra.data.repository.WorkoutRepository
 import com.vyrncore.palestra.data.sync.SyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -36,12 +39,17 @@ class PlanEditorViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val authRepository: AuthRepository,
     private val syncScheduler: SyncScheduler,
+    private val planTemplateRepository: PlanTemplateRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     val clientId: String = checkNotNull(savedStateHandle["clientId"])
+    private val ptId: String get() = authRepository.currentUserId.orEmpty()
 
     val exerciseCatalog = workoutRepository.observeExercises()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val templates = planTemplateRepository.observeForPt(ptId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /** Injuries/limitations the PT recorded for this client - shown as a warning while building the plan. */
@@ -77,6 +85,51 @@ class PlanEditorViewModel @Inject constructor(
     fun updateExerciseNote(exerciseId: String, notes: String) {
         _draftExercises.value = _draftExercises.value.map {
             if (it.exerciseId == exerciseId) it.copy(notes = notes.ifBlank { null }) else it
+        }
+    }
+
+    /** Loads a saved template's exercises into the draft, replacing whatever's there - a PT
+     * starts a new plan from "Push day" instead of re-adding every exercise by hand. */
+    fun applyTemplate(templateId: String) {
+        viewModelScope.launch {
+            val exercises = planTemplateRepository.observeExercisesForTemplate(templateId).first()
+            val catalog = exerciseCatalog.value
+            _draftExercises.value = exercises.map { templateExercise ->
+                DraftPlanExercise(
+                    exerciseId = templateExercise.exerciseId,
+                    exerciseName = catalog.firstOrNull { it.id == templateExercise.exerciseId }?.name ?: "Esercizio",
+                    targetSets = templateExercise.targetSets,
+                    targetReps = templateExercise.targetReps,
+                    targetWeightKg = templateExercise.targetWeightKg,
+                    restSeconds = templateExercise.restSeconds,
+                    notes = templateExercise.notes,
+                )
+            }
+        }
+    }
+
+    fun saveAsTemplate(name: String, category: String?) {
+        val exercises = _draftExercises.value
+        if (exercises.isEmpty()) return
+        viewModelScope.launch {
+            planTemplateRepository.saveTemplate(
+                ptId = ptId,
+                name = name,
+                category = category,
+                exercises = exercises.map {
+                    PlanTemplateExerciseEntity(
+                        id = "",
+                        templateId = "",
+                        exerciseId = it.exerciseId,
+                        orderIndex = 0,
+                        targetSets = it.targetSets,
+                        targetReps = it.targetReps,
+                        targetWeightKg = it.targetWeightKg,
+                        restSeconds = it.restSeconds,
+                        notes = it.notes,
+                    )
+                },
+            )
         }
     }
 

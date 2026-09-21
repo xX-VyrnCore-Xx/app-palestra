@@ -114,3 +114,43 @@ val MIGRATION_12_13 = object : Migration(12, 13) {
         db.execSQL("DROP INDEX IF EXISTS index_workout_sessions_planId")
     }
 }
+
+/** Optional local reminder on a PT note, and a device-local library of reusable plan templates
+ * (a PT builds a "Push day" once and reuses it across clients instead of retyping every time). */
+val MIGRATION_13_14 = object : Migration(13, 14) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE pt_notes ADD COLUMN reminderAtEpochMs INTEGER")
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS plan_templates (
+                id TEXT NOT NULL PRIMARY KEY,
+                ptId TEXT NOT NULL,
+                name TEXT NOT NULL,
+                category TEXT,
+                createdAtEpochMs INTEGER NOT NULL,
+                syncStatus TEXT NOT NULL
+            )
+            """.trimIndent(),
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_plan_templates_ptId ON plan_templates(ptId)")
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS plan_template_exercises (
+                id TEXT NOT NULL PRIMARY KEY,
+                templateId TEXT NOT NULL,
+                exerciseId TEXT NOT NULL,
+                orderIndex INTEGER NOT NULL,
+                targetSets INTEGER NOT NULL,
+                targetReps INTEGER NOT NULL,
+                targetWeightKg REAL,
+                restSeconds INTEGER NOT NULL,
+                notes TEXT,
+                syncStatus TEXT NOT NULL,
+                FOREIGN KEY (templateId) REFERENCES plan_templates(id) ON DELETE CASCADE
+            )
+            """.trimIndent(),
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_plan_template_exercises_templateId ON plan_template_exercises(templateId)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_plan_template_exercises_exerciseId ON plan_template_exercises(exerciseId)")
+    }
+}

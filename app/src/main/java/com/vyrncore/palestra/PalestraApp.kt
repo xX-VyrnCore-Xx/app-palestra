@@ -36,6 +36,7 @@ class PalestraApp : Application(), Configuration.Provider, ImageLoaderFactory {
         super.onCreate()
         syncScheduler.schedulePeriodicSync()
         reminderScheduler.scheduleDailyCheck()
+        reminderScheduler.scheduleWeeklyDigest()
         applicationScope.launch { workoutRepository.seedCatalogIfNeeded() }
     }
 

@@ -7,6 +7,7 @@ import com.vyrncore.palestra.data.remote.toDto
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -21,6 +22,13 @@ class PtNotesRepository @Inject constructor(
         ptNoteDao.observeForClient(ptId, clientId)
 
     suspend fun saveNote(ptId: String, clientId: String, content: String) {
+        val existing = ptNoteDao.observeForClient(ptId, clientId).first()
+        saveNote(ptId, clientId, content, existing?.reminderAtEpochMs)
+    }
+
+    /** The reminder is kept device-local (not synced to Supabase - see [PlanTemplateRepository]
+     * for the same reasoning), so it never round-trips through [PtNoteDto]. */
+    suspend fun saveNote(ptId: String, clientId: String, content: String, reminderAtEpochMs: Long?) {
         // Deterministic id from the (pt, client) pair mirrors the unique constraint on the
         // remote table, so re-saving always upserts the same row instead of creating duplicates.
         val id = UUID.nameUUIDFromBytes("$ptId:$clientId".toByteArray()).toString()
@@ -32,6 +40,7 @@ class PtNotesRepository @Inject constructor(
             content = content,
             createdAtEpochMs = now,
             updatedAtEpochMs = now,
+            reminderAtEpochMs = reminderAtEpochMs,
             syncStatus = SyncStatus.PENDING_UPDATE,
         )
         ptNoteDao.upsert(entity)

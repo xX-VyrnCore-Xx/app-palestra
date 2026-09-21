@@ -21,6 +21,7 @@ private val REMINDER_MESSAGE_KEY = stringPreferencesKey("workout_reminder_custom
 private val CHAT_NOTIFICATIONS_KEY = booleanPreferencesKey("chat_notifications_enabled")
 private val PLAN_NOTIFICATIONS_KEY = booleanPreferencesKey("plan_notifications_enabled")
 private val ACHIEVEMENT_NOTIFICATIONS_KEY = booleanPreferencesKey("achievement_notifications_enabled")
+private val PENDING_ONBOARDING_USER_ID_KEY = stringPreferencesKey("pending_onboarding_user_id")
 
 /** Default: nudge after 2 inactive days, same as the original hardcoded behavior. */
 const val DEFAULT_REMINDER_THRESHOLD_DAYS = 2
@@ -78,5 +79,17 @@ class ThemeRepository @Inject constructor(
 
     suspend fun setAchievementNotificationsEnabled(enabled: Boolean) {
         context.settingsDataStore.edit { it[ACHIEVEMENT_NOTIFICATIONS_KEY] = enabled }
+    }
+
+    /** The id of the allievo who still owes the Welcome questionnaire, or null. Set once at
+     * registration and cleared on completion - kept local so whether onboarding is due never
+     * depends on a network round trip (that dependency used to re-show Welcome to existing users
+     * whenever the completion check failed to load, e.g. while offline). */
+    val pendingOnboardingUserId = context.settingsDataStore.data.map { prefs -> prefs[PENDING_ONBOARDING_USER_ID_KEY] }
+
+    suspend fun setPendingOnboardingUserId(userId: String?) {
+        context.settingsDataStore.edit {
+            if (userId == null) it.remove(PENDING_ONBOARDING_USER_ID_KEY) else it[PENDING_ONBOARDING_USER_ID_KEY] = userId
+        }
     }
 }
