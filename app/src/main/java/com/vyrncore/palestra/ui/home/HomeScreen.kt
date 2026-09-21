@@ -121,6 +121,15 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            MaterialTheme.colorScheme.surface
+                        )
+                    )
+                )
                 .verticalScroll(rememberScrollState()),
         ) {
             ConnectionStatusBar(isOnline = isOnline, isSyncing = isSyncing)
