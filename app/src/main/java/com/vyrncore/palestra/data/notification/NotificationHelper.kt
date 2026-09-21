@@ -3,12 +3,15 @@ package com.vyrncore.palestra.data.notification
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.vyrncore.palestra.MainActivity
 import com.vyrncore.palestra.R
 import com.vyrncore.palestra.data.repository.ThemeRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -86,6 +89,18 @@ class NotificationHelper @Inject constructor(
         Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
+    /** Every notification this class posts used to have no tap action at all - tapping one did
+     * nothing. [chatPeerId] set deep-links a chat notification straight into that thread instead
+     * of just opening the app to wherever it was left. */
+    private fun openAppPendingIntent(requestCode: Int, chatPeerId: String? = null): PendingIntent {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            if (chatPeerId != null) putExtra(MainActivity.EXTRA_OPEN_CHAT_PEER_ID, chatPeerId)
+        }
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        return PendingIntent.getActivity(context, requestCode, intent, flags)
+    }
+
     fun showWorkoutReminder(title: String, message: String) {
         if (!hasNotificationPermission()) return
 
@@ -94,6 +109,7 @@ class NotificationHelper @Inject constructor(
             .setContentTitle(title)
             .setContentText(message)
             .setAutoCancel(true)
+            .setContentIntent(openAppPendingIntent(REMINDER_NOTIFICATION_ID))
             .build()
         NotificationManagerCompat.from(context).notify(REMINDER_NOTIFICATION_ID, notification)
     }
@@ -107,6 +123,7 @@ class NotificationHelper @Inject constructor(
             .setContentText(message)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(openAppPendingIntent(conversationId.hashCode(), chatPeerId = conversationId))
             .build()
         NotificationManagerCompat.from(context).notify(conversationId.hashCode(), notification)
     }
@@ -119,6 +136,7 @@ class NotificationHelper @Inject constructor(
             .setContentTitle(title)
             .setContentText(message)
             .setAutoCancel(true)
+            .setContentIntent(openAppPendingIntent(PLAN_NOTIFICATION_ID))
             .build()
         NotificationManagerCompat.from(context).notify(PLAN_NOTIFICATION_ID, notification)
     }
@@ -132,6 +150,7 @@ class NotificationHelper @Inject constructor(
             .setContentText("$exerciseName · 1RM stimato ${"%.1f".format(estimatedOneRepMaxKg)} kg")
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(openAppPendingIntent(exerciseName.hashCode()))
             .build()
         NotificationManagerCompat.from(context).notify(exerciseName.hashCode(), notification)
     }
@@ -144,6 +163,7 @@ class NotificationHelper @Inject constructor(
             .setContentTitle("Promemoria: $clientName")
             .setContentText(message)
             .setAutoCancel(true)
+            .setContentIntent(openAppPendingIntent(clientName.hashCode()))
             .build()
         NotificationManagerCompat.from(context).notify(clientName.hashCode(), notification)
     }
@@ -160,6 +180,7 @@ class NotificationHelper @Inject constructor(
             .setContentText(if (exerciseName != null) "Pronto per: $exerciseName" else "Si riparte!")
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(openAppPendingIntent(REST_TIMER_NOTIFICATION_ID))
             .build()
         NotificationManagerCompat.from(context).notify(REST_TIMER_NOTIFICATION_ID, notification)
     }
@@ -173,6 +194,7 @@ class NotificationHelper @Inject constructor(
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setAutoCancel(true)
+            .setContentIntent(openAppPendingIntent(DIGEST_NOTIFICATION_ID))
             .build()
         NotificationManagerCompat.from(context).notify(DIGEST_NOTIFICATION_ID, notification)
     }

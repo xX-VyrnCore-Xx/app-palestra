@@ -13,6 +13,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -89,5 +90,19 @@ class RootViewModel @Inject constructor(
 
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { themeRepository.setThemeMode(mode) }
+    }
+
+    private val _pendingChatPeerId = MutableStateFlow<String?>(null)
+
+    /** Set when a chat-message notification is tapped (cold or warm start) - the nav graph
+     * navigates to this peer's thread once it's non-null, then clears it via [consumeChatDeepLink]. */
+    val pendingChatPeerId: StateFlow<String?> = _pendingChatPeerId.asStateFlow()
+
+    fun requestOpenChat(peerId: String) {
+        _pendingChatPeerId.value = peerId
+    }
+
+    fun consumeChatDeepLink() {
+        _pendingChatPeerId.value = null
     }
 }
