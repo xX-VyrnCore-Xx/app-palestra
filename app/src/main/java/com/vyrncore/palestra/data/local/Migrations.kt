@@ -96,3 +96,21 @@ val MIGRATION_11_12 = object : Migration(11, 12) {
         db.execSQL("ALTER TABLE exercises ADD COLUMN difficulty TEXT")
     }
 }
+
+/** Performance indices for the hottest queries: clients-by-PT lookups, the history/stats
+ * list of a user's sessions and the unread-message counters. Composite indices match the
+ * WHERE + ORDER BY shape of the DAO queries so they can be satisfied without a sort. */
+val MIGRATION_12_13 = object : Migration(12, 13) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_user_profiles_ptId ON user_profiles(ptId)")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_workout_sessions_userId_startedAtEpochMs " +
+                "ON workout_sessions(userId, startedAtEpochMs)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_chat_messages_recipientId_readAtEpochMs " +
+                "ON chat_messages(recipientId, readAtEpochMs)",
+        )
+        db.execSQL("DROP INDEX IF EXISTS index_workout_sessions_planId")
+    }
+}

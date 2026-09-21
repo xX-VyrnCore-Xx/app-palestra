@@ -25,7 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -44,9 +44,9 @@ import com.vyrncore.palestra.ui.components.WeekOverWeekCard
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
-    val uiState by viewModel.uiState.collectAsState()
-    val (volumeByMuscleGroup, weeklyVolume) = viewModel.advancedStats.collectAsState().value
-    val personalRecords by viewModel.personalRecords.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val (volumeByMuscleGroup, weeklyVolume) = viewModel.advancedStats.collectAsStateWithLifecycle().value
+    val personalRecords by viewModel.personalRecords.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {

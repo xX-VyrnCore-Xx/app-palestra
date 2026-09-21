@@ -34,7 +34,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,14 +56,14 @@ fun PtClientDetailScreen(
     onOpenChat: (clientId: String) -> Unit,
     viewModel: PtClientDetailViewModel = hiltViewModel(),
 ) {
-    val plans by viewModel.plans.collectAsState()
-    val programs by viewModel.programs.collectAsState()
-    val sessions by viewModel.sessions.collectAsState()
-    val bodyMetrics by viewModel.bodyMetrics.collectAsState()
-    val note by viewModel.note.collectAsState()
-    val injuries by viewModel.injuries.collectAsState()
-    val clientName by viewModel.clientName.collectAsState()
-    val allievoProfile by viewModel.allievoProfile.collectAsState()
+    val plans by viewModel.plans.collectAsStateWithLifecycle()
+    val programs by viewModel.programs.collectAsStateWithLifecycle()
+    val sessions by viewModel.sessions.collectAsStateWithLifecycle()
+    val bodyMetrics by viewModel.bodyMetrics.collectAsStateWithLifecycle()
+    val note by viewModel.note.collectAsStateWithLifecycle()
+    val injuries by viewModel.injuries.collectAsStateWithLifecycle()
+    val clientName by viewModel.clientName.collectAsStateWithLifecycle()
+    val allievoProfile by viewModel.allievoProfile.collectAsStateWithLifecycle()
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.ITALY) }
 
     var noteDraft by remember(note) { mutableStateOf(note?.content.orEmpty()) }

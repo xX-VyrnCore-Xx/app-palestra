@@ -47,7 +47,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,14 +80,14 @@ fun ProfileScreen(
     onSignedOut: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
-    val profile by viewModel.profile.collectAsState()
-    val themeMode by viewModel.themeMode.collectAsState()
-    val remindersEnabled by viewModel.remindersEnabled.collectAsState()
-    val reminderThresholdDays by viewModel.reminderThresholdDays.collectAsState()
-    val reminderCustomMessage by viewModel.reminderCustomMessage.collectAsState()
-    val chatNotificationsEnabled by viewModel.chatNotificationsEnabled.collectAsState()
-    val planNotificationsEnabled by viewModel.planNotificationsEnabled.collectAsState()
-    val achievementNotificationsEnabled by viewModel.achievementNotificationsEnabled.collectAsState()
+    val profile by viewModel.profile.collectAsStateWithLifecycle()
+    val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+    val remindersEnabled by viewModel.remindersEnabled.collectAsStateWithLifecycle()
+    val reminderThresholdDays by viewModel.reminderThresholdDays.collectAsStateWithLifecycle()
+    val reminderCustomMessage by viewModel.reminderCustomMessage.collectAsStateWithLifecycle()
+    val chatNotificationsEnabled by viewModel.chatNotificationsEnabled.collectAsStateWithLifecycle()
+    val planNotificationsEnabled by viewModel.planNotificationsEnabled.collectAsStateWithLifecycle()
+    val achievementNotificationsEnabled by viewModel.achievementNotificationsEnabled.collectAsStateWithLifecycle()
     var showNameDialog by remember { mutableStateOf(false) }
     var showSignOutDialog by remember { mutableStateOf(false) }
     var showEditProfileSheet by remember { mutableStateOf(false) }

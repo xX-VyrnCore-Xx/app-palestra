@@ -51,7 +51,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -99,7 +99,7 @@ fun PtDashboardScreen(
     viewModel: PtDashboardViewModel = hiltViewModel(),
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val unreadCount by viewModel.unreadCount.collectAsState()
+    val unreadCount by viewModel.unreadCount.collectAsStateWithLifecycle()
 
     Scaffold(
         bottomBar = {
@@ -144,7 +144,7 @@ private fun PtPlansScreen(
     onOpenClient: (clientId: String) -> Unit,
     viewModel: PtDashboardViewModel,
 ) {
-    val overviews by viewModel.clientPlanOverviews.collectAsState()
+    val overviews by viewModel.clientPlanOverviews.collectAsStateWithLifecycle()
 
     Scaffold(topBar = { TopAppBar(title = { Text("Schede") }) }) { padding ->
         if (overviews.isEmpty()) {
@@ -210,16 +210,16 @@ private fun PtClientListScreen(
     onOpenSearch: () -> Unit,
     viewModel: PtDashboardViewModel,
 ) {
-    val clients by viewModel.clients.collectAsState()
-    val visibleClients by viewModel.visibleClients.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val sortMode by viewModel.sortMode.collectAsState()
-    val activeThisWeek by viewModel.activeThisWeekCount.collectAsState()
-    val inactiveCount by viewModel.inactiveCount.collectAsState()
-    val isOnline by viewModel.isOnline.collectAsState()
-    val isSyncing by viewModel.isSyncing.collectAsState()
-    val weeklyRanking by viewModel.weeklyRanking.collectAsState()
-    val feed by viewModel.feed.collectAsState()
+    val clients by viewModel.clients.collectAsStateWithLifecycle()
+    val visibleClients by viewModel.visibleClients.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val sortMode by viewModel.sortMode.collectAsStateWithLifecycle()
+    val activeThisWeek by viewModel.activeThisWeekCount.collectAsStateWithLifecycle()
+    val inactiveCount by viewModel.inactiveCount.collectAsStateWithLifecycle()
+    val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
+    val isSyncing by viewModel.isSyncing.collectAsStateWithLifecycle()
+    val weeklyRanking by viewModel.weeklyRanking.collectAsStateWithLifecycle()
+    val feed by viewModel.feed.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {

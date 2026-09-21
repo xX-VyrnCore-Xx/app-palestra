@@ -24,7 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,8 +38,8 @@ fun WorkoutPlansScreen(
     onOpenSession: (sessionId: String, planId: String) -> Unit,
     viewModel: WorkoutPlansViewModel = hiltViewModel(),
 ) {
-    val plans by viewModel.plans.collectAsState()
-    val exerciseCounts by viewModel.exerciseCounts.collectAsState()
+    val plans by viewModel.plans.collectAsStateWithLifecycle()
+    val exerciseCounts by viewModel.exerciseCounts.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Le tue schede") }) },

@@ -45,7 +45,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -78,8 +78,8 @@ fun ChatThreadScreen(
 ) {
     LaunchedEffect(peerId) { viewModel.setPeer(peerId) }
 
-    val messages by viewModel.messages.collectAsState()
-    val peerName by viewModel.peerName.collectAsState()
+    val messages by viewModel.messages.collectAsStateWithLifecycle()
+    val peerName by viewModel.peerName.collectAsStateWithLifecycle()
     var draft by remember { mutableStateOf("") }
     var messageToDelete by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()

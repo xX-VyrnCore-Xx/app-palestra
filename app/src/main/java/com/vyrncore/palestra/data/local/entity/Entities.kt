@@ -8,7 +8,7 @@ import com.vyrncore.palestra.data.local.SyncStatus
 
 enum class UserRole { PT, ALLIEVO }
 
-@Entity(tableName = "user_profiles")
+@Entity(tableName = "user_profiles", indices = [Index("ptId")])
 data class UserProfileEntity(
     @PrimaryKey val id: String,
     val email: String,
@@ -111,7 +111,7 @@ data class PlanExerciseEntity(
 
 @Entity(
     tableName = "workout_sessions",
-    indices = [Index("userId"), Index("planId")],
+    indices = [Index("userId"), Index(value = ["userId", "startedAtEpochMs"])],
 )
 data class WorkoutSessionEntity(
     @PrimaryKey val id: String,
@@ -147,7 +147,10 @@ data class SetEntryEntity(
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 
-@Entity(tableName = "body_metrics", indices = [Index("userId")])
+@Entity(
+    tableName = "body_metrics",
+    indices = [Index(value = ["userId", "dateEpochMs"])],
+)
 data class BodyMetricEntity(
     @PrimaryKey val id: String,
     val userId: String,
@@ -165,7 +168,10 @@ data class BodyMetricEntity(
 
 enum class ChatAttachmentType { IMAGE, FILE }
 
-@Entity(tableName = "chat_messages", indices = [Index("senderId"), Index("recipientId")])
+@Entity(
+    tableName = "chat_messages",
+    indices = [Index("senderId"), Index("recipientId")],
+)
 data class ChatMessageEntity(
     @PrimaryKey val id: String,
     val senderId: String,

@@ -17,7 +17,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -59,9 +59,9 @@ fun AllievoDashboardScreen(
     viewModel: AllievoDashboardViewModel = hiltViewModel(),
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val ptId by viewModel.ptId.collectAsState()
-    val ptName by viewModel.ptName.collectAsState()
-    val unreadCount by viewModel.unreadCount.collectAsState()
+    val ptId by viewModel.ptId.collectAsStateWithLifecycle()
+    val ptName by viewModel.ptName.collectAsStateWithLifecycle()
+    val unreadCount by viewModel.unreadCount.collectAsStateWithLifecycle()
 
     Scaffold(
         bottomBar = {

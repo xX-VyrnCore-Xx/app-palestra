@@ -53,7 +53,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -102,14 +102,14 @@ fun HomeScreen(
     onOpenChat: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val isOnline by viewModel.isOnline.collectAsState()
-    val isSyncing by viewModel.isSyncing.collectAsState()
-    val weeklyRanking by viewModel.weeklyRanking.collectAsState()
-    val feed by viewModel.feed.collectAsState()
-    val weeklyVolume by viewModel.weeklyVolume.collectAsState()
-    val volumeByMuscleGroup by viewModel.volumeByMuscleGroup.collectAsState()
-    val personalRecords by viewModel.personalRecords.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
+    val isSyncing by viewModel.isSyncing.collectAsStateWithLifecycle()
+    val weeklyRanking by viewModel.weeklyRanking.collectAsStateWithLifecycle()
+    val feed by viewModel.feed.collectAsStateWithLifecycle()
+    val weeklyVolume by viewModel.weeklyVolume.collectAsStateWithLifecycle()
+    val volumeByMuscleGroup by viewModel.volumeByMuscleGroup.collectAsStateWithLifecycle()
+    val personalRecords by viewModel.personalRecords.collectAsStateWithLifecycle()
     val greeting = when (LocalTime.now().hour) {
         in 5..11 -> "Buongiorno"
         in 12..17 -> "Buon pomeriggio"

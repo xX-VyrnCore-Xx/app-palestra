@@ -23,7 +23,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -59,7 +59,7 @@ fun ChatListScreen(
     onOpenChat: (peerId: String) -> Unit,
     viewModel: ChatListViewModel = hiltViewModel(),
 ) {
-    val conversations by viewModel.conversations.collectAsState()
+    val conversations by viewModel.conversations.collectAsStateWithLifecycle()
 
     Scaffold(topBar = { TopAppBar(title = { Text("Messaggi") }) }) { padding ->
         if (conversations.isEmpty()) {
