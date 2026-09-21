@@ -31,7 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,10 +45,10 @@ fun PlanEditorScreen(
     onSaved: () -> Unit,
     viewModel: PlanEditorViewModel = hiltViewModel(),
 ) {
-    val catalog by viewModel.exerciseCatalog.collectAsState()
-    val draft by viewModel.draftExercises.collectAsState()
-    val clientInjuries by viewModel.clientInjuries.collectAsState()
-    val templates by viewModel.templates.collectAsState()
+    val catalog by viewModel.exerciseCatalog.collectAsStateWithLifecycle()
+    val draft by viewModel.draftExercises.collectAsStateWithLifecycle()
+    val clientInjuries by viewModel.clientInjuries.collectAsStateWithLifecycle()
+    val templates by viewModel.templates.collectAsStateWithLifecycle()
     var planName by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var showPicker by remember { mutableStateOf(false) }

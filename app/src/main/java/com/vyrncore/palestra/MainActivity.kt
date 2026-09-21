@@ -10,7 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
@@ -34,8 +34,8 @@ class MainActivity : ComponentActivity() {
         requestNotificationPermissionIfNeeded()
         setContent {
             val rootViewModel: RootViewModel = hiltViewModel()
-            val themeMode by rootViewModel.themeMode.collectAsState()
-            val role by rootViewModel.role.collectAsState()
+            val themeMode by rootViewModel.themeMode.collectAsStateWithLifecycle()
+            val role by rootViewModel.role.collectAsStateWithLifecycle()
             PalestraTheme(themeMode = themeMode, role = role) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     PalestraNavGraph(rootViewModel = rootViewModel)

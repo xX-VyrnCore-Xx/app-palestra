@@ -8,7 +8,7 @@ import com.vyrncore.palestra.data.local.SyncStatus
 
 enum class UserRole { PT, ALLIEVO }
 
-@Entity(tableName = "user_profiles")
+@Entity(tableName = "user_profiles", indices = [Index("ptId")])
 data class UserProfileEntity(
     @PrimaryKey val id: String,
     val email: String,
@@ -19,6 +19,14 @@ data class UserProfileEntity(
     val injuries: String? = null,
     /** Foto profilo scelta dall'utente, caricata nel bucket pubblico "avatars". */
     val avatarUrl: String? = null,
+    /** Breve biografia mostrata in testa al profilo (max 200 caratteri). */
+    val bio: String? = null,
+    /** Altezza in centimetri, usata per BMI e statistiche. */
+    val heightCm: Int? = null,
+    /** Peso corporeo in kg, precompila la registrazione misure corporee. */
+    val weightKg: Double? = null,
+    /** Obiettivo dichiarato dall'utente (es. "Perdere peso"). */
+    val primaryGoal: String? = null,
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 
@@ -33,6 +41,8 @@ data class ExerciseEntity(
     val isCustom: Boolean = false,
     /** Optional URL of a demonstrative image/GIF, shown wherever the exercise appears. */
     val imageUrl: String? = null,
+    /** Coarse difficulty tier ([ExerciseDifficulty] name), null for legacy/custom rows. */
+    val difficulty: String? = null,
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 
@@ -101,7 +111,7 @@ data class PlanExerciseEntity(
 
 @Entity(
     tableName = "workout_sessions",
-    indices = [Index("userId"), Index("planId")],
+    indices = [Index("userId"), Index(value = ["userId", "startedAtEpochMs"])],
 )
 data class WorkoutSessionEntity(
     @PrimaryKey val id: String,
@@ -137,7 +147,10 @@ data class SetEntryEntity(
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 
-@Entity(tableName = "body_metrics", indices = [Index("userId")])
+@Entity(
+    tableName = "body_metrics",
+    indices = [Index(value = ["userId", "dateEpochMs"])],
+)
 data class BodyMetricEntity(
     @PrimaryKey val id: String,
     val userId: String,
@@ -155,7 +168,10 @@ data class BodyMetricEntity(
 
 enum class ChatAttachmentType { IMAGE, FILE }
 
-@Entity(tableName = "chat_messages", indices = [Index("senderId"), Index("recipientId")])
+@Entity(
+    tableName = "chat_messages",
+    indices = [Index("senderId"), Index("recipientId")],
+)
 data class ChatMessageEntity(
     @PrimaryKey val id: String,
     val senderId: String,

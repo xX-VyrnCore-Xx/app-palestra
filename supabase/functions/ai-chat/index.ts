@@ -206,11 +206,16 @@ Deno.serve(async (req: Request) => {
   let body: ChatRequestBody;
   try {
     body = await req.json();
-  } catch {
-    return jsonResponse({ error: "Invalid JSON body" }, 400);
+    if (!body.message || typeof body.message !== "string") {
+      throw new Error("Message field is missing or invalid");
+    }
+  } catch (err) {
+    console.error("Validation error:", err.message);
+    return jsonResponse({ error: "Invalid JSON body or missing message" }, 400);
   }
-  const message = body.message?.trim();
-  if (!message) return jsonResponse({ error: "Empty message" }, 400);
+  const message = body.message.trim();
+  if (message.length === 0) return jsonResponse({ error: "Empty message" }, 400);
+  if (message.length > 2000) return jsonResponse({ error: "Messaggio troppo lungo (max 2000 caratteri)" }, 400);
 
   // Service-role client: only this function touches the rate-limit table (no client RLS policy).
   const serviceClient = createClient(supabaseUrl, serviceRoleKey);

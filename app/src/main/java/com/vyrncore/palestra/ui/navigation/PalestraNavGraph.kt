@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,8 +43,8 @@ import com.vyrncore.palestra.ui.workout.WorkoutSummaryScreen
 @Composable
 fun PalestraNavGraph(rootViewModel: RootViewModel) {
     val navController = rememberNavController()
-    val role by rootViewModel.role.collectAsState()
-    val needsOnboarding by rootViewModel.needsOnboarding.collectAsState()
+    val role by rootViewModel.role.collectAsStateWithLifecycle()
+    val needsOnboarding by rootViewModel.needsOnboarding.collectAsStateWithLifecycle()
 
     val startDestination = if (rootViewModel.startUserId != null) "home" else Routes.LOGIN
 
@@ -73,6 +73,7 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
         composable(Routes.LOGIN) {
             LoginScreen(
                 onLoggedIn = { userId ->
+                    // Login never onboards: a returning user goes straight to their dashboard.
                     rootViewModel.setLoggedInUser(userId)
                     navController.navigate("home") { popUpTo(Routes.LOGIN) { inclusive = true } }
                 },
@@ -82,9 +83,11 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
         composable(Routes.REGISTER) {
             RegisterScreen(
                 onRegistered = { userId ->
+                    // A fresh ALLIEVO lands on the Welcome wizard; a PT lands on their dashboard.
                     rootViewModel.setNewlyRegisteredUser(userId)
                     navController.navigate("home") { popUpTo(Routes.LOGIN) { inclusive = true } }
                 },
+                onNavigateToLogin = { navController.popBackStack() },
             )
         }
         composable("home") {

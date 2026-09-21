@@ -72,6 +72,19 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch { authRepository.updateFullName(userId, fullName.trim()) }
     }
 
+    /** Persists bio/height/weight/goal edits from the profile customization sheet. */
+    fun updateProfileExtras(bio: String, heightCm: Int?, weightKg: Double?, primaryGoal: String?) {
+        viewModelScope.launch {
+            authRepository.updateProfileExtras(
+                userId = userId,
+                bio = bio.trim().takeIf { it.isNotBlank() },
+                heightCm = heightCm,
+                weightKg = weightKg,
+                primaryGoal = primaryGoal,
+            )
+        }
+    }
+
     fun updateAvatar(uri: Uri) {
         viewModelScope.launch {
             val bytes = withContext(Dispatchers.IO) {

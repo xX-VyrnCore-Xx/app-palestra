@@ -1,18 +1,23 @@
 package com.vyrncore.palestra.ui.home
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -21,10 +26,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DynamicFeed
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Search
@@ -44,27 +53,43 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.data.repository.PlotoneFeedPost
 import com.vyrncore.palestra.data.repository.WeeklyRankingEntry
+import com.vyrncore.palestra.ui.components.BadgeTier
 import com.vyrncore.palestra.ui.components.BarChartEntry
 import com.vyrncore.palestra.ui.components.ConnectionStatusBar
 import com.vyrncore.palestra.ui.components.GradientHeader
 import com.vyrncore.palestra.ui.components.MetricCard
 import com.vyrncore.palestra.ui.components.PersonalRecordsCard
 import com.vyrncore.palestra.ui.components.ProgressTrendCard
+import com.vyrncore.palestra.ui.components.RealisticBadge
+import com.vyrncore.palestra.ui.components.pressScale
 import com.vyrncore.palestra.ui.components.SimpleBarChart
 import com.vyrncore.palestra.ui.components.SimpleLineChart
 import com.vyrncore.palestra.ui.components.WeekOverWeekCard
+import com.vyrncore.palestra.ui.theme.Gold40
+import com.vyrncore.palestra.ui.theme.Gold50
+import com.vyrncore.palestra.ui.home.HomeSuggestionAction.Assistant
+import com.vyrncore.palestra.ui.home.HomeSuggestionAction.ChatPt
+import com.vyrncore.palestra.ui.home.HomeSuggestionAction.History
+import com.vyrncore.palestra.ui.home.HomeSuggestionAction.StartWorkout
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalTime
@@ -76,16 +101,18 @@ fun HomeScreen(
     onOpenHistory: () -> Unit = {},
     onOpenCalendar: () -> Unit = {},
     onOpenSearch: () -> Unit = {},
+    onOpenAssistant: () -> Unit = {},
+    onOpenChat: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val isOnline by viewModel.isOnline.collectAsState()
-    val isSyncing by viewModel.isSyncing.collectAsState()
-    val weeklyRanking by viewModel.weeklyRanking.collectAsState()
-    val feed by viewModel.feed.collectAsState()
-    val weeklyVolume by viewModel.weeklyVolume.collectAsState()
-    val volumeByMuscleGroup by viewModel.volumeByMuscleGroup.collectAsState()
-    val personalRecords by viewModel.personalRecords.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
+    val isSyncing by viewModel.isSyncing.collectAsStateWithLifecycle()
+    val weeklyRanking by viewModel.weeklyRanking.collectAsStateWithLifecycle()
+    val feed by viewModel.feed.collectAsStateWithLifecycle()
+    val weeklyVolume by viewModel.weeklyVolume.collectAsStateWithLifecycle()
+    val volumeByMuscleGroup by viewModel.volumeByMuscleGroup.collectAsStateWithLifecycle()
+    val personalRecords by viewModel.personalRecords.collectAsStateWithLifecycle()
     val greeting = when (LocalTime.now().hour) {
         in 5..11 -> "Buongiorno"
         in 12..17 -> "Buon pomeriggio"
@@ -101,6 +128,15 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            MaterialTheme.colorScheme.surface
+                        )
+                    )
+                )
                 .verticalScroll(rememberScrollState()),
         ) {
             ConnectionStatusBar(isOnline = isOnline, isSyncing = isSyncing)
@@ -147,6 +183,26 @@ fun HomeScreen(
                 thisWeek = uiState.workoutsThisWeek,
                 lastWeek = uiState.workoutsLastWeek,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+
+            SuggestionsSection(
+                suggestions = uiState.suggestions,
+                onSuggestionTap = { suggestion ->
+                    when (suggestion.action) {
+                        StartWorkout -> {
+                            val planId = uiState.nextPlanId ?: return@SuggestionsSection
+                            uiState.sessionsWithPending[planId]?.let { sessionId ->
+                                onStartSession(sessionId, planId)
+                            } ?: viewModel.startWorkout(planId) { sessionId ->
+                                onStartSession(sessionId, planId)
+                            }
+                        }
+                        History -> onOpenHistory()
+                        Assistant -> onOpenAssistant()
+                        ChatPt -> onOpenChat()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
             )
 
             if (weeklyRanking.isNotEmpty()) {
@@ -205,17 +261,11 @@ fun HomeScreen(
                     }
                 }
             } else {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        "Nessuna missione assegnata ancora",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                NoMissionCard(
+                    onOpenAssistant = onOpenAssistant,
+                    onOpenChat = onOpenChat,
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                )
             }
 
             Text(
@@ -354,6 +404,153 @@ fun HomeScreen(
     }
 }
 
+/** The "Ordini del giorno" block: context-aware, tappable nudges computed from the allievo's real
+ * data. Every card is actionable — no dead-end chips: StartWorkout launches (or resumes) the
+ * session, the rest deep-link to the screen that solves the nudge. */
+@Composable
+private fun SuggestionsSection(
+    suggestions: List<HomeSuggestion>,
+    onSuggestionTap: (HomeSuggestion) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (suggestions.isEmpty()) return
+    Column(modifier = modifier) {
+        Text(
+            "ORDINI DEL GIORNO",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
+        )
+        suggestions.forEach { suggestion ->
+            HomeActionCard(
+                suggestion = suggestion,
+                onClick = { onSuggestionTap(suggestion) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+        }
+    }
+}
+
+/** One tappable suggestion: icon, title, one-line why, and a chevron so it clearly reads as a
+ * button. Gives a light haptic tick plus the shared press-scale bounce on tap. */
+@Composable
+private fun HomeActionCard(
+    suggestion: HomeSuggestion,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val haptic = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
+    Card(
+        onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            onClick()
+        },
+        modifier = modifier
+            .pressScale(interactionSource),
+        interactionSource = interactionSource,
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                suggestion.action.icon(),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 10.dp),
+            ) {
+                Text(
+                    suggestion.title,
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    suggestion.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Icon(
+                Icons.Filled.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Icon shown on a suggestion card, matched to the action the card deep-links into. */
+private fun HomeSuggestionAction.icon() = when (this) {
+    StartWorkout -> Icons.Filled.FitnessCenter
+    History -> Icons.Filled.History
+    Assistant -> Icons.Filled.AutoAwesome
+    ChatPt -> Icons.Filled.Chat
+}
+
+/** Dead-end replacement for the old "nessuna missione" label: explains what's missing and offers
+ * two tappable ways out — asking the PT for a plan, or letting the assistant suggest one. */
+@Composable
+private fun NoMissionCard(
+    onOpenAssistant: () -> Unit,
+    onOpenChat: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp).fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                Icons.Filled.Replay,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                "Nessuna missione assegnata ancora",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            Text(
+                "Il PT può prepararti una scheda su misura: intanto l'assistente ti suggerisce come non fermarti.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            Row(modifier = Modifier.padding(top = 12.dp)) {
+                Button(onClick = onOpenChat, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Filled.Chat, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Text("Chiedi al PT", modifier = Modifier.padding(start = 6.dp))
+                }
+                Button(
+                    onClick = onOpenAssistant,
+                    modifier = Modifier.weight(1f).padding(start = 12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
+                ) {
+                    Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Text("Assistente", modifier = Modifier.padding(start = 6.dp))
+                }
+            }
+        }
+    }
+}
+
 /** A compact entry point into a full-screen destination that used to live in its own "Progressi"
  * tab - folded into Home so the allievo never has to hunt for a separate nav slot for it. */
 @Composable
@@ -402,47 +599,80 @@ private fun MedalSummaryCard(
     suffix: String,
     modifier: Modifier = Modifier,
 ) {
+    val tier = when {
+        unlockedCount == 0 -> BadgeTier.LOCKED
+        unlockedCount >= totalCount -> BadgeTier.PLATINUM
+        unlockedCount >= totalCount / 2 -> BadgeTier.GOLD
+        unlockedCount >= 2 -> BadgeTier.SILVER
+        else -> BadgeTier.BRONZE
+    }
+
     Card(
-        modifier = modifier.width(150.dp),
-        shape = MaterialTheme.shapes.medium,
+        modifier = modifier.width(160.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = if (unlockedCount > 0) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+            containerColor = MaterialTheme.colorScheme.surface,
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = if (unlockedCount > 0) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            RealisticBadge(
+                icon = icon,
+                tier = tier,
+                size = 48.dp,
+                modifier = Modifier.padding(bottom = 12.dp)
             )
             Text(
                 title,
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.padding(top = 8.dp),
-                color = if (unlockedCount > 0) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                "$unlockedCount/$totalCount medaglie",
-                style = MaterialTheme.typography.bodySmall,
-                color = if (unlockedCount > 0) MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                "$unlockedCount / $totalCount Medaglie",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
             if (nextMilestone != null) {
+                val progress = (currentValue.toFloat() / nextMilestone).coerceIn(0f, 1f)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(progress)
+                            .fillMaxHeight()
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.tertiary
+                                    )
+                                )
+                            )
+                    )
+                }
                 Text(
                     "Prossima: $currentValue/$nextMilestone$suffix",
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (unlockedCount > 0) MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = 6.dp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 4.dp),
                 )
-            } else if (totalCount > 0) {
+            } else {
                 Text(
-                    "Tutte sbloccate!",
+                    "Massimo Grado",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = 6.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 4.dp),
                 )
             }
         }
@@ -458,51 +688,111 @@ private fun RankCard(level: Int, rankTitle: String, stars: Int, xpIntoLevel: Int
     )
     Card(
         modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    Text("$rankTitle · Grado $level", style = MaterialTheme.typography.titleMedium)
-                    if (stars > 0) {
-                        Row(modifier = Modifier.padding(top = 2.dp)) {
-                            repeat(stars) {
-                                Icon(
-                                    Icons.Filled.Star,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.tertiary,
-                                    modifier = Modifier.size(14.dp),
-                                )
+        Box(
+            modifier = Modifier
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        )
+                    )
+                )
+                .padding(20.dp)
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column {
+                        Text(
+                            rankTitle.uppercase(),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            letterSpacing = 2.sp
+                        )
+                        Text(
+                            "Grado $level",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (stars > 0) {
+                            Row(modifier = Modifier.padding(top = 4.dp)) {
+                                repeat(stars) {
+                                    Icon(
+                                        Icons.Filled.Star,
+                                        contentDescription = null,
+                                        tint = Gold50,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
                             }
                         }
                     }
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                    ) {
+                        Icon(
+                            Icons.Filled.MilitaryTech,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
                 }
-                Text(
-                    "$xpIntoLevel / 100 XP",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 10.dp)
-                    .height(10.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-            ) {
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "XP MISSIONE",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "$xpIntoLevel / 100 XP",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(progress.coerceIn(0f, 1f))
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(MaterialTheme.colorScheme.tertiary),
-                )
+                        .fillMaxWidth()
+                        .padding(top = 6.dp)
+                        .height(12.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(progress.coerceIn(0f, 1f))
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.tertiary
+                                    )
+                                )
+                            ),
+                    )
+                }
             }
         }
     }
@@ -512,48 +802,118 @@ private fun RankCard(level: Int, rankTitle: String, stars: Int, xpIntoLevel: Int
 private fun WeeklyGoalCard(completed: Int, goal: Int, modifier: Modifier = Modifier) {
     val progress by animateFloatAsState(
         targetValue = (completed.toFloat() / goal).coerceIn(0f, 1f),
-        animationSpec = tween(600),
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
         label = "weeklyGoalProgress",
     )
+    val isComplete = completed >= goal
+
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(48.dp)) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val strokeWidth = 6.dp.toPx()
-                    drawArc(
-                        color = Color.White.copy(alpha = 0.35f),
-                        startAngle = -90f,
-                        sweepAngle = 360f,
-                        useCenter = false,
-                        style = Stroke(width = strokeWidth),
+        Box(
+            modifier = Modifier
+                .background(
+                    Brush.verticalGradient(
+                        colors = if (isComplete) {
+                            listOf(
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                            )
+                        } else {
+                            listOf(
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            )
+                        }
                     )
-                    drawArc(
-                        color = Color.White,
-                        startAngle = -90f,
-                        sweepAngle = 360f * progress,
-                        useCenter = false,
-                        style = Stroke(width = strokeWidth),
+                )
+                .border(
+                    width = 1.dp,
+                    color = if (isComplete) MaterialTheme.colorScheme.primary.copy(alpha = 0.3f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                    shape = MaterialTheme.shapes.large
+                )
+                .padding(20.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            "OBIETTIVO SETTIMANALE",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isComplete) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            if (isComplete) "Missione Compiuta!" else "Ancora $completed su $goal missioni",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isComplete) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Icon(
+                        if (isComplete) Icons.Filled.AutoAwesome else Icons.Filled.CalendarMonth,
+                        contentDescription = null,
+                        tint = if (isComplete) Gold50 else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(32.dp)
                     )
                 }
-                Text(
-                    "$completed/$goal",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(20.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(progress)
+                            .fillMaxHeight()
+                            .clip(CircleShape)
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = if (isComplete) {
+                                        listOf(Gold50, Gold40)
+                                    } else {
+                                        listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary)
+                                    }
+                                )
+                            )
+                            .drawBehind {
+                                if (progress > 0f) {
+                                    drawCircle(
+                                        color = Color.White.copy(alpha = 0.3f),
+                                        radius = 4.dp.toPx(),
+                                        center = center.copy(x = size.width - 10.dp.toPx())
+                                    )
+                                }
+                            }
+                    )
+                }
+                
+                if (isComplete) {
+                    Text(
+                        "Soldato, hai superato le aspettative questa settimana!",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                        modifier = Modifier.padding(top = 12.dp)
+                    )
+                }
             }
-            Text(
-                "OBIETTIVO SETTIMANALE",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
-                modifier = Modifier.padding(top = 8.dp),
-            )
         }
     }
 }

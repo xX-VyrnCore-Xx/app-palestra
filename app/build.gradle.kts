@@ -1,3 +1,4 @@
+import com.android.build.gradle.api.ApkVariantOutput
 import java.util.Properties
 
 plugins {
@@ -10,13 +11,19 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+// Bump versionCode by 1 on every release; versionName follows semver (MAJOR.MINOR.PATCH).
+val appVersionCode = 2
+val appVersionName = "1.1.0"
+
 android {
     namespace = "com.vyrncore.palestra"
-    compileSdk = 34
+    compileSdk = 35
 
-    // Bump versionCode by 1 on every release; versionName follows semver (MAJOR.MINOR.PATCH).
-    val appVersionCode = 2
-    val appVersionName = "1.1.0"
+    java {
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(21))
+        }
+    }
 
     base.archivesName.set("VibeFitness-$appVersionName")
 
@@ -28,7 +35,7 @@ android {
     defaultConfig {
         applicationId = "com.vyrncore.palestra"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         versionCode = appVersionCode
         versionName = appVersionName
 
@@ -93,11 +100,11 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "21"
         freeCompilerArgs += listOf(
             "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
         )
@@ -111,7 +118,7 @@ android {
     // suffix. The version alone is enough to tell builds apart; the build type isn't user-facing.
     applicationVariants.all {
         outputs.all {
-            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
+            (this as ApkVariantOutput).outputFileName =
                 "VibeFitness-$appVersionName.apk"
         }
     }
@@ -122,11 +129,14 @@ dependencies {
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
-    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.core:core-ktx:1.15.0")
     implementation("com.google.android.material:material:1.12.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
-    implementation("androidx.activity:activity-compose:1.9.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    // collectAsStateWithLifecycle: stops collecting ViewModel state when the UI is not
+    // visible (backgrounded), avoiding wasted recompositions while the app is in background.
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+    implementation("androidx.activity:activity-compose:1.10.0")
 
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.animation:animation")
@@ -172,8 +182,10 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:functions-kt:$supabaseVersion")
     implementation("io.ktor:ktor-client-android:3.1.2")
 
-    // Inline image thumbnails in chat attachments
+    // Inline image thumbnails in chat attachments. coil-gif adds animated-GIF decoding so
+    // exercises with a custom .gif demo URL animate directly in the workout cards.
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("io.coil-kt:coil-gif:2.7.0")
 
     // Firebase Cloud Messaging: server-triggered push (new chat message / plan assignment)
     // delivered even when the app is killed - complements Supabase Realtime, which only

@@ -80,9 +80,44 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
     }
 }
 
+/** Richer self-service profile: bio, height, weight and declared primary goal. */
+val MIGRATION_10_11 = object : Migration(10, 11) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE user_profiles ADD COLUMN bio TEXT")
+        db.execSQL("ALTER TABLE user_profiles ADD COLUMN heightCm INTEGER")
+        db.execSQL("ALTER TABLE user_profiles ADD COLUMN weightKg REAL")
+        db.execSQL("ALTER TABLE user_profiles ADD COLUMN primaryGoal TEXT")
+    }
+}
+
+/** Coarse difficulty tier on catalog + custom exercises, shown in pickers and workout cards. */
+val MIGRATION_11_12 = object : Migration(11, 12) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE exercises ADD COLUMN difficulty TEXT")
+    }
+}
+
+/** Performance indices for the hottest queries: clients-by-PT lookups, the history/stats
+ * list of a user's sessions and the unread-message counters. Composite indices match the
+ * WHERE + ORDER BY shape of the DAO queries so they can be satisfied without a sort. */
+val MIGRATION_12_13 = object : Migration(12, 13) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_user_profiles_ptId ON user_profiles(ptId)")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_workout_sessions_userId_startedAtEpochMs " +
+                "ON workout_sessions(userId, startedAtEpochMs)",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_chat_messages_recipientId_readAtEpochMs " +
+                "ON chat_messages(recipientId, readAtEpochMs)",
+        )
+        db.execSQL("DROP INDEX IF EXISTS index_workout_sessions_planId")
+    }
+}
+
 /** Optional local reminder on a PT note, and a device-local library of reusable plan templates
  * (a PT builds a "Push day" once and reuses it across clients instead of retyping every time). */
-val MIGRATION_10_11 = object : Migration(10, 11) {
+val MIGRATION_13_14 = object : Migration(13, 14) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE pt_notes ADD COLUMN reminderAtEpochMs INTEGER")
         db.execSQL(

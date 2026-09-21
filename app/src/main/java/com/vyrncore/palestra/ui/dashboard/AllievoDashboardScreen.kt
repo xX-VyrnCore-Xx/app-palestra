@@ -10,14 +10,14 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -43,9 +43,9 @@ private const val CHAT_TAB_INDEX = 2
 private val tabs = listOf(
     AllievoTab("Home", Icons.Filled.Home),
     AllievoTab("Schede", Icons.Filled.FitnessCenter),
-    AllievoTab("Chat", Icons.Filled.Forum),
-    AllievoTab("Assistente", Icons.Filled.AutoAwesome),
-    AllievoTab("Profilo", Icons.Filled.Person),
+    AllievoTab("Chat", Icons.AutoMirrored.Filled.Chat),
+    AllievoTab("Assistente", Icons.Filled.Psychology),
+    AllievoTab("Profilo", Icons.Filled.AccountCircle),
 )
 
 @Composable
@@ -59,9 +59,9 @@ fun AllievoDashboardScreen(
     viewModel: AllievoDashboardViewModel = hiltViewModel(),
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val ptId by viewModel.ptId.collectAsState()
-    val ptName by viewModel.ptName.collectAsState()
-    val unreadCount by viewModel.unreadCount.collectAsState()
+    val ptId by viewModel.ptId.collectAsStateWithLifecycle()
+    val ptName by viewModel.ptName.collectAsStateWithLifecycle()
+    val unreadCount by viewModel.unreadCount.collectAsStateWithLifecycle()
 
     Scaffold(
         bottomBar = {
@@ -96,6 +96,10 @@ fun AllievoDashboardScreen(
                     onOpenHistory = onOpenHistory,
                     onOpenCalendar = onOpenCalendar,
                     onOpenSearch = onOpenSearch,
+                    // Home's tappable suggestions deep-link into the matching dashboard tab
+                    // (assistant nudges -> Assistente, "chiedi al PT" -> Chat) instead of dead-ending.
+                    onOpenAssistant = { selectedTab = 3 },
+                    onOpenChat = { selectedTab = CHAT_TAB_INDEX },
                 )
                 1 -> WorkoutPlansScreen(onOpenSession = onOpenSession)
                 CHAT_TAB_INDEX -> AllievoChatScreen(ptId = ptId, ptName = ptName.orEmpty())

@@ -3,12 +3,46 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Vibe monogram: a "V" whose right stroke breaks into a heartbeat pulse. -->
+    <!-- ViBE wordmark: italic-rounded letterforms drawn as rounded strokes so they stay
+         crisp at every launcher size. Content sits well inside the 66dp adaptive-icon
+         safe circle (max radius ~23 units from center). -->
+    <!-- V -->
     <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="9"
+        android:pathData="M32.8,46.5 L35.3,61.5 L43.8,46.5"
+        android:strokeColor="#F76B15"
+        android:strokeWidth="3.9"
         android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M33,30 L54,74 L61,49 L67,61 L75,30" />
+        android:strokeLineJoin="round" />
+    <!-- i: stem + dot -->
+    <path
+        android:pathData="M47.3,53 L45.8,60.5"
+        android:strokeColor="#F76B15"
+        android:strokeWidth="3.9"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="#F76B15"
+        android:pathData="M48.14,48.8 m-2.2,0 a2.2,2.2 0 1,1 4.4,0 a2.2,2.2 0 1,1 -4.4,0" />
+    <!-- B: stem + two bumps -->
+    <path
+        android:pathData="M53.4,46.5 L50.4,61.5"
+        android:strokeColor="#F76B15"
+        android:strokeWidth="3.9"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M53.4,46.5 L58.9,46.5 A3.65,3.65 0 0 1 58.9,53.8 L51.94,53.8"
+        android:strokeColor="#F76B15"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M51.94,53.8 L59.6,53.8 A3.85,3.85 0 0 1 59.6,61.5 L50.4,61.5"
+        android:strokeColor="#F76B15"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round" />
+    <!-- E: top bar, slanted stem, bottom bar, middle bar -->
+    <path
+        android:pathData="M75.2,46.5 L66.2,46.5 L63.2,61.5 L72.2,61.5 M64.74,53.8 L70.4,53.8"
+        android:strokeColor="#F76B15"
+        android:strokeWidth="3.9"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
 </vector>

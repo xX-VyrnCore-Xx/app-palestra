@@ -1,11 +1,13 @@
 package com.vyrncore.palestra.ui.search
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -26,9 +28,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -36,7 +39,10 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.vyrncore.palestra.ui.components.EmptyState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.vyrncore.palestra.ui.components.ExerciseDetailSheet
+import com.vyrncore.palestra.ui.components.MuscleGroupBadge
+import com.vyrncore.palestra.ui.components.MuscleGroupArtwork
 
 @Composable
 fun GlobalSearchScreen(
@@ -46,9 +52,10 @@ fun GlobalSearchScreen(
     onOpenChat: (peerId: String) -> Unit,
     viewModel: GlobalSearchViewModel = hiltViewModel(),
 ) {
-    val query by viewModel.query.collectAsState()
-    val results by viewModel.results.collectAsState()
+    val query by viewModel.query.collectAsStateWithLifecycle()
+    val results by viewModel.results.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
+    var detailExercise by remember { mutableStateOf<com.vyrncore.palestra.data.local.entity.ExerciseEntity?>(null) }
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
@@ -73,13 +80,13 @@ fun GlobalSearchScreen(
         },
     ) { padding ->
         if (query.isBlank()) {
-            EmptyState(
+            com.vyrncore.palestra.ui.components.EmptyState(
                 icon = Icons.Filled.Search,
                 message = "Cerca tra le tue schede, esercizi e persone.",
                 modifier = Modifier.padding(padding).fillMaxSize(),
             )
         } else if (results.isEmpty()) {
-            EmptyState(
+            com.vyrncore.palestra.ui.components.EmptyState(
                 icon = Icons.Filled.Search,
                 message = "Nessun risultato per \"$query\".",
                 modifier = Modifier.padding(padding).fillMaxSize(),
@@ -96,7 +103,7 @@ fun GlobalSearchScreen(
                                 }
                                 is SearchResult.Client -> onOpenClient(result.clientId)
                                 is SearchResult.Contact -> onOpenChat(result.peerId)
-                                is SearchResult.Exercise -> Unit
+                                is SearchResult.Exercise -> detailExercise = result.entity
                             }
                         },
                     )
@@ -104,18 +111,27 @@ fun GlobalSearchScreen(
             }
         }
     }
+
+    detailExercise?.let { exercise ->
+        ExerciseDetailSheet(
+            exercise = exercise,
+            onDismiss = { detailExercise = null },
+        )
+    }
 }
 
 private data class SearchRowContent(
-    val icon: ImageVector,
+    val icon: ImageVector?,
     val title: String,
     val subtitle: String,
     val trailingIcon: ImageVector? = null,
+    /** Non-null only for exercise rows: replaces the icon with the group artwork badge. */
+    val muscleGroup: String? = null,
 )
 
 private fun SearchResult.toRowContent(): SearchRowContent = when (this) {
     is SearchResult.Plan -> SearchRowContent(Icons.Filled.FitnessCenter, name, subtitle, Icons.Filled.PlayArrow)
-    is SearchResult.Exercise -> SearchRowContent(Icons.Filled.FitnessCenter, name, muscleGroup)
+    is SearchResult.Exercise -> SearchRowContent(null, entity.name, entity.muscleGroup, muscleGroup = entity.muscleGroup)
     is SearchResult.Client -> SearchRowContent(Icons.Filled.People, fullName, email)
     is SearchResult.Contact -> SearchRowContent(Icons.Filled.Forum, fullName, "Il tuo Personal Trainer", Icons.Filled.Forum)
 }
@@ -130,7 +146,11 @@ private fun SearchResultRow(result: SearchResult, onClick: () -> Unit) {
         onClick = onClick,
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(content.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            if (content.muscleGroup != null) {
+                MuscleGroupBadge(group = content.muscleGroup, size = 36.dp)
+            } else {
+                Icon(content.icon ?: Icons.Filled.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            }
             Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
                 Text(content.title, style = MaterialTheme.typography.titleMedium)
                 Text(

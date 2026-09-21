@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -34,7 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,7 +51,7 @@ fun RestTimerScreen(
     onClose: () -> Unit,
     viewModel: RestTimerViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     LaunchedEffect(uiState.isFinished) {
@@ -151,6 +152,19 @@ fun RestTimerScreen(
                     modifier = Modifier.padding(start = 12.dp).height(52.dp),
                 ) {
                     Text("Chiudi")
+                }
+            }
+
+            // Once time is up the pause button above is a no-op (nothing left to resume), so
+            // offer the natural next action instead: run the same rest again.
+            if (uiState.isFinished) {
+                Button(
+                    onClick = viewModel::restart,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary, contentColor = MaterialTheme.colorScheme.onTertiary),
+                    modifier = Modifier.padding(top = 12.dp).height(52.dp),
+                ) {
+                    Icon(Icons.Filled.Replay, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
+                    Text("Ricomincia")
                 }
             }
         }

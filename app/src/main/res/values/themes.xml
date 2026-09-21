@@ -3,7 +3,9 @@
 
     <style name="Theme.Palestra.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <!-- Dedicated splash logo: the launcher foreground is padded for the adaptive-icon
+             safe zone and looks tiny here, so splash uses its own larger wordmark. -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
         <item name="postSplashScreenTheme">@style/Theme.Palestra</item>
     </style>
 </resources>

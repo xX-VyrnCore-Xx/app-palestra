@@ -28,9 +28,9 @@ import java.time.Instant
 private fun Long.toIso(): String = Instant.ofEpochMilli(this).toString()
 private fun String.toEpochMs(): Long = Instant.parse(this).toEpochMilli()
 
-fun UserProfileEntity.toDto() = UserProfileDto(id, email, fullName, role.name, ptId, injuries, avatarUrl)
+fun UserProfileEntity.toDto() = UserProfileDto(id, email, fullName, role.name, ptId, injuries, avatarUrl, bio, heightCm, weightKg, primaryGoal)
 
-fun ExerciseEntity.toDto() = ExerciseDto(id, name, muscleGroup, equipment, notes, createdByUserId, isCustom, imageUrl)
+fun ExerciseEntity.toDto() = ExerciseDto(id, name, muscleGroup, equipment, notes, createdByUserId, isCustom, imageUrl, difficulty)
 
 fun WorkoutPlanEntity.toDto() = WorkoutPlanDto(
     id, name, description, createdByPtId, assignedToUserId, createdAtEpochMs.toIso(), category, estimatedMinutes,
@@ -57,9 +57,14 @@ fun BodyMetricEntity.toDto() = BodyMetricDto(
     id, userId, dateEpochMs.toIso(), weightKg, bodyFatPercent, chestCm, waistCm, hipsCm, armCm, thighCm, notes
 )
 
-fun UserProfileDto.toEntity() = UserProfileEntity(id, email, fullName, UserRole.valueOf(role), ptId, injuries, avatarUrl, SyncStatus.SYNCED)
+fun UserProfileDto.toEntity() = UserProfileEntity(
+    id, email, fullName, UserRole.valueOf(role), ptId, injuries, avatarUrl,
+    bio, heightCm, weightKg, primaryGoal, SyncStatus.SYNCED,
+)
 
-fun ExerciseDto.toEntity() = ExerciseEntity(id, name, muscleGroup, equipment, notes, createdByUserId, isCustom, imageUrl, SyncStatus.SYNCED)
+fun ExerciseDto.toEntity() = ExerciseEntity(
+    id, name, muscleGroup, equipment, notes, createdByUserId, isCustom, imageUrl, difficulty, SyncStatus.SYNCED
+)
 
 fun WorkoutPlanDto.toEntity() = WorkoutPlanEntity(
     id, name, description, createdByPtId, assignedToUserId, createdAt.toEpochMs(), category, estimatedMinutes,
