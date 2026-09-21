@@ -15,3 +15,9 @@ local.properties
 
 # Local JDK used for builds
 .jdk/
+
+# Kotlin compiler daemon state - machine-local, never meaningful to commit
+.kotlin/
+
+# Session-local planning artifacts from AI coding assistants
+.artifacts/
