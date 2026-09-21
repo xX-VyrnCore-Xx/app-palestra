@@ -3,6 +3,7 @@ package com.vyrncore.palestra.ui.auth
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,7 +22,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -42,11 +42,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.ui.components.BackendConfigBanner
+import com.vyrncore.palestra.ui.components.VibeWordmark
 
 /**
  * Login: name, email and password are all it ever asks - no extra steps, no questionnaire.
@@ -57,6 +57,7 @@ import com.vyrncore.palestra.ui.components.BackendConfigBanner
 fun LoginScreen(
     onLoggedIn: (String) -> Unit,
     onNavigateToRegister: () -> Unit,
+    onForgotPassword: () -> Unit = {},
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -83,27 +84,23 @@ fun LoginScreen(
         ) {
             Spacer(Modifier.height(48.dp))
 
-            // Hero: brand badge springs in, then the headline fades up.
+            // Hero: the ViBE wordmark springs in over the brand gradient, then the tagline
+            // fades up. Replaces the old generic dumbbell badge with the real brand mark.
             var heroVisible by remember { mutableStateOf(false) }
             LaunchedEffect(Unit) { heroVisible = true }
             AnimatedVisibility(
                 visible = heroVisible,
-                enter = fadeIn(tween(500)) + slideInVertically(tween(500)) { -it / 3 },
+                enter = fadeIn(tween(500)) +
+                    slideInVertically(tween(500)) { -it / 3 } +
+                    scaleIn(initialScale = 0.7f, animationSpec = tween(500)),
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    BrandBadge(icon = Icons.Filled.FitnessCenter)
-                    Text(
-                        "Vibe Fitness",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(top = 16.dp),
-                    )
+                    VibeWordmark(width = 170.dp)
                     Text(
                         "Bentornato. Ogni ripetizione conta.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 28.dp),
+                        modifier = Modifier.padding(top = 14.dp, bottom = 28.dp),
                     )
                 }
             }
@@ -170,6 +167,17 @@ fun LoginScreen(
                             enabled = email.isNotBlank() && password.isNotBlank(),
                             modifier = Modifier.padding(top = 8.dp),
                         )
+
+                        TextButton(
+                            onClick = onForgotPassword,
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                        ) {
+                            Text(
+                                "Password dimenticata?",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     }
                 }
             }

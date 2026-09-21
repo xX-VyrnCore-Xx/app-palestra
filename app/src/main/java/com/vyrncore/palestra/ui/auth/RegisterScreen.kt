@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Arrangement
@@ -25,7 +26,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.Person
@@ -50,13 +50,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.ui.components.BackendConfigBanner
+import com.vyrncore.palestra.ui.components.VibeWordmark
 
 /**
  * Registration collects the essentials (role, name, email, password) plus optional body metrics,
@@ -116,22 +116,17 @@ fun RegisterScreen(
             LaunchedEffect(Unit) { heroVisible = true }
             AnimatedVisibility(
                 visible = heroVisible,
-                enter = fadeIn(tween(500)) + slideInVertically(tween(500)) { -it / 3 },
+                enter = fadeIn(tween(500)) +
+                    slideInVertically(tween(500)) { -it / 3 } +
+                    scaleIn(initialScale = 0.7f, animationSpec = tween(500)),
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    BrandBadge(icon = Icons.Filled.FitnessCenter)
-                    Text(
-                        "Unisciti al Vibe",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(top = 16.dp),
-                    )
+                    VibeWordmark(width = 170.dp)
                     Text(
                         "Crea il tuo account e inizia il percorso",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 24.dp),
+                        modifier = Modifier.padding(top = 14.dp, bottom = 24.dp),
                     )
                 }
             }

@@ -1,0 +1,44 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="104dp"
+    android:height="46dp"
+    android:viewportWidth="52"
+    android:viewportHeight="23">
+    <!-- ViBE wordmark on a tight viewport (unlike the launcher version, which carries the
+         adaptive-icon safe-zone padding), so it can scale up cleanly for in-app hero use.
+         Strokes are neutral white so Compose Icon tint can recolor it per-surface. -->
+    <path
+        android:pathData="M4.8,4 L7.3,19 L15.8,4"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.9"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M19.3,10.5 L17.8,18"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.9"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M20.14,6.3 m-2.2,0 a2.2,2.2 0 1,1 4.4,0 a2.2,2.2 0 1,1 -4.4,0" />
+    <path
+        android:pathData="M25.4,4 L22.4,19"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.9"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M25.4,4 L30.9,4 A3.65,3.65 0 0 1 30.9,11.3 L23.94,11.3"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M23.94,11.3 L31.6,11.3 A3.85,3.85 0 0 1 31.6,19 L22.4,19"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M47.2,4 L38.2,4 L35.2,19 L44.2,19 M36.74,11.3 L42.4,11.3"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.9"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>
