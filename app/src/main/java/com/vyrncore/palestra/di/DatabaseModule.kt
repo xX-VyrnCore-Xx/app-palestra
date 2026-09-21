@@ -10,6 +10,7 @@ import com.vyrncore.palestra.data.local.MIGRATION_6_7
 import com.vyrncore.palestra.data.local.MIGRATION_7_8
 import com.vyrncore.palestra.data.local.MIGRATION_8_9
 import com.vyrncore.palestra.data.local.MIGRATION_9_10
+import com.vyrncore.palestra.data.local.MIGRATION_10_11
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,7 +26,10 @@ object DatabaseModule {
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.DATABASE_NAME)
-            .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+            .addMigrations(
+                MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8,
+                MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
+            )
             .fallbackToDestructiveMigration()
             .build()
 
@@ -58,4 +62,10 @@ object DatabaseModule {
 
     @Provides
     fun provideProgramDao(db: AppDatabase) = db.programDao()
+
+    @Provides
+    fun providePlanTemplateDao(db: AppDatabase) = db.planTemplateDao()
+
+    @Provides
+    fun providePlanTemplateExerciseDao(db: AppDatabase) = db.planTemplateExerciseDao()
 }

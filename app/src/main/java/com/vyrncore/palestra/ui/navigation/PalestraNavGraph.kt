@@ -82,7 +82,7 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
         composable(Routes.REGISTER) {
             RegisterScreen(
                 onRegistered = { userId ->
-                    rootViewModel.setLoggedInUser(userId)
+                    rootViewModel.setNewlyRegisteredUser(userId)
                     navController.navigate("home") { popUpTo(Routes.LOGIN) { inclusive = true } }
                 },
             )

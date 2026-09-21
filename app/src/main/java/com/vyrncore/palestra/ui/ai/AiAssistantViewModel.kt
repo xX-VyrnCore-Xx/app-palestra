@@ -38,20 +38,25 @@ class AiAssistantViewModel @Inject constructor(
         if (trimmed.isEmpty() || _uiState.value.isSending) return
 
         _uiState.value = _uiState.value.copy(
-            messages = _uiState.value.messages + AiMessage(role = "user", content = trimmed),
+            messages = _uiState.value.messages + AiMessage(role = "user", content = trimmed) +
+                AiMessage(role = "assistant", content = ""),
             isSending = true,
             error = null,
         )
         viewModelScope.launch {
-            runCatching { repository.sendMessage(trimmed) }
-                .onSuccess { reply ->
-                    _uiState.value = _uiState.value.copy(
-                        messages = _uiState.value.messages + AiMessage(role = "assistant", content = reply),
-                        isSending = false,
-                    )
+            runCatching {
+                repository.sendMessage(trimmed) { chunk ->
+                    val messages = _uiState.value.messages.toMutableList()
+                    val lastIndex = messages.lastIndex
+                    messages[lastIndex] = messages[lastIndex].copy(content = messages[lastIndex].content + chunk)
+                    _uiState.value = _uiState.value.copy(messages = messages)
                 }
+            }
+                .onSuccess { _uiState.value = _uiState.value.copy(isSending = false) }
                 .onFailure { e ->
                     _uiState.value = _uiState.value.copy(
+                        // Drop the empty assistant placeholder bubble left over from the failed attempt.
+                        messages = _uiState.value.messages.dropLast(1),
                         isSending = false,
                         error = friendlyError(e),
                     )

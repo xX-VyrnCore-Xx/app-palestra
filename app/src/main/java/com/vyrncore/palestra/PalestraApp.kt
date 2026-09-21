@@ -30,6 +30,7 @@ class PalestraApp : Application(), Configuration.Provider {
         super.onCreate()
         syncScheduler.schedulePeriodicSync()
         reminderScheduler.scheduleDailyCheck()
+        reminderScheduler.scheduleWeeklyDigest()
         applicationScope.launch { workoutRepository.seedCatalogIfNeeded() }
     }
 }

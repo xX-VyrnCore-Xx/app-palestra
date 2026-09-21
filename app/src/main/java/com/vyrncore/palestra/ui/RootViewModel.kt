@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.messaging.FirebaseMessaging
 import com.vyrncore.palestra.data.local.entity.UserRole
-import com.vyrncore.palestra.data.repository.AllievoProfileRepository
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.ChatRepository
 import com.vyrncore.palestra.data.repository.ThemeMode
@@ -16,7 +15,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -29,7 +27,6 @@ class RootViewModel @Inject constructor(
     private val themeRepository: ThemeRepository,
     private val chatRepository: ChatRepository,
     private val realtimeSyncManager: RealtimeSyncManager,
-    private val allievoProfileRepository: AllievoProfileRepository,
 ) : ViewModel() {
 
     val startUserId: String? = authRepository.currentUserId
@@ -61,19 +58,19 @@ class RootViewModel @Inject constructor(
 
     private val onboardingCompletedOverride = MutableStateFlow(false)
 
-    /** True only while an ALLIEVO is logged in and hasn't finished the private Welcome
-     * questionnaire yet. Never triggers for a PT - their role short-circuits the check. */
-    val needsOnboarding: StateFlow<Boolean> = combine(userId, role, onboardingCompletedOverride) { id, r, override ->
-        Triple(id, r, override)
-    }.flatMapLatest { (id, r, override) ->
-        when {
-            override || id == null || r != UserRole.ALLIEVO -> flowOf(false)
-            else -> flow { emit(allievoProfileRepository.fetch(id)?.completedOnboarding != true) }
-        }
+    /** True only while an ALLIEVO who just registered in this app install hasn't finished the
+     * private Welcome questionnaire yet - never re-derived from a network fetch, so a returning
+     * user is never nagged again just because a completion check failed to load (e.g. offline).
+     * Never triggers for a PT - their role short-circuits the check. */
+    val needsOnboarding: StateFlow<Boolean> = combine(
+        userId, role, onboardingCompletedOverride, themeRepository.pendingOnboardingUserId,
+    ) { id, r, override, pendingId ->
+        !override && id != null && r == UserRole.ALLIEVO && pendingId == id
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     fun markOnboardingComplete() {
         onboardingCompletedOverride.value = true
+        viewModelScope.launch { themeRepository.setPendingOnboardingUserId(null) }
     }
 
     fun setLoggedInUser(id: String) {
@@ -81,6 +78,13 @@ class RootViewModel @Inject constructor(
         chatRepository.startListening(id)
         realtimeSyncManager.startListening(id)
         registerFcmToken(id)
+    }
+
+    /** Same as [setLoggedInUser], plus marks this account as owing the Welcome questionnaire -
+     * call this only right after a successful sign-up, never on an ordinary login. */
+    fun setNewlyRegisteredUser(id: String) {
+        setLoggedInUser(id)
+        viewModelScope.launch { themeRepository.setPendingOnboardingUserId(id) }
     }
 
     fun setThemeMode(mode: ThemeMode) {

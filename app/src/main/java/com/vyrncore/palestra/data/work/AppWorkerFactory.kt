@@ -5,7 +5,9 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.vyrncore.palestra.data.notification.NotificationHelper
+import com.vyrncore.palestra.data.notification.PtNoteReminderWorker
 import com.vyrncore.palestra.data.notification.ReminderWorker
+import com.vyrncore.palestra.data.notification.WeeklyDigestWorker
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.ThemeRepository
 import com.vyrncore.palestra.data.repository.WorkoutRepository
@@ -51,6 +53,18 @@ class AppWorkerFactory @Inject constructor() : WorkerFactory() {
                 appContext,
                 workerParameters,
                 entryPoint.syncManager(),
+            )
+            PtNoteReminderWorker::class.java.name -> PtNoteReminderWorker(
+                appContext,
+                workerParameters,
+                entryPoint.notificationHelper(),
+            )
+            WeeklyDigestWorker::class.java.name -> WeeklyDigestWorker(
+                appContext,
+                workerParameters,
+                entryPoint.authRepository(),
+                entryPoint.workoutRepository(),
+                entryPoint.notificationHelper(),
             )
             else -> null
         }

@@ -180,5 +180,43 @@ data class PtNoteEntity(
     val content: String,
     val createdAtEpochMs: Long,
     val updatedAtEpochMs: Long,
+    /** Optional local reminder: fires a one-off notification for the PT at this time. Kept
+     * device-local (not synced to Supabase) since it's a personal scheduling aid, not shared data. */
+    val reminderAtEpochMs: Long? = null,
+    val syncStatus: SyncStatus = SyncStatus.SYNCED,
+)
+
+@Entity(tableName = "plan_templates", indices = [Index("ptId")])
+data class PlanTemplateEntity(
+    @PrimaryKey val id: String,
+    val ptId: String,
+    val name: String,
+    val category: String? = null,
+    val createdAtEpochMs: Long,
+    val syncStatus: SyncStatus = SyncStatus.SYNCED,
+)
+
+@Entity(
+    tableName = "plan_template_exercises",
+    indices = [Index("templateId"), Index("exerciseId")],
+    foreignKeys = [
+        ForeignKey(
+            entity = PlanTemplateEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["templateId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class PlanTemplateExerciseEntity(
+    @PrimaryKey val id: String,
+    val templateId: String,
+    val exerciseId: String,
+    val orderIndex: Int,
+    val targetSets: Int,
+    val targetReps: Int,
+    val targetWeightKg: Double? = null,
+    val restSeconds: Int = 90,
+    val notes: String? = null,
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )

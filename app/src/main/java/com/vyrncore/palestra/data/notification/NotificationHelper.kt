@@ -52,6 +52,20 @@ class NotificationHelper @Inject constructor(
                     NotificationManager.IMPORTANCE_HIGH,
                 )
             )
+            manager?.createNotificationChannel(
+                NotificationChannel(
+                    PT_REMINDER_CHANNEL_ID,
+                    "Promemoria PT",
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                )
+            )
+            manager?.createNotificationChannel(
+                NotificationChannel(
+                    DIGEST_CHANNEL_ID,
+                    "Riepilogo settimanale",
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                )
+            )
         }
     }
 
@@ -109,6 +123,31 @@ class NotificationHelper @Inject constructor(
         NotificationManagerCompat.from(context).notify(exerciseName.hashCode(), notification)
     }
 
+    fun showPtNoteReminder(clientName: String, message: String) {
+        if (!hasNotificationPermission()) return
+
+        val notification = NotificationCompat.Builder(context, PT_REMINDER_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Promemoria: $clientName")
+            .setContentText(message)
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(clientName.hashCode(), notification)
+    }
+
+    fun showWeeklyDigest(title: String, message: String) {
+        if (!hasNotificationPermission()) return
+
+        val notification = NotificationCompat.Builder(context, DIGEST_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(DIGEST_NOTIFICATION_ID, notification)
+    }
+
     private companion object {
         const val REMINDER_CHANNEL_ID = "workout_reminders"
         const val REMINDER_NOTIFICATION_ID = 1001
@@ -116,5 +155,8 @@ class NotificationHelper @Inject constructor(
         const val PLAN_CHANNEL_ID = "plan_updates"
         const val PLAN_NOTIFICATION_ID = 1002
         const val ACHIEVEMENT_CHANNEL_ID = "achievements"
+        const val PT_REMINDER_CHANNEL_ID = "pt_note_reminders"
+        const val DIGEST_CHANNEL_ID = "weekly_digest"
+        const val DIGEST_NOTIFICATION_ID = 1003
     }
 }

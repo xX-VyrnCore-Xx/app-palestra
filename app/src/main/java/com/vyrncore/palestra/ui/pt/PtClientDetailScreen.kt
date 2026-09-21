@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.MilitaryTech
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -81,6 +82,9 @@ fun PtClientDetailScreen(
             TopAppBar(
                 title = { Text("Scheda recluta") },
                 actions = {
+                    IconButton(onClick = { viewModel.exportPdfReport() }) {
+                        Icon(Icons.Filled.PictureAsPdf, contentDescription = "Esporta report PDF")
+                    }
                     IconButton(onClick = { onOpenChat(viewModel.clientId) }) {
                         Icon(Icons.Filled.Forum, contentDescription = "Chat")
                     }
@@ -278,6 +282,40 @@ fun PtClientDetailScreen(
                         modifier = Modifier.padding(top = 4.dp),
                     ) {
                         Text("Salva nota")
+                    }
+
+                    val reminderAt = note?.reminderAtEpochMs
+                    if (reminderAt != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                "Promemoria: ${SimpleDateFormat("dd MMM, HH:mm", Locale.ITALY).format(Date(reminderAt))}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(onClick = { viewModel.cancelNoteReminder() }) {
+                                Text("Annulla")
+                            }
+                        }
+                    } else {
+                        Text(
+                            "Imposta un promemoria",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                        Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                            listOf("Domani" to 1, "Tra 3 giorni" to 3, "Tra 1 settimana" to 7).forEach { (label, days) ->
+                                AssistChip(
+                                    onClick = { viewModel.saveNoteWithReminder(noteDraft, days) },
+                                    label = { Text(label) },
+                                    modifier = Modifier.padding(end = 8.dp),
+                                )
+                            }
+                        }
                     }
                 }
             }

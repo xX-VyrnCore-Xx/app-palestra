@@ -98,4 +98,7 @@ fun ChatMessageDto.toEntity() = ChatMessageEntity(
 
 fun PtNoteEntity.toDto() = PtNoteDto(id, ptId, clientId, content, createdAtEpochMs.toIso(), updatedAtEpochMs.toIso())
 
-fun PtNoteDto.toEntity() = PtNoteEntity(id, ptId, clientId, content, createdAt.toEpochMs(), updatedAt.toEpochMs(), SyncStatus.SYNCED)
+fun PtNoteDto.toEntity() = PtNoteEntity(
+    id = id, ptId = ptId, clientId = clientId, content = content,
+    createdAtEpochMs = createdAt.toEpochMs(), updatedAtEpochMs = updatedAt.toEpochMs(), syncStatus = SyncStatus.SYNCED,
+)
