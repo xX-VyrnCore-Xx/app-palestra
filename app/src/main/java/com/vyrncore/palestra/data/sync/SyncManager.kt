@@ -5,6 +5,8 @@ import com.vyrncore.palestra.data.local.dao.BodyMetricDao
 import com.vyrncore.palestra.data.local.dao.ChatMessageDao
 import com.vyrncore.palestra.data.local.dao.ExerciseDao
 import com.vyrncore.palestra.data.local.dao.PlanExerciseDao
+import com.vyrncore.palestra.data.local.dao.PlanTemplateDao
+import com.vyrncore.palestra.data.local.dao.PlanTemplateExerciseDao
 import com.vyrncore.palestra.data.local.dao.ProgramDao
 import com.vyrncore.palestra.data.local.dao.PtNoteDao
 import com.vyrncore.palestra.data.local.dao.SetEntryDao
@@ -16,6 +18,8 @@ import com.vyrncore.palestra.data.remote.dto.BodyMetricDto
 import com.vyrncore.palestra.data.remote.dto.ChatMessageDto
 import com.vyrncore.palestra.data.remote.dto.ExerciseDto
 import com.vyrncore.palestra.data.remote.dto.PlanExerciseDto
+import com.vyrncore.palestra.data.remote.dto.PlanTemplateDto
+import com.vyrncore.palestra.data.remote.dto.PlanTemplateExerciseDto
 import com.vyrncore.palestra.data.remote.dto.ProgramDto
 import com.vyrncore.palestra.data.remote.dto.PtNoteDto
 import com.vyrncore.palestra.data.remote.dto.SetEntryDto
@@ -69,6 +73,8 @@ class SyncManager @Inject constructor(
     private val chatMessageDao: ChatMessageDao,
     private val ptNoteDao: PtNoteDao,
     private val programDao: ProgramDao,
+    private val planTemplateDao: PlanTemplateDao,
+    private val planTemplateExerciseDao: PlanTemplateExerciseDao,
 ) {
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
@@ -128,6 +134,14 @@ class SyncManager @Inject constructor(
         programDao.getPendingSync().forEach { entity ->
             postgrest.from("programs").upsert(entity.toDto())
             programDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED))
+        }
+        planTemplateDao.getPendingSync().forEach { entity ->
+            postgrest.from("plan_templates").upsert(entity.toDto())
+            planTemplateDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED))
+        }
+        planTemplateExerciseDao.getPendingSync().forEach { entity ->
+            postgrest.from("plan_template_exercises").upsert(entity.toDto())
+            planTemplateExerciseDao.upsert(entity.copy(syncStatus = SyncStatus.SYNCED))
         }
     }
 
@@ -226,5 +240,21 @@ class SyncManager @Inject constructor(
                 .decodeList<ProgramDto>()
         }.getOrDefault(emptyList())
         (programsAssigned + programsCreated).distinctBy { it.id }.forEach { programDao.upsert(it.toEntity()) }
+
+        if (ownProfile.role == UserRole.PT.name) {
+            val templates = runCatching {
+                postgrest.from("plan_templates").select { filter { eq("pt_id", userId) } }
+                    .decodeList<PlanTemplateDto>()
+            }.getOrDefault(emptyList())
+            templates.forEach { planTemplateDao.upsert(it.toEntity()) }
+
+            val templateIds = templates.map { it.id }
+            if (templateIds.isNotEmpty()) {
+                runCatching {
+                    postgrest.from("plan_template_exercises").select { filter { isIn("template_id", templateIds) } }
+                        .decodeList<PlanTemplateExerciseDto>()
+                }.getOrDefault(emptyList()).forEach { planTemplateExerciseDao.upsert(it.toEntity()) }
+            }
+        }
     }
 }

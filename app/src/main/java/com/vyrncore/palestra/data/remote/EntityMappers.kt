@@ -6,6 +6,8 @@ import com.vyrncore.palestra.data.local.entity.ChatAttachmentType
 import com.vyrncore.palestra.data.local.entity.ChatMessageEntity
 import com.vyrncore.palestra.data.local.entity.ExerciseEntity
 import com.vyrncore.palestra.data.local.entity.PlanExerciseEntity
+import com.vyrncore.palestra.data.local.entity.PlanTemplateEntity
+import com.vyrncore.palestra.data.local.entity.PlanTemplateExerciseEntity
 import com.vyrncore.palestra.data.local.entity.ProgramEntity
 import com.vyrncore.palestra.data.local.entity.PtNoteEntity
 import com.vyrncore.palestra.data.local.entity.SetEntryEntity
@@ -17,6 +19,8 @@ import com.vyrncore.palestra.data.remote.dto.BodyMetricDto
 import com.vyrncore.palestra.data.remote.dto.ChatMessageDto
 import com.vyrncore.palestra.data.remote.dto.ExerciseDto
 import com.vyrncore.palestra.data.remote.dto.PlanExerciseDto
+import com.vyrncore.palestra.data.remote.dto.PlanTemplateDto
+import com.vyrncore.palestra.data.remote.dto.PlanTemplateExerciseDto
 import com.vyrncore.palestra.data.remote.dto.ProgramDto
 import com.vyrncore.palestra.data.remote.dto.PtNoteDto
 import com.vyrncore.palestra.data.remote.dto.SetEntryDto
@@ -47,6 +51,16 @@ fun ProgramEntity.toDto() = ProgramDto(
 
 fun PlanExerciseEntity.toDto() = PlanExerciseDto(
     id, planId, exerciseId, orderIndex, targetSets, targetReps, targetWeightKg, restSeconds, notes
+)
+
+fun PlanTemplateEntity.toDto() = PlanTemplateDto(
+    id = id, ptId = ptId, name = name, category = category, createdAt = createdAtEpochMs.toIso(),
+)
+
+fun PlanTemplateExerciseEntity.toDto() = PlanTemplateExerciseDto(
+    id = id, templateId = templateId, exerciseId = exerciseId, orderIndex = orderIndex,
+    targetSets = targetSets, targetReps = targetReps, targetWeightKg = targetWeightKg,
+    restSeconds = restSeconds, notes = notes,
 )
 
 fun WorkoutSessionEntity.toDto() = WorkoutSessionDto(
@@ -82,6 +96,17 @@ fun ProgramDto.toEntity() = ProgramEntity(
 
 fun PlanExerciseDto.toEntity() = PlanExerciseEntity(
     id, planId, exerciseId, orderIndex, targetSets, targetReps, targetWeightKg, restSeconds, notes, SyncStatus.SYNCED
+)
+
+fun PlanTemplateDto.toEntity() = PlanTemplateEntity(
+    id = id, ptId = ptId, name = name, category = category, createdAtEpochMs = createdAt.toEpochMs(),
+    syncStatus = SyncStatus.SYNCED,
+)
+
+fun PlanTemplateExerciseDto.toEntity() = PlanTemplateExerciseEntity(
+    id = id, templateId = templateId, exerciseId = exerciseId, orderIndex = orderIndex,
+    targetSets = targetSets, targetReps = targetReps, targetWeightKg = targetWeightKg,
+    restSeconds = restSeconds, notes = notes, syncStatus = SyncStatus.SYNCED,
 )
 
 fun WorkoutSessionDto.toEntity() = WorkoutSessionEntity(
