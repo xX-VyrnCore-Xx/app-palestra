@@ -15,12 +15,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-
-@Serializable
-private data class InviteCodeParams(val code: String)
 
 @Serializable
 data class PtInviteMatch(
@@ -144,8 +143,8 @@ class AuthRepository @Inject constructor(
     suspend fun resolvePtInviteCode(code: String): PtInviteMatch? {
         if (code.isBlank()) return null
         return runCatching {
-            postgrest.rpc("resolve_pt_invite_code", InviteCodeParams(code.trim()))
-                .decodeSingleOrNull<PtInviteMatch>()
+            val params = buildJsonObject { put("code", code.trim()) }
+            postgrest.rpc("resolve_pt_invite_code", params).decodeSingleOrNull<PtInviteMatch>()
         }.getOrNull()
     }
 
