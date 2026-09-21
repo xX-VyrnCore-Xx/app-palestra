@@ -26,13 +26,22 @@ App Android nativa per il brand di palestre **Vibe Fitness**, pensata per due ru
 - Calendario allenamenti: vista mensile con indicatore del giorno corrente, riepilogo allenamenti del mese e legenda
 - Note private del PT su ogni allievo (obiettivi, infortuni, osservazioni), visibili solo al PT
 - Statistiche avanzate: volume di allenamento per gruppo muscolare e andamento del volume settimanale, oltre al grafico di progressione per esercizio
-- Gamification: livelli/XP con titolo (Novizio → Leggenda), obiettivo settimanale, e tre serie di traguardi (streak, numero allenamenti, kg totali sollevati)
+- Gamification: livelli/XP a tema palestra (Principiante → Elite → Leggenda), obiettivo settimanale, e tre serie di traguardi (streak, numero allenamenti, kg totali sollevati)
 - Classifica settimanale motivazionale: allievo e PT vedono chi si è allenato di più negli ultimi 7 giorni tra gli allievi dello stesso PT (funzione Postgres server-side che restituisce solo nome e conteggio, nessun accesso incrociato ai dati altrui)
 - Schede di allenamento con categoria (Full Body, Push, Pull, Gambe, Cardio, Mobilità), durata stimata e numero di esercizi mostrati in lista
 - Profilo con tema chiaro/scuro/di sistema (persistito) e logout
 - Catalogo di 60 esercizi precaricato al primo avvio (offline e su Supabase), con gruppo muscolare, attrezzatura, difficoltà e nota tecnica; picker per i PT con filtri per gruppo muscolare e ricerca tutorial video
 - Login essenziale (email + password, nessun passaggio extra) e registrazione con ruolo, dati corporali opzionali e onboarding guidato post-registrazione per gli allievi (esperienza, giorni di allenamento, obiettivo, stile di vita, lesioni, alimentazione, note + riepilogo); il profilo resta personalizzabile in ogni momento (bio, obiettivo, altezza, peso)
 - Sincronizzazione bidirezionale: push dei dati registrati offline + pull periodico di fallback; schede, esercizi assegnati e metriche corporee arrivano però **in tempo reale** via Supabase Realtime (come la chat), senza bisogno di riaprire l'app o aspettare il sync — nessuna nuova build richiesta per vedere dati aggiornati, solo per nuove funzionalità/modifiche al codice
+- Collegamento PT↔Allievo tramite codice invito a 6 caratteri (il PT lo genera e condivide, invece di far incollare un ID grezzo), in registrazione o in un secondo momento dal Profilo
+- Creazione scheda assistita da AI per il PT: descrive l'obiettivo in linguaggio naturale, l'AI propone 4-8 esercizi dal catalogo reale (mai inventati) tenendo conto degli infortuni noti del cliente, come bozza da rivedere prima di salvare
+- Video tutorial esercizi riprodotti **in app** (WebView), senza aprire YouTube esterno
+- Chat: indicatore "sta scrivendo", allegati immagine/file, messaggi vocali (registrazione + player play/pausa), doppia spunta di lettura
+- Timer di recupero con notifica push (e vibrazione) se l'allievo lascia la schermata o l'app va in background prima che scada
+- La lista schede dell'allievo evidenzia automaticamente la "prossima" in rotazione dopo un allenamento completato
+- Livelli di progressione a tema palestra (Principiante → Intermedio → Avanzato → Elite → Leggenda), non più gradi militari
+- App bloccata in orientamento verticale
+- Modelli scheda riutilizzabili del PT ("Push day", ecc.) sincronizzati su Supabase, non più solo sul dispositivo
 
 ## Architettura
 
@@ -69,13 +78,20 @@ Per usare un **tuo** progetto Supabase invece: crea un progetto su [supabase.com
 
 | Tabella | Descrizione |
 |---|---|
-| `profiles` | Utente con ruolo `PT` o `ALLIEVO`; un allievo referenzia il proprio `pt_id` |
+| `profiles` | Utente con ruolo `PT` o `ALLIEVO`; un allievo referenzia il proprio `pt_id`; il PT ha un `invite_code` univoco |
+| `allievo_private_profiles` | Risposte del questionario di onboarding (Welcome Page), leggibile dal proprio PT ma mai scrivibile da lui |
 | `exercises` | Catalogo esercizi (di sistema o custom) |
-| `workout_plans` | Scheda creata da un PT e assegnata a un allievo |
+| `workout_plans` | Scheda creata da un PT e assegnata a un allievo (eventualmente parte di un `program`) |
 | `plan_exercises` | Esercizi di una scheda con serie/ripetizioni/recupero target |
+| `plan_templates` / `plan_template_exercises` | Libreria di modelli scheda riutilizzabili del PT |
+| `programs` | Mesociclo multi-settimana (raggruppa più `workout_plans`) |
 | `workout_sessions` | Una sessione di allenamento svolta da un allievo |
 | `set_entries` | Singola serie registrata (reps, peso, RPE) |
 | `body_metrics` | Storico peso corporeo e misure |
+| `messages` | Chat PT↔Allievo, con allegati (immagine/file/vocale) opzionali |
+| `pt_notes` | Note private del PT su un allievo, con promemoria opzionale |
+| `plotone_feed_posts` | Bacheca auto-pubblicata a fine allenamento |
+| `ai_messages` / `ai_rate_limit_events` | Storico conversazione con l'assistente AI e rate limiting condiviso |
 
 ## Build dell'APK
 
@@ -120,9 +136,24 @@ Senza questo secret la funzione risponde con un no-op silenzioso: l'app funziona
 
 Vedi `docs/play_store_release.md` per la guida completa: build firmata (Android App Bundle) via `.github/workflows/build-release-aab.yml`, testi della scheda (`docs/play_store_listing.md`) e bozza dell'informativa privacy (`docs/privacy_policy.md`).
 
+## Assistente AI per la creazione scheda (PT)
+
+Oltre alla chat con l'assistente, il PT può generare una bozza di scheda dal Plan Editor
+("Crea con AI"): descrive l'obiettivo in italiano, e l'Edge Function `ai-plan-builder`
+(`supabase/functions/ai-plan-builder`) chiede al modello NIM di scegliere 4-8 esercizi **solo**
+dal catalogo reale (mai inventati), tenendo conto degli infortuni noti del cliente. La risposta
+popola il draft del Plan Editor esattamente come una scheda costruita a mano: il PT la rivede,
+modifica sets/reps/recupero, e la salva solo quando è soddisfatto — non viene mai assegnata
+automaticamente. Usa lo stesso secret `NVIDIA_NIM_API_KEY` dell'assistente AI.
+
+## Nota su CI e branch
+
+`.github/workflows/build-apk.yml` e `build-release-aab.yml` si attivano solo su push a `main`
+(non su pull request o altri branch): un branch di feature non ha quindi build automatica finché
+non viene mergiato. Verifica sempre lo stato della build su `main` dopo un merge.
+
 ## Prossimi passi suggeriti
 
-- Notifiche push per nuove schede assegnate (Supabase Realtime + FCM)
-- Editor esercizi custom con immagini/GIF dimostrative
-- Export PDF della scheda o dei progressi
 - Test strumentali per il flusso offline -> sync
+- Editor esercizi custom con immagini/GIF dimostrative (oggi solo URL manuale)
+- Abilitare "leaked password protection" di Supabase Auth (richiede la dashboard, non è automatizzabile via SQL/API)
