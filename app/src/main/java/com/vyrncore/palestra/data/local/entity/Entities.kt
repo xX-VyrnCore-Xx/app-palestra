@@ -169,7 +169,7 @@ data class BodyMetricEntity(
     val syncStatus: SyncStatus = SyncStatus.SYNCED,
 )
 
-enum class ChatAttachmentType { IMAGE, FILE }
+enum class ChatAttachmentType { IMAGE, FILE, VOICE }
 
 @Entity(
     tableName = "chat_messages",
