@@ -46,9 +46,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vyrncore.palestra.ui.components.BarChartEntry
 import com.vyrncore.palestra.ui.components.SimpleBarChart
-import com.vyrncore.palestra.ui.theme.Magenta60
 import com.vyrncore.palestra.ui.theme.Orange50
-import com.vyrncore.palestra.ui.theme.Violet40
+import com.vyrncore.palestra.ui.theme.Orange60
+import com.vyrncore.palestra.ui.theme.Gold50
+import com.vyrncore.palestra.ui.theme.OrangeDeep
 import com.vyrncore.palestra.util.ImageShareUtil
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -221,7 +222,7 @@ private fun PrComparisonRow(entry: SummaryPrEntry) {
             Icon(
                 Icons.Filled.EmojiEvents,
                 contentDescription = "Nuovo record",
-                tint = Color(0xFFFFD700),
+                tint = Gold50,
                 modifier = Modifier.size(18.dp).padding(end = 4.dp),
             )
         }
@@ -241,7 +242,7 @@ private fun ShareableWorkoutCard(uiState: WorkoutSummaryUiState) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(28.dp))
-            .background(Brush.linearGradient(listOf(Orange50, Magenta60, Violet40)))
+            .background(Brush.linearGradient(listOf(Orange60, Orange50, OrangeDeep)))
             .padding(24.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

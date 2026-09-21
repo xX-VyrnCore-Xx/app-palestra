@@ -69,7 +69,7 @@ fun AnimatedNavBar(
                     )
                 )
                 .padding(top = 1.dp) // Space for the top border
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)) // Thin top border effect
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)) // Thin top border effect
         ) {
             Row(
                 modifier = Modifier

@@ -5,20 +5,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.data.repository.ThemeMode
 
+// Visible-on-white warm gray for text field borders and dividers in light mode - the pale
+// brand orange would wash out there.
+private val WarmGray40 = Color(0xFF8A7566)
+
 private val DarkColors = darkColorScheme(
-    primary = Magenta60,
+    primary = Orange50,
     onPrimary = Neutral10,
-    primaryContainer = Violet30,
-    onPrimaryContainer = Violet90,
-    secondary = Orange50,
-    onSecondary = Violet10,
+    primaryContainer = OrangeDeep,
+    onPrimaryContainer = Orange95,
+    secondary = Orange60,
+    onSecondary = Neutral10,
     secondaryContainer = Violet30,
     onSecondaryContainer = Orange80,
     tertiary = Lime50,
-    onTertiary = Violet10,
+    onTertiary = Neutral10,
     tertiaryContainer = Violet30,
     onTertiaryContainer = Lime80,
     background = Violet10,
@@ -26,38 +31,48 @@ private val DarkColors = darkColorScheme(
     surface = Violet20,
     onSurface = Neutral90,
     surfaceVariant = Violet30,
-    onSurfaceVariant = Violet80,
+    onSurfaceVariant = Violet40,
     outline = Violet40,
     error = Coral50,
 )
 
 private val LightColors = lightColorScheme(
-    primary = Magenta50,
+    primary = OrangeDeep,
     onPrimary = Neutral99,
-    primaryContainer = Violet95,
-    onPrimaryContainer = Violet20,
-    secondary = Orange40,
+    primaryContainer = Orange95,
+    onPrimaryContainer = Neutral10,
+    secondary = Orange50,
     onSecondary = Neutral99,
     secondaryContainer = Orange80,
-    onSecondaryContainer = Violet10,
+    onSecondaryContainer = Neutral10,
     tertiary = Lime40,
-    onTertiary = Violet10,
+    onTertiary = Neutral10,
     tertiaryContainer = Lime80,
-    onTertiaryContainer = Violet10,
+    onTertiaryContainer = Neutral10,
     background = Neutral95,
     onBackground = Neutral10,
     surface = Neutral99,
     onSurface = Neutral10,
-    surfaceVariant = Violet95,
-    onSurfaceVariant = Violet30,
-    outline = Violet80,
+    surfaceVariant = Orange95,
+    onSurfaceVariant = Neutral20,
+    outline = WarmGray40,
     error = Coral50,
 )
 
-// PT gets a calmer, violet-led primary instead of the energetic magenta - a quiet visual cue
+// PT gets a calmer, violet-led primary instead of the energetic orange - a quiet visual cue
 // that reinforces "this is the professional side of the app" without changing layout or copy.
-private val PtDarkColors = DarkColors.copy(primary = Violet80, onPrimary = Violet10, primaryContainer = Violet40)
-private val PtLightColors = LightColors.copy(primary = Violet40, onPrimary = Neutral99, primaryContainer = Violet80)
+private val PtDarkColors = DarkColors.copy(
+    primary = Violet80,
+    onPrimary = Violet10,
+    primaryContainer = Violet30,
+    onPrimaryContainer = Violet80,
+)
+private val PtLightColors = LightColors.copy(
+    primary = Violet40,
+    onPrimary = Neutral99,
+    primaryContainer = Violet90,
+    onPrimaryContainer = Neutral10,
+)
 
 @Composable
 fun PalestraTheme(

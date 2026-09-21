@@ -55,7 +55,6 @@ import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -70,12 +69,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vyrncore.palestra.ui.auth.GradientButton
 import com.vyrncore.palestra.ui.components.GradientHeader
 import com.vyrncore.palestra.ui.components.pressScale
 
@@ -480,18 +479,13 @@ private fun WizardNavigation(
             }
             Spacer(Modifier.weight(1f))
         }
-        Button(
+        GradientButton(
+            text = if (step == lastStep) "Arruolati" else "Avanti",
             onClick = if (step == lastStep) onFinish else onNext,
             enabled = !isSaving,
-            modifier = Modifier.fillMaxWidth().height(52.dp).padding(top = 8.dp),
-            shape = RoundedCornerShape(16.dp),
-        ) {
-            if (isSaving) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
-            } else {
-                Text(if (step == lastStep) "Arruolati" else "Avanti")
-            }
-        }
+            isLoading = isSaving,
+            modifier = Modifier.padding(top = 8.dp),
+        )
         if (step == lastStep) {
             TextButton(
                 onClick = onSkip,

@@ -89,6 +89,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.vyrncore.palestra.ui.components.DifficultyRank
 import com.vyrncore.palestra.ui.components.ExercisePatternAnimation
+import com.vyrncore.palestra.ui.theme.Gold50
 import com.vyrncore.palestra.util.exerciseMedia
 import kotlinx.coroutines.delay
 import kotlin.random.Random
@@ -308,7 +309,7 @@ private fun PrCelebrationOverlay(
                         Icon(
                             Icons.Filled.EmojiEvents,
                             contentDescription = null,
-                            tint = Color(0xFFFFD700),
+                            tint = Gold50,
                             modifier = Modifier.size(40.dp),
                         )
                     }
@@ -362,7 +363,7 @@ private fun ConfettiBurst(modifier: Modifier = Modifier) {
         MaterialTheme.colorScheme.primary,
         MaterialTheme.colorScheme.tertiary,
         MaterialTheme.colorScheme.secondary,
-        Color(0xFFFFD700),
+        Gold50,
     )
     val particles = remember {
         List(70) {

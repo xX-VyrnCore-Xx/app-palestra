@@ -83,6 +83,8 @@ import com.vyrncore.palestra.ui.components.pressScale
 import com.vyrncore.palestra.ui.components.SimpleBarChart
 import com.vyrncore.palestra.ui.components.SimpleLineChart
 import com.vyrncore.palestra.ui.components.WeekOverWeekCard
+import com.vyrncore.palestra.ui.theme.Gold40
+import com.vyrncore.palestra.ui.theme.Gold50
 import com.vyrncore.palestra.ui.home.HomeSuggestionAction.Assistant
 import com.vyrncore.palestra.ui.home.HomeSuggestionAction.ChatPt
 import com.vyrncore.palestra.ui.home.HomeSuggestionAction.History
@@ -718,7 +720,7 @@ private fun RankCard(level: Int, rankTitle: String, stars: Int, xpIntoLevel: Int
                                     Icon(
                                         Icons.Filled.Star,
                                         contentDescription = null,
-                                        tint = Color(0xFFFFD700),
+                                        tint = Gold50,
                                         modifier = Modifier.size(18.dp),
                                     )
                                 }
@@ -822,7 +824,7 @@ private fun WeeklyGoalCard(completed: Int, goal: Int, modifier: Modifier = Modif
                 )
                 .border(
                     width = 1.dp,
-                    color = if (isComplete) MaterialTheme.colorScheme.primary.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.1f),
+                    color = if (isComplete) MaterialTheme.colorScheme.primary.copy(alpha = 0.3f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
                     shape = MaterialTheme.shapes.large
                 )
                 .padding(20.dp)
@@ -854,7 +856,7 @@ private fun WeeklyGoalCard(completed: Int, goal: Int, modifier: Modifier = Modif
                     Icon(
                         if (isComplete) Icons.Filled.AutoAwesome else Icons.Filled.CalendarMonth,
                         contentDescription = null,
-                        tint = if (isComplete) Color(0xFFFFD700) else MaterialTheme.colorScheme.primary,
+                        tint = if (isComplete) Gold50 else MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(32.dp)
                     )
                 }
@@ -877,7 +879,7 @@ private fun WeeklyGoalCard(completed: Int, goal: Int, modifier: Modifier = Modif
                             .background(
                                 Brush.horizontalGradient(
                                     colors = if (isComplete) {
-                                        listOf(Color(0xFFFFD700), Color(0xFFFFA500))
+                                        listOf(Gold50, Gold40)
                                     } else {
                                         listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary)
                                     }

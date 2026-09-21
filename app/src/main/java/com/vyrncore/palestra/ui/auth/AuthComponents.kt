@@ -53,10 +53,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.vyrncore.palestra.ui.components.pressScale
-import com.vyrncore.palestra.ui.theme.Magenta60
 import com.vyrncore.palestra.ui.theme.Orange50
+import com.vyrncore.palestra.ui.theme.Orange60
+import com.vyrncore.palestra.ui.theme.OrangeDeep
 import com.vyrncore.palestra.ui.theme.Violet20
-import com.vyrncore.palestra.ui.theme.Violet40
 
 /**
  * Full-screen animated gradient backdrop shared by Login and Register: three brand hues slowly
@@ -70,13 +70,13 @@ fun AnimatedAuthBackground(modifier: Modifier = Modifier) {
     // Slow hue drift: the gradient's anchor colors crossfade between their brand value and a
     // neighbour, so the whole surface feels like it's breathing instead of being a static image.
     val shiftA by transition.animateColor(
-        initialValue = Orange50,
-        targetValue = Magenta60,
+        initialValue = Orange60,
+        targetValue = Orange50,
         animationSpec = infiniteRepeatable(tween(7000, easing = LinearEasing), RepeatMode.Reverse),
         label = "authBgA",
     )
     val shiftB by transition.animateColor(
-        initialValue = Violet40,
+        initialValue = OrangeDeep,
         targetValue = Violet20,
         animationSpec = infiniteRepeatable(tween(9000, easing = LinearEasing), RepeatMode.Reverse),
         label = "authBgB",
@@ -172,7 +172,7 @@ fun BrandBadge(modifier: Modifier = Modifier, icon: ImageVector) {
                 modifier = Modifier
                     .size(44.dp)
                     .background(
-                        Brush.linearGradient(listOf(Orange50, Magenta60)),
+                        Brush.linearGradient(listOf(Orange60, Orange50)),
                         CircleShape,
                     ),
                 contentAlignment = Alignment.Center,
@@ -290,12 +290,12 @@ fun GradientButton(
             .shadow(
                 elevation = if (enabled) 12.dp else 0.dp,
                 shape = RoundedCornerShape(16.dp),
-                spotColor = Magenta60
+                spotColor = OrangeDeep
             )
             .background(
                 if (enabled) Brush.horizontalGradient(
-                    colors = listOf(Orange50, Magenta60),
-                ) else Brush.horizontalGradient(listOf(Violet40, Violet40)),
+                    colors = listOf(Orange60, Orange50),
+                ) else Brush.horizontalGradient(listOf(Violet20, Violet20)),
                 RoundedCornerShape(16.dp),
             )
             .border(

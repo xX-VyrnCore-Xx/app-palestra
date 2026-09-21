@@ -1,3 +1,6 @@
 <resources>
-    <color name="splash_background">#3D2B8C</color>
+    <!-- Brand: warm white like the ViBE logo field, with the orange wordmark on top. -->
+    <color name="splash_background">#FFFFFF</color>
+    <color name="brand_orange">#F76B15</color>
+    <color name="brand_orange_deep">#E85510</color>
 </resources>

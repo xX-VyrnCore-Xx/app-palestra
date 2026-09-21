@@ -72,6 +72,9 @@ import com.vyrncore.palestra.ui.components.MetricCard
 import com.vyrncore.palestra.ui.components.NavBarItem
 import com.vyrncore.palestra.ui.components.pressScale
 import com.vyrncore.palestra.ui.profile.ProfileScreen
+import com.vyrncore.palestra.ui.theme.Bronze40
+import com.vyrncore.palestra.ui.theme.Gold40
+import com.vyrncore.palestra.ui.theme.Silver40
 import com.vyrncore.palestra.data.repository.PlotoneFeedPost
 import java.time.Duration
 import java.time.Instant
@@ -460,11 +463,7 @@ private fun PlotoneFeedCard(posts: List<PlotoneFeedPost>, modifier: Modifier = M
 /** A light motivational nudge for the PT: who's been most active this week, at a glance. */
 @Composable
 private fun WeeklyRankingCard(ranking: List<ClientRanking>, modifier: Modifier = Modifier) {
-    val medalColors = listOf(
-        androidx.compose.ui.graphics.Color(0xFFFFC94A),
-        androidx.compose.ui.graphics.Color(0xFFC7C7C7),
-        androidx.compose.ui.graphics.Color(0xFFCB8B5B),
-    )
+    val medalColors = listOf(Gold40, Silver40, Bronze40)
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,

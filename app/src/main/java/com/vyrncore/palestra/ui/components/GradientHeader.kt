@@ -21,9 +21,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
-import com.vyrncore.palestra.ui.theme.Magenta60
 import com.vyrncore.palestra.ui.theme.Orange50
-import com.vyrncore.palestra.ui.theme.Violet10
+import com.vyrncore.palestra.ui.theme.Orange60
+import com.vyrncore.palestra.ui.theme.OrangeDeep
 
 /** Signature gradient block used at the top of hero screens (auth, dashboards). The gradient
  * slowly drifts sideways via an infinite transition: a cheap GPU-only animation (brush offset)
@@ -72,5 +72,5 @@ fun GradientHeader(
 private fun driftingGradient(drift: Float): Brush {
     val start = Offset(x = -200f + drift * 400f, y = 0f)
     val end = Offset(x = 800f + drift * 400f, y = 1000f)
-    return Brush.linearGradient(listOf(Orange50, Magenta60, Violet10), start = start, end = end)
+    return Brush.linearGradient(listOf(Orange60, Orange50, OrangeDeep), start = start, end = end)
 }

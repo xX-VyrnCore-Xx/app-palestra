@@ -268,7 +268,7 @@ private fun PremiumChartCard(content: @Composable () -> Unit) {
                 )
                 .border(
                     width = 1.dp,
-                    color = Color.White.copy(alpha = 0.1f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
                     shape = MaterialTheme.shapes.large
                 )
         ) {

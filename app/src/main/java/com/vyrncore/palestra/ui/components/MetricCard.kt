@@ -50,7 +50,7 @@ fun MetricCard(
                 )
                 .border(
                     width = 1.dp,
-                    color = Color.White.copy(alpha = 0.2f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
                     shape = MaterialTheme.shapes.large
                 )
                 .padding(16.dp)

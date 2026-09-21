@@ -1,0 +1,50 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Same wordmark as the launcher foreground, scaled up for the splash screen, where the
+         system masks the icon to a circle and the launcher safe-zone padding would make it
+         look tiny. Scale 1.55 keeps every glyph edge inside the visible circle. -->
+    <group
+        android:scaleX="1.55"
+        android:scaleY="1.55"
+        android:pivotX="54"
+        android:pivotY="54">
+        <path
+            android:pathData="M32.8,46.5 L35.3,61.5 L43.8,46.5"
+            android:strokeColor="#F76B15"
+            android:strokeWidth="3.9"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M47.3,53 L45.8,60.5"
+            android:strokeColor="#F76B15"
+            android:strokeWidth="3.9"
+            android:strokeLineCap="round" />
+        <path
+            android:fillColor="#F76B15"
+            android:pathData="M48.14,48.8 m-2.2,0 a2.2,2.2 0 1,1 4.4,0 a2.2,2.2 0 1,1 -4.4,0" />
+        <path
+            android:pathData="M53.4,46.5 L50.4,61.5"
+            android:strokeColor="#F76B15"
+            android:strokeWidth="3.9"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M53.4,46.5 L58.9,46.5 A3.65,3.65 0 0 1 58.9,53.8 L51.94,53.8"
+            android:strokeColor="#F76B15"
+            android:strokeWidth="3.5"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M51.94,53.8 L59.6,53.8 A3.85,3.85 0 0 1 59.6,61.5 L50.4,61.5"
+            android:strokeColor="#F76B15"
+            android:strokeWidth="3.5"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M75.2,46.5 L66.2,46.5 L63.2,61.5 L72.2,61.5 M64.74,53.8 L70.4,53.8"
+            android:strokeColor="#F76B15"
+            android:strokeWidth="3.9"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
+</vector>

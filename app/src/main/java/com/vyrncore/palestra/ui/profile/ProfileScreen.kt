@@ -65,9 +65,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.data.repository.ThemeMode
-import com.vyrncore.palestra.ui.theme.Magenta60
 import com.vyrncore.palestra.ui.theme.Orange50
-import com.vyrncore.palestra.ui.theme.Violet10
+import com.vyrncore.palestra.ui.theme.Orange50
+import com.vyrncore.palestra.ui.theme.Orange60
+import com.vyrncore.palestra.ui.theme.OrangeDeep
 import com.vyrncore.palestra.ui.welcome.PRIMARY_GOAL_OPTIONS
 
 /**
@@ -109,7 +110,7 @@ fun ProfileScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Brush.horizontalGradient(listOf(Orange50, Magenta60, Violet10))),
+                    .background(Brush.horizontalGradient(listOf(Orange60, Orange50, OrangeDeep))),
             ) {
                 Row(
                     modifier = Modifier.padding(20.dp),

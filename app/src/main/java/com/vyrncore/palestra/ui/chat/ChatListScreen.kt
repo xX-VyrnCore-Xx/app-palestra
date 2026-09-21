@@ -40,13 +40,14 @@ import com.vyrncore.palestra.ui.components.pressScale
 import com.vyrncore.palestra.ui.theme.Lime50
 import com.vyrncore.palestra.ui.theme.Magenta60
 import com.vyrncore.palestra.ui.theme.Orange50
+import com.vyrncore.palestra.ui.theme.Orange60
 import com.vyrncore.palestra.ui.theme.Violet40
 
 private val avatarGradients = listOf(
-    listOf(Magenta60, Violet40),
+    listOf(Orange60, Orange50),
     listOf(Orange50, Magenta60),
     listOf(Violet40, Lime50),
-    listOf(Lime50, Orange50),
+    listOf(Lime50, Orange60),
 )
 
 private fun gradientFor(seed: String): Brush {

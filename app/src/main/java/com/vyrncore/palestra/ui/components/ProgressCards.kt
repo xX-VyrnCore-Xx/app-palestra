@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vyrncore.palestra.data.local.dao.PersonalRecord
+import com.vyrncore.palestra.ui.theme.Gold50
 
 /** Best estimated 1RM (Epley formula) ever logged per exercise, ranked highest first.
  * Redesigned with a premium glassmorphic list style. */
@@ -56,7 +57,7 @@ fun PersonalRecordsCard(records: List<PersonalRecord>, modifier: Modifier = Modi
                 )
                 .border(
                     width = 1.dp,
-                    color = Color.White.copy(alpha = 0.1f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
                     shape = MaterialTheme.shapes.large
                 )
                 .padding(16.dp)
@@ -66,7 +67,7 @@ fun PersonalRecordsCard(records: List<PersonalRecord>, modifier: Modifier = Modi
                     Icon(
                         Icons.Default.EmojiEvents,
                         contentDescription = null,
-                        tint = Color(0xFFFFD700),
+                        tint = Gold50,
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
@@ -152,7 +153,7 @@ fun WeekOverWeekCard(previousVolumeKg: Double, currentVolumeKg: Double, modifier
                 )
                 .border(
                     width = 1.dp,
-                    color = Color.White.copy(alpha = 0.1f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
                     shape = MaterialTheme.shapes.large
                 )
                 .padding(16.dp)
