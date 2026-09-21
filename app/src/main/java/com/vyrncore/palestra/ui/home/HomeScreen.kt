@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -57,18 +58,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.data.repository.PlotoneFeedPost
 import com.vyrncore.palestra.data.repository.WeeklyRankingEntry
+import com.vyrncore.palestra.ui.components.BadgeTier
 import com.vyrncore.palestra.ui.components.BarChartEntry
 import com.vyrncore.palestra.ui.components.ConnectionStatusBar
 import com.vyrncore.palestra.ui.components.GradientHeader
 import com.vyrncore.palestra.ui.components.MetricCard
 import com.vyrncore.palestra.ui.components.PersonalRecordsCard
+import com.vyrncore.palestra.ui.components.RealisticBadge
 import com.vyrncore.palestra.ui.components.pressScale
 import com.vyrncore.palestra.ui.components.SimpleBarChart
 import com.vyrncore.palestra.ui.components.SimpleLineChart
@@ -570,47 +576,80 @@ private fun MedalSummaryCard(
     suffix: String,
     modifier: Modifier = Modifier,
 ) {
+    val tier = when {
+        unlockedCount == 0 -> BadgeTier.LOCKED
+        unlockedCount >= totalCount -> BadgeTier.PLATINUM
+        unlockedCount >= totalCount / 2 -> BadgeTier.GOLD
+        unlockedCount >= 2 -> BadgeTier.SILVER
+        else -> BadgeTier.BRONZE
+    }
+
     Card(
-        modifier = modifier.width(150.dp),
-        shape = MaterialTheme.shapes.medium,
+        modifier = modifier.width(160.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = if (unlockedCount > 0) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+            containerColor = MaterialTheme.colorScheme.surface,
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = if (unlockedCount > 0) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            RealisticBadge(
+                icon = icon,
+                tier = tier,
+                size = 48.dp,
+                modifier = Modifier.padding(bottom = 12.dp)
             )
             Text(
                 title,
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.padding(top = 8.dp),
-                color = if (unlockedCount > 0) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                "$unlockedCount/$totalCount medaglie",
-                style = MaterialTheme.typography.bodySmall,
-                color = if (unlockedCount > 0) MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                "$unlockedCount / $totalCount Medaglie",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
             if (nextMilestone != null) {
+                val progress = (currentValue.toFloat() / nextMilestone).coerceIn(0f, 1f)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(progress)
+                            .fillMaxHeight()
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.tertiary
+                                    )
+                                )
+                            )
+                    )
+                }
                 Text(
                     "Prossima: $currentValue/$nextMilestone$suffix",
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (unlockedCount > 0) MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = 6.dp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 4.dp),
                 )
-            } else if (totalCount > 0) {
+            } else {
                 Text(
-                    "Tutte sbloccate!",
+                    "Massimo Grado",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = 6.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 4.dp),
                 )
             }
         }
@@ -626,51 +665,111 @@ private fun RankCard(level: Int, rankTitle: String, stars: Int, xpIntoLevel: Int
     )
     Card(
         modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    Text("$rankTitle · Grado $level", style = MaterialTheme.typography.titleMedium)
-                    if (stars > 0) {
-                        Row(modifier = Modifier.padding(top = 2.dp)) {
-                            repeat(stars) {
-                                Icon(
-                                    Icons.Filled.Star,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.tertiary,
-                                    modifier = Modifier.size(14.dp),
-                                )
+        Box(
+            modifier = Modifier
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        )
+                    )
+                )
+                .padding(20.dp)
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column {
+                        Text(
+                            rankTitle.uppercase(),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            letterSpacing = 2.sp
+                        )
+                        Text(
+                            "Grado $level",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (stars > 0) {
+                            Row(modifier = Modifier.padding(top = 4.dp)) {
+                                repeat(stars) {
+                                    Icon(
+                                        Icons.Filled.Star,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFFD700),
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
                             }
                         }
                     }
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                    ) {
+                        Icon(
+                            Icons.Filled.MilitaryTech,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
                 }
-                Text(
-                    "$xpIntoLevel / 100 XP",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 10.dp)
-                    .height(10.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-            ) {
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "XP MISSIONE",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "$xpIntoLevel / 100 XP",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(progress.coerceIn(0f, 1f))
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(MaterialTheme.colorScheme.tertiary),
-                )
+                        .fillMaxWidth()
+                        .padding(top = 6.dp)
+                        .height(12.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(progress.coerceIn(0f, 1f))
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.tertiary
+                                    )
+                                )
+                            ),
+                    )
+                }
             }
         }
     }
