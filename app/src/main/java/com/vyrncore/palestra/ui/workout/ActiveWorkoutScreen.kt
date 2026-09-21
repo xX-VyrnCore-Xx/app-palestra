@@ -83,8 +83,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.vyrncore.palestra.ui.components.DifficultyRank
-import com.vyrncore.palestra.ui.components.MuscleGroupBadge
-import com.vyrncore.palestra.util.youtubeTutorialSearchUrl
+import com.vyrncore.palestra.ui.components.ExercisePatternAnimation
+import com.vyrncore.palestra.util.exerciseMedia
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -405,6 +405,11 @@ private fun ActiveExerciseCard(
         label = "exerciseProgress",
     )
     val uriHandler = LocalUriHandler.current
+    // Verified official video when available, otherwise a brand-aware YouTube search
+    // (e.g. "leg press panatta tutorial") so the results show the exact machine in use.
+    val tutorialUrl = remember(exercise.name, exercise.equipment) {
+        exerciseMedia(exercise.name, exercise.equipment).videoUrl
+    }
 
     Card(
         modifier = modifier
@@ -437,6 +442,8 @@ private fun ActiveExerciseCard(
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (exercise.imageUrl != null) {
+                        // Custom image/GIF demo URL: Coil animates GIFs natively (gif decoder
+                        // registered app-wide), so this is already a moving demonstration.
                         AsyncImage(
                             model = exercise.imageUrl,
                             contentDescription = null,
@@ -446,7 +453,20 @@ private fun ActiveExerciseCard(
                                 .clip(RoundedCornerShape(12.dp))
                         )
                     } else {
-                        MuscleGroupBadge(group = exercise.muscleGroup ?: "", size = 64.dp)
+                        // Inline animated demo: a looping skeleton glyph of the movement,
+                        // drawn on Canvas - zero bytes, works offline, animates forever.
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            ExercisePatternAnimation(
+                                exerciseName = exercise.name,
+                                modifier = Modifier.size(56.dp),
+                            )
+                        }
                     }
 
                     Column(modifier = Modifier.padding(start = 16.dp).weight(1f)) {
@@ -518,12 +538,12 @@ private fun ActiveExerciseCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         TextButton(
-                            onClick = { uriHandler.openUri(youtubeTutorialSearchUrl(exercise.name)) },
+                            onClick = { uriHandler.openUri(tutorialUrl) },
                             contentPadding = PaddingValues(0.dp)
                         ) {
                             Icon(Icons.Filled.OndemandVideo, contentDescription = null, modifier = Modifier.size(18.dp))
                             Text(
-                                "GUARDA TUTORIAL",
+                                "VIDEO TUTORIAL",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(start = 6.dp)

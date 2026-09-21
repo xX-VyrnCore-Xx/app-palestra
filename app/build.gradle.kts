@@ -182,8 +182,10 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:functions-kt:$supabaseVersion")
     implementation("io.ktor:ktor-client-android:3.1.2")
 
-    // Inline image thumbnails in chat attachments
+    // Inline image thumbnails in chat attachments. coil-gif adds animated-GIF decoding so
+    // exercises with a custom .gif demo URL animate directly in the workout cards.
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("io.coil-kt:coil-gif:2.7.0")
 
     // Firebase Cloud Messaging: server-triggered push (new chat message / plan assignment)
     // delivered even when the app is killed - complements Supabase Realtime, which only

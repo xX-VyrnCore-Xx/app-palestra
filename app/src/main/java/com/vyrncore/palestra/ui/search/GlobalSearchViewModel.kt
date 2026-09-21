@@ -2,6 +2,7 @@ package com.vyrncore.palestra.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vyrncore.palestra.data.local.entity.ExerciseEntity
 import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.WorkoutRepository
@@ -20,7 +21,8 @@ import javax.inject.Inject
 
 sealed interface SearchResult {
     data class Plan(val planId: String, val name: String, val subtitle: String) : SearchResult
-    data class Exercise(val exerciseId: String, val name: String, val muscleGroup: String) : SearchResult
+    /** Carries the full entity so the UI can open the exercise detail sheet from a tap. */
+    data class Exercise(val entity: ExerciseEntity) : SearchResult
     data class Client(val clientId: String, val fullName: String, val email: String) : SearchResult
     data class Contact(val peerId: String, val fullName: String) : SearchResult
 }
@@ -87,7 +89,7 @@ class GlobalSearchViewModel @Inject constructor(
                 }
                 exercises.filter { it.name.contains(query, ignoreCase = true) || it.muscleGroup.contains(query, ignoreCase = true) }
                     .take(20)
-                    .forEach { add(SearchResult.Exercise(it.id, it.name, it.muscleGroup)) }
+                    .forEach { add(SearchResult.Exercise(it)) }
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

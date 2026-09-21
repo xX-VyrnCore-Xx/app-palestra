@@ -28,8 +28,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -45,7 +45,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -53,8 +52,8 @@ import com.vyrncore.palestra.data.local.ExerciseDifficulty
 import com.vyrncore.palestra.data.local.ExerciseCatalogSeed
 import com.vyrncore.palestra.data.local.entity.ExerciseEntity
 import com.vyrncore.palestra.ui.components.DifficultyRank
+import com.vyrncore.palestra.ui.components.ExerciseDetailSheet
 import com.vyrncore.palestra.ui.components.MuscleGroupBadge
-import com.vyrncore.palestra.util.youtubeTutorialSearchUrl
 
 @Composable
 fun ExercisePickerDialog(
@@ -67,6 +66,9 @@ fun ExercisePickerDialog(
     var query by remember { mutableStateOf("") }
     var groupFilter by remember { mutableStateOf<String?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
+    // Tap on a row opens the full exercise sheet (video, machine, technique); the trailing
+    // button performs the actual "add to plan" action.
+    var detailExercise by remember { mutableStateOf<ExerciseEntity?>(null) }
 
     val groups = remember(catalog) {
         ExerciseCatalogSeed.groupOrder.filter { g -> catalog.any { it.muscleGroup == g } } +
@@ -169,23 +171,23 @@ fun ExercisePickerDialog(
                                 trailingContent = {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         DifficultyRank(difficulty = exercise.difficulty)
-                                        val uriHandler = LocalUriHandler.current
-                                        IconButton(onClick = { uriHandler.openUri(youtubeTutorialSearchUrl(exercise.name)) }) {
-                                            Icon(Icons.Filled.OndemandVideo, contentDescription = "Cerca tutorial video")
-                                        }
                                         if (alreadyAdded) {
                                             Icon(
                                                 Icons.Filled.CheckCircle,
                                                 contentDescription = "Già nella scheda",
                                                 tint = MaterialTheme.colorScheme.primary,
                                             )
+                                        } else {
+                                            FilledTonalIconButton(onClick = { onSelect(exercise) }) {
+                                                Icon(Icons.Filled.Add, contentDescription = "Aggiungi alla scheda")
+                                            }
                                         }
                                     }
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .animateContentSize()
-                                    .clickable(enabled = !alreadyAdded) { onSelect(exercise) },
+                                    .clickable { detailExercise = exercise },
                             )
                         }
                     }
@@ -210,6 +212,13 @@ fun ExercisePickerDialog(
                 onCreateCustom(name, muscleGroup, imageUrl)
                 showCreateDialog = false
             },
+        )
+    }
+
+    detailExercise?.let { exercise ->
+        ExerciseDetailSheet(
+            exercise = exercise,
+            onDismiss = { detailExercise = null },
         )
     }
 }
