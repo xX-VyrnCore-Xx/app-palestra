@@ -12,11 +12,15 @@ import com.vyrncore.palestra.data.repository.ChatRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -55,10 +59,32 @@ class ChatThreadViewModel @Inject constructor(
         .map { it?.fullName ?: "Chat" }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Chat")
 
+    val peerIsTyping: StateFlow<Boolean> = peerId.filterNotNull()
+        .flatMapLatest { peer -> flow { emitAll(chatRepository.observeTyping(userId, peer)) } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    private var typingIdleJob: Job? = null
+
+    /** Broadcasts "typing" on every keystroke, then auto-clears it after a pause so the peer
+     * doesn't see a stuck indicator if the allievo/PT stops typing without sending or leaving. */
+    fun notifyTyping() {
+        val peer = peerId.value ?: return
+        viewModelScope.launch { chatRepository.sendTypingEvent(userId, peer, isTyping = true) }
+        typingIdleJob?.cancel()
+        typingIdleJob = viewModelScope.launch {
+            delay(3000)
+            chatRepository.sendTypingEvent(userId, peer, isTyping = false)
+        }
+    }
+
     fun sendMessage(content: String) {
         val peer = peerId.value ?: return
         if (content.isBlank()) return
-        viewModelScope.launch { chatRepository.sendMessage(userId, peer, content) }
+        typingIdleJob?.cancel()
+        viewModelScope.launch {
+            chatRepository.sendTypingEvent(userId, peer, isTyping = false)
+            chatRepository.sendMessage(userId, peer, content)
+        }
     }
 
     fun deleteMessage(messageId: String) {
@@ -92,5 +118,6 @@ class ChatThreadViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         chatRepository.setActiveConversation(null)
+        chatRepository.stopTypingChannel()
     }
 }

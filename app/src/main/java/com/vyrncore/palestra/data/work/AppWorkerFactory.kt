@@ -7,6 +7,7 @@ import androidx.work.WorkerParameters
 import com.vyrncore.palestra.data.notification.NotificationHelper
 import com.vyrncore.palestra.data.notification.PtNoteReminderWorker
 import com.vyrncore.palestra.data.notification.ReminderWorker
+import com.vyrncore.palestra.data.notification.RestTimerWorker
 import com.vyrncore.palestra.data.notification.WeeklyDigestWorker
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.ThemeRepository
@@ -64,6 +65,11 @@ class AppWorkerFactory @Inject constructor() : WorkerFactory() {
                 workerParameters,
                 entryPoint.authRepository(),
                 entryPoint.workoutRepository(),
+                entryPoint.notificationHelper(),
+            )
+            RestTimerWorker::class.java.name -> RestTimerWorker(
+                appContext,
+                workerParameters,
                 entryPoint.notificationHelper(),
             )
             else -> null

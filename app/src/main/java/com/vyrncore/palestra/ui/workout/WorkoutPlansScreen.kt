@@ -26,6 +26,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +41,12 @@ fun WorkoutPlansScreen(
 ) {
     val plans by viewModel.plans.collectAsStateWithLifecycle()
     val exerciseCounts by viewModel.exerciseCounts.collectAsStateWithLifecycle()
+    val suggestedPlanId by viewModel.suggestedPlanId.collectAsStateWithLifecycle()
+    // The suggested "up next" plan always leads the list, so finishing a workout visibly
+    // advances what the allievo sees here without them having to pick it out manually.
+    val orderedPlans = remember(plans, suggestedPlanId) {
+        if (suggestedPlanId == null) plans else plans.sortedByDescending { it.id == suggestedPlanId }
+    }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Le tue schede") }) },
@@ -52,7 +59,7 @@ fun WorkoutPlansScreen(
             )
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
-                items(plans, key = { it.id }) { plan ->
+                items(orderedPlans, key = { it.id }) { plan ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -84,6 +91,21 @@ fun WorkoutPlansScreen(
                                 )
                             }
                             Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
+                                if (plan.id == suggestedPlanId) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(MaterialTheme.colorScheme.primaryContainer)
+                                            .padding(horizontal = 8.dp, vertical = 3.dp),
+                                    ) {
+                                        Text(
+                                            "PROSSIMO ALLENAMENTO",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        )
+                                    }
+                                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(top = 2.dp))
+                                }
                                 Text(plan.name, style = MaterialTheme.typography.titleMedium)
                                 plan.description?.let {
                                     Text(

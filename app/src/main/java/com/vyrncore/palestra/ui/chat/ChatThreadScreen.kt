@@ -80,6 +80,7 @@ fun ChatThreadScreen(
 
     val messages by viewModel.messages.collectAsStateWithLifecycle()
     val peerName by viewModel.peerName.collectAsStateWithLifecycle()
+    val peerIsTyping by viewModel.peerIsTyping.collectAsStateWithLifecycle()
     var draft by remember { mutableStateOf("") }
     var messageToDelete by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
@@ -98,7 +99,18 @@ fun ChatThreadScreen(
         modifier = Modifier.imePadding(),
         topBar = {
             TopAppBar(
-                title = { Text(peerName) },
+                title = {
+                    Column {
+                        Text(peerName)
+                        if (peerIsTyping) {
+                            Text(
+                                "sta scrivendo…",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     if (onBack != null) {
                         IconButton(onClick = onBack) {
@@ -118,7 +130,7 @@ fun ChatThreadScreen(
                 }
                 OutlinedTextField(
                     value = draft,
-                    onValueChange = { draft = it },
+                    onValueChange = { draft = it; viewModel.notifyTyping() },
                     modifier = Modifier.weight(1f),
                     placeholder = { Text("Scrivi un messaggio…") },
                 )

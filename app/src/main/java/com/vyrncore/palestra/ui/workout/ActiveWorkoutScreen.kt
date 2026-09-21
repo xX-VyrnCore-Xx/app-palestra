@@ -78,7 +78,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -89,6 +88,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.vyrncore.palestra.ui.components.DifficultyRank
 import com.vyrncore.palestra.ui.components.ExercisePatternAnimation
+import com.vyrncore.palestra.ui.components.InAppVideoDialog
 import com.vyrncore.palestra.ui.theme.Gold50
 import com.vyrncore.palestra.util.exerciseMedia
 import kotlinx.coroutines.delay
@@ -410,11 +410,14 @@ private fun ActiveExerciseCard(
         animationSpec = tween(400),
         label = "exerciseProgress",
     )
-    val uriHandler = LocalUriHandler.current
     // Verified official video when available, otherwise a brand-aware YouTube search
     // (e.g. "leg press panatta tutorial") so the results show the exact machine in use.
     val tutorialUrl = remember(exercise.name, exercise.equipment) {
         exerciseMedia(exercise.name, exercise.equipment).videoUrl
+    }
+    var showVideo by remember { mutableStateOf(false) }
+    if (showVideo) {
+        InAppVideoDialog(url = tutorialUrl, onDismiss = { showVideo = false })
     }
 
     Card(
@@ -538,7 +541,7 @@ private fun ActiveExerciseCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         TextButton(
-                            onClick = { uriHandler.openUri(tutorialUrl) },
+                            onClick = { showVideo = true },
                             contentPadding = PaddingValues(0.dp)
                         ) {
                             Icon(Icons.Filled.OndemandVideo, contentDescription = null, modifier = Modifier.size(18.dp))

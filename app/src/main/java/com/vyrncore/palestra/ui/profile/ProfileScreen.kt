@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
@@ -47,6 +48,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,6 +60,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -89,9 +92,16 @@ fun ProfileScreen(
     val chatNotificationsEnabled by viewModel.chatNotificationsEnabled.collectAsStateWithLifecycle()
     val planNotificationsEnabled by viewModel.planNotificationsEnabled.collectAsStateWithLifecycle()
     val achievementNotificationsEnabled by viewModel.achievementNotificationsEnabled.collectAsStateWithLifecycle()
+    val inviteCode by viewModel.inviteCode.collectAsStateWithLifecycle()
+    val linkPtResult by viewModel.linkPtResult.collectAsStateWithLifecycle()
     var showNameDialog by remember { mutableStateOf(false) }
     var showSignOutDialog by remember { mutableStateOf(false) }
     var showEditProfileSheet by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    LaunchedEffect(profile?.role) {
+        if (profile?.role == UserRole.PT) viewModel.loadInviteCode()
+    }
 
     val avatarPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -217,6 +227,105 @@ fun ProfileScreen(
                 ) {
                     Icon(Icons.Filled.FitnessCenter, contentDescription = null, modifier = Modifier.size(18.dp))
                     Text("Dati corporei e progressi", modifier = Modifier.padding(start = 8.dp))
+                }
+            }
+
+            if (profile?.role == UserRole.PT) {
+                Text(
+                    "Il tuo codice invito",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+                )
+                Card(
+                    shape = MaterialTheme.shapes.medium,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                inviteCode ?: "Generazione…",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Text(
+                                "Dallo ai tuoi allievi per collegarli al volo, in registrazione o dal loro profilo.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 2.dp),
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                inviteCode?.let { code ->
+                                    val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(android.content.Intent.EXTRA_TEXT, "Collegati a me su Vibe Fitness con il codice: $code")
+                                    }
+                                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Condividi codice invito"))
+                                }
+                            },
+                            enabled = inviteCode != null,
+                        ) {
+                            Icon(Icons.Filled.Share, contentDescription = "Condividi codice")
+                        }
+                    }
+                }
+            }
+
+            if (profile?.role == UserRole.ALLIEVO && profile?.ptId == null) {
+                Text(
+                    "Collega il tuo PT",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+                )
+                Card(
+                    shape = MaterialTheme.shapes.medium,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        var codeDraft by remember { mutableStateOf("") }
+                        Text(
+                            "Chiedi al tuo PT il suo codice invito e inseriscilo qui.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            OutlinedTextField(
+                                value = codeDraft,
+                                onValueChange = { codeDraft = it.uppercase().take(6); viewModel.clearLinkPtResult() },
+                                label = { Text("Codice") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Button(
+                                onClick = { viewModel.linkToPt(codeDraft) },
+                                enabled = codeDraft.isNotBlank(),
+                                modifier = Modifier.padding(start = 8.dp),
+                            ) { Text("Collega") }
+                        }
+                        when (val result = linkPtResult) {
+                            is LinkPtResult.Success -> Text(
+                                "Collegato a ${result.ptName}!",
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(top = 8.dp),
+                            )
+                            LinkPtResult.NotFound -> Text(
+                                "Codice non valido, controlla e riprova.",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(top = 8.dp),
+                            )
+                            null -> {}
+                        }
+                    }
                 }
             }
 

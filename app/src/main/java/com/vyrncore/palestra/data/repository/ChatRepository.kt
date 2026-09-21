@@ -15,6 +15,8 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.realtime.RealtimeChannel
+import io.github.jan.supabase.realtime.broadcast
+import io.github.jan.supabase.realtime.broadcastFlow
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.decodeRecord
 import io.github.jan.supabase.realtime.postgresChangeFlow
@@ -23,7 +25,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import java.time.Instant
@@ -38,6 +42,9 @@ private data class SendPushRequest(
     val title: String,
     val body: String,
 )
+
+@Serializable
+private data class TypingEvent(val senderId: String, val isTyping: Boolean)
 
 /**
  * Realtime PT<->Allievo messaging. Sent/received messages are always mirrored into Room so the
@@ -68,6 +75,46 @@ class ChatRepository @Inject constructor(
 
     fun setActiveConversation(peerId: String?) {
         activeConversationPeerId = peerId
+    }
+
+    private var typingChannel: RealtimeChannel? = null
+    private var typingChannelKey: String? = null
+
+    private fun conversationKey(a: String, b: String) = listOf(a, b).sorted().joinToString("-")
+
+    /** Ephemeral (never persisted) broadcast channel shared by exactly the two people in a
+     * conversation - reused for both sending and observing typing state, joined lazily and
+     * replaced if the thread switches to a different peer. */
+    private suspend fun ensureTypingChannel(key: String): RealtimeChannel {
+        val current = typingChannel
+        if (typingChannelKey == key && current != null) return current
+        current?.let { runCatching { it.unsubscribe() } }
+        val ch = realtime.channel("typing-$key")
+        typingChannel = ch
+        typingChannelKey = key
+        ch.subscribe()
+        return ch
+    }
+
+    /** True while [peerId] is composing a reply in this conversation. */
+    suspend fun observeTyping(userId: String, peerId: String): Flow<Boolean> {
+        val ch = ensureTypingChannel(conversationKey(userId, peerId))
+        return ch.broadcastFlow<TypingEvent>(event = "typing")
+            .filter { it.senderId == peerId }
+            .map { it.isTyping }
+    }
+
+    suspend fun sendTypingEvent(userId: String, peerId: String, isTyping: Boolean) {
+        runCatching {
+            val ch = ensureTypingChannel(conversationKey(userId, peerId))
+            ch.broadcast(event = "typing", message = TypingEvent(senderId = userId, isTyping = isTyping))
+        }
+    }
+
+    fun stopTypingChannel() {
+        typingChannel?.let { runCatching { scope.launch { it.unsubscribe() } } }
+        typingChannel = null
+        typingChannelKey = null
     }
 
     fun observeConversation(userId: String, otherUserId: String): Flow<List<ChatMessageEntity>> =
