@@ -416,7 +416,7 @@ private fun SuggestionsSection(
     if (suggestions.isEmpty()) return
     Column(modifier = modifier) {
         Text(
-            "ORDINI DEL GIORNO",
+            "PER TE OGGI",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
@@ -907,7 +907,7 @@ private fun WeeklyGoalCard(completed: Int, goal: Int, modifier: Modifier = Modif
                 
                 if (isComplete) {
                     Text(
-                        "Soldato, hai superato le aspettative questa settimana!",
+                        "Complimenti, hai superato le aspettative questa settimana!",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                         modifier = Modifier.padding(top = 12.dp)

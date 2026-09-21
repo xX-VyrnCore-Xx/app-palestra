@@ -47,44 +47,46 @@ val VOLUME_MILESTONES_KG = listOf(1_000, 5_000, 10_000, 25_000, 50_000, 100_000)
 /** Real Italian Army rank hierarchy (Esercito Italiano), one promotion per level: truppa ->
  * graduati -> sottufficiali -> ufficiali inferiori -> ufficiali superiori -> ufficiali generali.
  * The app's gamification is framed as a career of service; each level climbed is a real promotion. */
-private val MILITARY_RANKS = listOf(
-    "Soldato", // 1
-    "Soldato Scelto", // 2
-    "Caporale", // 3
-    "Caporal Maggiore", // 4
-    "Caporal Maggiore Capo", // 5
-    "Caporal Maggiore Capo Scelto", // 6
-    "Sergente", // 7
-    "Sergente Maggiore", // 8
-    "Sergente Maggiore Capo", // 9
-    "Maresciallo", // 10
-    "Maresciallo Ordinario", // 11
-    "Maresciallo Capo", // 12
-    "Maresciallo Aiutante", // 13
-    "Primo Maresciallo", // 14
-    "Primo Maresciallo Luogotenente", // 15
-    "Sottotenente", // 16
-    "Tenente", // 17
-    "Capitano", // 18
-    "Maggiore", // 19
-    "Tenente Colonnello", // 20
-    "Colonnello", // 21
-    "Generale di Brigata", // 22
-    "Generale di Divisione", // 23
-    "Generale di Corpo d'Armata", // 24
-    "Generale", // 25+
+/** Gym-themed progression (Principiante -> Intermedio -> Avanzato -> Elite), each macro-tier
+ * split into a few steps so leveling still feels granular over a long training history. */
+private val GYM_LEVELS = listOf(
+    "Principiante", // 1
+    "Principiante Assiduo", // 2
+    "Allievo", // 3
+    "Allievo Costante", // 4
+    "Atleta in Erba", // 5
+    "Atleta", // 6
+    "Atleta Esperto", // 7
+    "Intermedio", // 8
+    "Intermedio Solido", // 9
+    "Intermedio Avanzato", // 10
+    "Veterano", // 11
+    "Veterano Esperto", // 12
+    "Specialista", // 13
+    "Specialista Esperto", // 14
+    "Avanzato", // 15
+    "Avanzato Esperto", // 16
+    "Elite Junior", // 17
+    "Elite", // 18
+    "Elite Esperto", // 19
+    "Campione", // 20
+    "Campione Esperto", // 21
+    "Maestro", // 22
+    "Maestro Esperto", // 23
+    "Leggenda", // 24
+    "Leggenda Assoluta", // 25+
 )
 
-fun levelTitle(level: Int): String = MILITARY_RANKS.getOrElse(level - 1) { MILITARY_RANKS.last() }
+fun levelTitle(level: Int): String = GYM_LEVELS.getOrElse(level - 1) { GYM_LEVELS.last() }
 
-/** Number of stars on the rank insignia — climbs with rank tier, caps at 5 for the generals. */
+/** Number of stars on the level badge — climbs with tier, caps at 5 for Leggenda. */
 fun rankStars(level: Int): Int = when {
-    level < 3 -> 0 // Truppa
-    level < 7 -> 1 // Graduati
-    level < 16 -> 2 // Sottufficiali
-    level < 19 -> 3 // Ufficiali inferiori
-    level < 22 -> 4 // Ufficiali superiori
-    else -> 5 // Ufficiali generali
+    level < 3 -> 0 // Principiante
+    level < 7 -> 1 // Allievo/Atleta
+    level < 16 -> 2 // Intermedio/Veterano/Specialista
+    level < 19 -> 3 // Avanzato/Elite Junior
+    level < 22 -> 4 // Elite/Campione
+    else -> 5 // Maestro/Leggenda
 }
 
 /** One tappable "ordine del giorno" on the Home screen: a context-aware nudge computed from the
@@ -111,7 +113,7 @@ private fun buildHomeSuggestions(state: HomeUiState): List<HomeSuggestion> = bui
             HomeSuggestion(
                 id = "start_workout",
                 title = "Devi ancora allenarti questa settimana",
-                description = "La scheda “${state.nextPlanName.orEmpty()}” ti aspetta: reparti e carichi sono già pronti.",
+                description = "La scheda “${state.nextPlanName.orEmpty()}” ti aspetta: esercizi e carichi sono già pronti.",
                 action = HomeSuggestionAction.StartWorkout,
             ),
         )
@@ -122,7 +124,7 @@ private fun buildHomeSuggestions(state: HomeUiState): List<HomeSuggestion> = bui
             HomeSuggestion(
                 id = "goal_reached",
                 title = "Obiettivo settimanale centrato!",
-                description = "${state.workoutsThisWeek} missioni completate: ogni giorno extra vale XP e tiene viva la streak di ${state.streakDays} giorni.",
+                description = "${state.workoutsThisWeek} allenamenti completati: ogni giorno extra vale XP e tiene viva la streak di ${state.streakDays} giorni.",
                 action = HomeSuggestionAction.History,
             ),
         )
@@ -133,7 +135,7 @@ private fun buildHomeSuggestions(state: HomeUiState): List<HomeSuggestion> = bui
             HomeSuggestion(
                 id = "behind_weekly_goal",
                 title = "La settimana è ancora in sospeso",
-                description = "Ti mancano ${WEEKLY_GOAL - state.workoutsThisWeek} missioni all'obiettivo: anche una sessione breve vale più di zero.",
+                description = "Ti mancano ${WEEKLY_GOAL - state.workoutsThisWeek} allenamenti all'obiettivo: anche una sessione breve vale più di zero.",
                 action = HomeSuggestionAction.StartWorkout,
             ),
         )
@@ -166,8 +168,8 @@ private fun buildHomeSuggestions(state: HomeUiState): List<HomeSuggestion> = bui
         add(
             HomeSuggestion(
                 id = "promotion_in_sight",
-                title = "A un passo dalla promozione",
-                description = "Ti mancano $xpToPromotion XP per il grado di ${levelTitle(state.level + 1)}: una missione e ci sei.",
+                title = "A un passo dal livello successivo",
+                description = "Ti mancano $xpToPromotion XP per il livello ${levelTitle(state.level + 1)}: un allenamento e ci sei.",
                 action = HomeSuggestionAction.StartWorkout,
             ),
         )
@@ -177,7 +179,7 @@ private fun buildHomeSuggestions(state: HomeUiState): List<HomeSuggestion> = bui
         add(
             HomeSuggestion(
                 id = "no_plan",
-                title = "Nessuna missione assegnata",
+                title = "Nessuna scheda assegnata",
                 description = "Scrivi al tuo PT per farti assegnare una scheda, o chiedi all'assistente come strutturarti intanto.",
                 action = HomeSuggestionAction.ChatPt,
             ),
