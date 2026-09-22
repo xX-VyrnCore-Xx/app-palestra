@@ -39,6 +39,28 @@ private val verifiedVideos: List<Pair<String, String>> = listOf(
     "vertical traction" to "https://www.youtube.com/watch?v=db_BT6FyTtE",
     "arm curl" to "https://www.youtube.com/watch?v=VV8Q9kb5dPw",
     "curl su panca scott" to "https://www.youtube.com/watch?v=VV8Q9kb5dPw", // arm curl machine pattern
+    // Free-weight/bodyweight tutorials with no specific brand - picked from real (web) search
+    // results by matching the video's own title against the exercise name, not by watching the
+    // video: still a specific checked video rather than a bare search page, but the title match
+    // is the extent of the verification. Most-specific fragment first within each group so a
+    // variant (e.g. "squat bulgaro") is never shadowed by its generic parent ("squat").
+    "squat bulgaro" to "https://www.youtube.com/watch?v=j6pg190BxJg",
+    "goblet squat" to "https://www.youtube.com/watch?v=jnm_rsBb1Gc",
+    "affondi" to "https://www.youtube.com/watch?v=b0XC4jBR3zM",
+    "alzate laterali" to "https://www.youtube.com/watch?v=gCNQ5fQiwNs",
+    "alzate frontali" to "https://www.youtube.com/watch?v=svFmfoOmDZY",
+    "alzate posteriori" to "https://www.youtube.com/watch?v=DBh5rRbZGyU",
+    "stacco rumeno" to "https://www.youtube.com/watch?v=BFunYXrKcl4",
+    "stacco da terra" to "https://www.youtube.com/watch?v=I5Y-3mF55bo",
+    "panca piana" to "https://www.youtube.com/watch?v=inb-a7oV_D4",
+    "panca declinata" to "https://www.youtube.com/watch?v=ET9QiRnbXlY",
+    "trazioni alla sbarra" to "https://www.youtube.com/watch?v=VOxz0TSK2JA",
+    "dip alle parallele" to "https://www.youtube.com/watch?v=5qz-hzHYDSs",
+    "plank" to "https://www.youtube.com/watch?v=Is-7PPaBcsM",
+    "hip thrust" to "https://www.youtube.com/watch?v=K2Q6hRKYpMI",
+    "kettlebell swing" to "https://www.youtube.com/watch?v=POsDNElNVS4",
+    "face pull" to "https://www.youtube.com/watch?v=5GKhYz6Tubc",
+    "curl bicipiti" to "https://www.youtube.com/watch?v=CmDp-PYeFK8",
     // Panatta official product videos (YouTube, verified Sep 2026)
     "leg press" to "https://www.youtube.com/watch?v=4xU_AKXz1q8", // Super Leg Press 45°
     "panca inclinata" to "https://www.youtube.com/watch?v=Vvz1iys3IF8", // Inclined Chest Press FitEvo
@@ -47,6 +69,10 @@ private val verifiedVideos: List<Pair<String, String>> = listOf(
     "leg extension" to "https://www.youtube.com/watch?v=8joxx9xnMzM", // same dual machine
     "hack squat" to "https://www.youtube.com/watch?v=lLpe1tTcW0A", // Super Squat machine walkthrough
     "croci" to "https://www.youtube.com/watch?v=JHvxKMAHUH4", // Standing Multi Flight FitEvo
+    // Generic "squat" (free bilanciere back squat) - must stay last among every squat-family
+    // entry above (squat bulgaro/goblet squat/hack squat) so those specific variants are never
+    // shadowed by this fallback.
+    "squat" to "https://www.youtube.com/watch?v=n_ShzNtvino",
 )
 
 /** YouTube thumbnail for a watch URL (maxres might not exist; hq does for every video). */

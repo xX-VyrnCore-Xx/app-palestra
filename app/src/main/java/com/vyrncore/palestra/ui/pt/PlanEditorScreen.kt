@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -231,13 +232,57 @@ fun PlanEditorScreen(
                                     modifier = Modifier.weight(1f).padding(start = 8.dp),
                                 )
                             }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                            ) {
+                                Text(
+                                    "RIPOSO",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                IconButton(
+                                    onClick = {
+                                        viewModel.updateExercise(
+                                            exercise.exerciseId,
+                                            exercise.targetSets,
+                                            exercise.targetReps,
+                                            (exercise.restSeconds - 15).coerceAtLeast(15),
+                                        )
+                                    },
+                                    modifier = Modifier.size(28.dp),
+                                ) {
+                                    Icon(Icons.Filled.Remove, contentDescription = "Riduci riposo", modifier = Modifier.size(18.dp))
+                                }
+                                Text(
+                                    "${exercise.restSeconds}s",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 4.dp),
+                                )
+                                IconButton(
+                                    onClick = {
+                                        viewModel.updateExercise(
+                                            exercise.exerciseId,
+                                            exercise.targetSets,
+                                            exercise.targetReps,
+                                            exercise.restSeconds + 15,
+                                        )
+                                    },
+                                    modifier = Modifier.size(28.dp),
+                                ) {
+                                    Icon(Icons.Filled.Add, contentDescription = "Aumenta riposo", modifier = Modifier.size(18.dp))
+                                }
+                            }
                             OutlinedTextField(
                                 value = exercise.notes.orEmpty(),
                                 onValueChange = { viewModel.updateExerciseNote(exercise.exerciseId, it) },
                                 label = { Text("Nota (opzionale)") },
                                 placeholder = { Text("Es. tempo 3-1-1, o cedimento all'ultima serie") },
                                 singleLine = true,
-                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                             )
                         }
                     }
