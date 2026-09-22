@@ -191,7 +191,15 @@ class ChatRepository @Inject constructor(
         type: ChatAttachmentType,
     ) {
         val path = "$senderId/${UUID.randomUUID()}-$fileName"
-        storage.from(ATTACHMENTS_BUCKET).upload(path, bytes)
+        storage.from(ATTACHMENTS_BUCKET).upload(path, bytes) {
+            // Left null, Storage infers this from the extension - correct almost always, but
+            // voice notes are the one attachment type this app plays back with streaming/seek
+            // (VoiceMessagePlayer), where a wrong or missing Content-Type header can break range
+            // requests. Pinning it removes any doubt for exactly that path.
+            if (type == ChatAttachmentType.VOICE) {
+                contentType = io.ktor.http.ContentType.parse("audio/mp4")
+            }
+        }
         val url = storage.from(ATTACHMENTS_BUCKET).publicUrl(path)
 
         val entity = ChatMessageEntity(

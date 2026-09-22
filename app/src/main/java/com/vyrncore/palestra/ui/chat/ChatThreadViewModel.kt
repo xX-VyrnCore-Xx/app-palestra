@@ -132,9 +132,21 @@ class ChatThreadViewModel @Inject constructor(
         }
         runCatching {
             rec.apply {
-                setAudioSource(MediaRecorder.AudioSource.MIC)
+                // VOICE_COMMUNICATION (not the plain MIC source) is what actually made these
+                // sound bad: it's the only source that gets the device's hardware/OEM noise
+                // suppression, echo cancellation and automatic gain control applied to it, since
+                // that's the path phone calls use. Plain MIC records the raw, unprocessed signal -
+                // fine for music, thin and noisy for a voice memo held at arm's length.
+                setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION)
                 setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                 setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                // Left unset, these default to whatever the OEM's audio HAL picks - commonly a
+                // low bitrate (sometimes under 24kbps) that makes speech sound compressed and
+                // muffled. 44.1kHz/128kbps mono is well above what a human voice needs and keeps
+                // clips small (roughly 1MB/min) while sounding clean.
+                setAudioSamplingRate(44_100)
+                setAudioEncodingBitRate(128_000)
+                setAudioChannels(1)
                 setOutputFile(file.absolutePath)
                 prepare()
                 start()
@@ -143,6 +155,7 @@ class ChatThreadViewModel @Inject constructor(
             recorder = rec
             recordingFile = file
             recordingStartMs = System.currentTimeMillis()
+            attachNoiseProcessing(rec.audioSessionId)
             _isRecording.value = true
             _recordingSeconds.value = 0
             recordingTickJob = viewModelScope.launch {
@@ -152,6 +165,37 @@ class ChatThreadViewModel @Inject constructor(
                 }
             }
         }.onFailure { rec.release() }
+    }
+
+    private var noiseSuppressor: android.media.audiofx.NoiseSuppressor? = null
+    private var echoCanceler: android.media.audiofx.AcousticEchoCanceler? = null
+    private var gainControl: android.media.audiofx.AutomaticGainControl? = null
+
+    /** VOICE_COMMUNICATION already engages the device's audio HAL processing, but these
+     * platform-level effects stack on top where the hardware supports them - most phones do, some
+     * budget/older devices don't, hence the availability checks (each `create()` degrades to a
+     * silent no-op object if the effect can't actually be applied on this device). */
+    private fun attachNoiseProcessing(audioSessionId: Int) {
+        runCatching {
+            if (android.media.audiofx.NoiseSuppressor.isAvailable()) {
+                noiseSuppressor = android.media.audiofx.NoiseSuppressor.create(audioSessionId)?.apply { enabled = true }
+            }
+            if (android.media.audiofx.AcousticEchoCanceler.isAvailable()) {
+                echoCanceler = android.media.audiofx.AcousticEchoCanceler.create(audioSessionId)?.apply { enabled = true }
+            }
+            if (android.media.audiofx.AutomaticGainControl.isAvailable()) {
+                gainControl = android.media.audiofx.AutomaticGainControl.create(audioSessionId)?.apply { enabled = true }
+            }
+        }
+    }
+
+    private fun releaseNoiseProcessing() {
+        runCatching { noiseSuppressor?.release() }
+        runCatching { echoCanceler?.release() }
+        runCatching { gainControl?.release() }
+        noiseSuppressor = null
+        echoCanceler = null
+        gainControl = null
     }
 
     /** Stops recording and sends the clip as a VOICE attachment - a tap under 1s is treated as an
@@ -164,6 +208,7 @@ class ChatThreadViewModel @Inject constructor(
         runCatching { recorder?.stop() }
         recorder?.release()
         recorder = null
+        releaseNoiseProcessing()
         _isRecording.value = false
         _recordingSeconds.value = 0
         if (peer == null || file == null || durationMs < 1000) {
@@ -182,6 +227,7 @@ class ChatThreadViewModel @Inject constructor(
         runCatching { recorder?.stop() }
         recorder?.release()
         recorder = null
+        releaseNoiseProcessing()
         _isRecording.value = false
         _recordingSeconds.value = 0
         recordingFile?.delete()

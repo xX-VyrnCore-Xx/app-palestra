@@ -424,6 +424,16 @@ private fun VoiceMessagePlayer(url: String?, textColor: androidx.compose.ui.grap
                 if (current == null) {
                     val mp = android.media.MediaPlayer()
                     runCatching {
+                        // Without explicit AudioAttributes, MediaPlayer falls back to a generic
+                        // stream type that some OEM audio HALs route without their speech
+                        // enhancement path - CONTENT_TYPE_SPEECH is what tells the device this is
+                        // a voice clip, not music, so it gets treated (EQ/loudness) accordingly.
+                        mp.setAudioAttributes(
+                            android.media.AudioAttributes.Builder()
+                                .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                                .build(),
+                        )
                         mp.setDataSource(url)
                         mp.setOnCompletionListener {
                             isPlaying = false
