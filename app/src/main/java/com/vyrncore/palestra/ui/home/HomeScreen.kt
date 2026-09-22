@@ -76,6 +76,7 @@ import com.vyrncore.palestra.data.repository.PlotoneFeedPost
 import com.vyrncore.palestra.data.repository.WeeklyRankingEntry
 import com.vyrncore.palestra.ui.components.BadgeTier
 import com.vyrncore.palestra.ui.components.BarChartEntry
+import com.vyrncore.palestra.ui.components.CircularProgressRing
 import com.vyrncore.palestra.ui.components.ConnectionStatusBar
 import com.vyrncore.palestra.ui.components.GradientHeader
 import com.vyrncore.palestra.ui.components.MetricCard
