@@ -5,7 +5,10 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -14,10 +17,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Pause
@@ -26,6 +31,8 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,9 +46,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -68,26 +78,48 @@ fun RestTimerScreen(
         label = "restTimerRingColor",
     )
 
+    val infiniteTransition = rememberInfiniteTransition(label = "restTimerPulse")
+    val finishedPulse by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = if (uiState.isFinished) 1.06f else 1f,
+        animationSpec = infiniteRepeatable(tween(600), repeatMode = androidx.compose.animation.core.RepeatMode.Reverse),
+        label = "restTimerPulseScale",
+    )
+
     Scaffold(topBar = { TopAppBar(title = { Text("Recupero") }) }) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            MaterialTheme.colorScheme.surface,
+                        ),
+                    ),
+                ),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(240.dp)) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(260.dp).scale(finishedPulse),
+            ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
-                    val strokeWidth = 14.dp.toPx()
+                    val strokeWidth = 16.dp.toPx()
                     drawArc(
-                        color = ringColor.copy(alpha = 0.15f),
+                        color = ringColor.copy(alpha = 0.12f),
                         startAngle = -90f,
                         sweepAngle = 360f,
                         useCenter = false,
-                        style = Stroke(width = strokeWidth),
+                        style = Stroke(width = strokeWidth, cap = androidx.compose.ui.graphics.StrokeCap.Round),
                         size = Size(size.width - strokeWidth, size.height - strokeWidth),
                         topLeft = androidx.compose.ui.geometry.Offset(strokeWidth / 2, strokeWidth / 2),
                     )
                     drawArc(
-                        color = ringColor,
+                        brush = Brush.sweepGradient(listOf(ringColor.copy(alpha = 0.5f), ringColor)),
                         startAngle = -90f,
                         sweepAngle = 360f * progress,
                         useCenter = false,
@@ -99,21 +131,37 @@ fun RestTimerScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = "%d:%02d".format(uiState.remainingSeconds / 60, uiState.remainingSeconds % 60),
-                        fontSize = 56.sp,
+                        fontSize = 60.sp,
+                        fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge,
                     )
-                    if (uiState.isFinished) {
-                        Text(
-                            "Tempo scaduto!",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.tertiary,
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
-                    }
+                    Text(
+                        if (uiState.isFinished) "Tempo scaduto!" else if (uiState.isRunning) "In recupero…" else "In pausa",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (uiState.isFinished) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
                 }
             }
 
-            Row(modifier = Modifier.padding(top = 28.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 24.dp),
+            ) {
+                listOf(30, 60, 90, 120).forEach { seconds ->
+                    FilterChip(
+                        selected = uiState.totalSeconds == seconds,
+                        onClick = { viewModel.setDuration(seconds) },
+                        label = { Text("${seconds}s") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
+                    )
+                }
+            }
+
+            Row(modifier = Modifier.padding(top = 20.dp)) {
                 IconButton(
                     onClick = { viewModel.addSeconds(-15) },
                     modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),

@@ -26,7 +26,7 @@ class RestTimerViewModel @Inject constructor(
     private val reminderScheduler: ReminderScheduler,
 ) : ViewModel() {
 
-    private val totalSeconds: Int = checkNotNull(savedStateHandle["seconds"])
+    private var totalSeconds: Int = checkNotNull(savedStateHandle["seconds"])
     private val exerciseName: String? = savedStateHandle["exerciseName"]
 
     private val _uiState = MutableStateFlow(RestTimerUiState(totalSeconds, totalSeconds))
@@ -72,6 +72,13 @@ class RestTimerViewModel @Inject constructor(
     fun restart() {
         _uiState.value = RestTimerUiState(totalSeconds, totalSeconds)
         start()
+    }
+
+    /** Swaps to one of the quick-pick durations (30/60/90/120s) and restarts from it - lets the
+     * allievo re-time a rest on the fly without leaving the timer screen to change it. */
+    fun setDuration(seconds: Int) {
+        totalSeconds = seconds
+        restart()
     }
 
     fun addSeconds(delta: Int) {
