@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
+import { Search, ArrowUp, ArrowDown, X, Check, Plus, Loader2, AlertCircle } from "lucide-react";
 import { supabase } from "../../../../../lib/supabaseClient";
 import { useAuthGuard } from "../../../../../lib/useAuthGuard";
+import AppShell from "../../../../../components/AppShell";
+import { useToast } from "../../../../../components/Toast";
 
 const CATEGORIES = ["Full Body", "Push", "Pull", "Gambe", "Cardio", "Mobilità"];
 
@@ -12,6 +14,7 @@ export default function NewPlanPage() {
   const { id } = useParams();
   const router = useRouter();
   const { profile: pt, loading: authLoading } = useAuthGuard();
+  const toast = useToast();
 
   const [clientName, setClientName] = useState("");
   const [exercises, setExercises] = useState([]);
@@ -108,122 +111,151 @@ export default function NewPlanPage() {
       return;
     }
 
+    toast.success("Scheda assegnata");
     router.push(`/clients/${id}`);
   }
 
-  if (authLoading) return <CenteredSpinner />;
+  if (authLoading) {
+    return (
+      <AppShell profile={pt}>
+        <div className="flex justify-center py-20">
+          <Loader2 className="animate-spin text-white/30" />
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <Link href={`/clients/${id}`} className="mb-4 inline-block text-sm text-white/50 hover:text-white/80">
-        ‹ Torna a {clientName || "allievo"}
-      </Link>
+    <AppShell profile={pt} back={{ href: `/clients/${id}`, label: `Torna a ${clientName || "allievo"}` }}>
+      <div className="mx-auto max-w-3xl animate-fade-in">
+        <h1 className="mb-6 text-2xl font-bold">Nuova scheda per {clientName}</h1>
 
-      <h1 className="mb-6 text-2xl font-bold">Nuova scheda per {clientName}</h1>
-
-      <form onSubmit={handleSave} className="space-y-6">
-        <div className="glass-card space-y-4 p-5">
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="label-text">Nome scheda</label>
-              <input className="input-field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Es. Push Day" />
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="glass-card space-y-4 p-5">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex-1">
+                <label className="label-text">Nome scheda</label>
+                <input className="input-field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Es. Push Day" />
+              </div>
+              <div className="sm:w-48">
+                <label className="label-text">Categoria</label>
+                <select className="input-field" value={category} onChange={(e) => setCategory(e.target.value)}>
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="label-text">Categoria</label>
-              <select className="input-field" value={category} onChange={(e) => setCategory(e.target.value)}>
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {draft.length > 0 && (
+              <p className="text-sm text-white/50">
+                {draft.length} esercizi · ~{estimatedMinutes} min stimati
+              </p>
+            )}
           </div>
-          {draft.length > 0 && (
-            <p className="text-sm text-white/50">
-              {draft.length} esercizi · ~{estimatedMinutes} min
-            </p>
-          )}
-        </div>
 
-        <div className="glass-card p-5">
-          <h2 className="mb-3 font-semibold">Esercizi nella scheda</h2>
-          {draft.length === 0 ? (
-            <p className="mb-4 text-sm text-white/50">Cerca e aggiungi esercizi dalla lista qui sotto.</p>
-          ) : (
-            <div className="mb-4 space-y-2">
-              {draft.map((row, index) => (
-                <div key={row.exercise.id} className="rounded-xl border border-white/10 p-3">
-                  <div className="mb-2 flex items-center justify-between">
-                    <p className="font-medium">{row.exercise.name}</p>
-                    <div className="flex items-center gap-1">
-                      <button type="button" className="text-white/40 hover:text-white" onClick={() => moveRow(index, -1)}>
-                        ↑
-                      </button>
-                      <button type="button" className="text-white/40 hover:text-white" onClick={() => moveRow(index, 1)}>
-                        ↓
-                      </button>
-                      <button
-                        type="button"
-                        className="ml-2 text-red-400/70 hover:text-red-400"
-                        onClick={() => removeExercise(row.exercise.id)}
-                      >
-                        Rimuovi
-                      </button>
+          <div className="glass-card p-5">
+            <h2 className="mb-3 font-semibold">Esercizi nella scheda</h2>
+            {draft.length === 0 ? (
+              <p className="mb-4 text-sm text-white/50">Cerca e aggiungi esercizi dalla lista qui sotto.</p>
+            ) : (
+              <div className="mb-4 space-y-2">
+                {draft.map((row, index) => (
+                  <div key={row.exercise.id} className="rounded-xl border border-white/10 p-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="font-medium">{row.exercise.name}</p>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          className="rounded-lg p-1 text-white/40 transition hover:bg-white/5 hover:text-white disabled:opacity-30"
+                          onClick={() => moveRow(index, -1)}
+                          disabled={index === 0}
+                          aria-label="Sposta su"
+                        >
+                          <ArrowUp size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-lg p-1 text-white/40 transition hover:bg-white/5 hover:text-white disabled:opacity-30"
+                          onClick={() => moveRow(index, 1)}
+                          disabled={index === draft.length - 1}
+                          aria-label="Sposta giù"
+                        >
+                          <ArrowDown size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          className="ml-1 rounded-lg p-1 text-red-400/70 transition hover:bg-red-500/10 hover:text-red-400"
+                          onClick={() => removeExercise(row.exercise.id)}
+                          aria-label="Rimuovi esercizio"
+                        >
+                          <X size={15} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      <NumberField label="Serie" value={row.sets} onChange={(v) => updateRow(row.exercise.id, "sets", v)} />
+                      <NumberField label="Rip." value={row.reps} onChange={(v) => updateRow(row.exercise.id, "reps", v)} />
+                      <NumberField
+                        label="Peso kg"
+                        value={row.weight}
+                        onChange={(v) => updateRow(row.exercise.id, "weight", v)}
+                        allowEmpty
+                      />
+                      <NumberField label="Rec. sec" value={row.rest} onChange={(v) => updateRow(row.exercise.id, "rest", v)} />
                     </div>
                   </div>
-                  <div className="grid grid-cols-4 gap-2">
-                    <NumberField label="Serie" value={row.sets} onChange={(v) => updateRow(row.exercise.id, "sets", v)} />
-                    <NumberField label="Rip." value={row.reps} onChange={(v) => updateRow(row.exercise.id, "reps", v)} />
-                    <NumberField
-                      label="Peso kg"
-                      value={row.weight}
-                      onChange={(v) => updateRow(row.exercise.id, "weight", v)}
-                      allowEmpty
-                    />
-                    <NumberField label="Rec. sec" value={row.rest} onChange={(v) => updateRow(row.exercise.id, "rest", v)} />
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+
+            <div className="relative mb-3">
+              <Search size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35" />
+              <input
+                className="input-field pl-9"
+                placeholder="Cerca esercizio…"
+                value={exerciseSearch}
+                onChange={(e) => setExerciseSearch(e.target.value)}
+              />
             </div>
+            <div className="thin-scroll max-h-56 space-y-1 overflow-y-auto">
+              {filteredExercises.map((ex) => {
+                const added = draft.some((d) => d.exercise.id === ex.id);
+                return (
+                  <button
+                    type="button"
+                    key={ex.id}
+                    onClick={() => addExercise(ex)}
+                    disabled={added}
+                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition hover:bg-white/5 disabled:opacity-40"
+                  >
+                    <span>
+                      {ex.name} <span className="text-white/40">· {ex.muscle_group}</span>
+                    </span>
+                    {added ? <Check size={15} className="text-emerald-400" /> : <Plus size={15} className="text-white/40" />}
+                  </button>
+                );
+              })}
+              {filteredExercises.length === 0 && (
+                <p className="px-3 py-2 text-sm text-white/40">Nessun esercizio trovato.</p>
+              )}
+            </div>
+          </div>
+
+          {error && (
+            <p className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm text-red-300">
+              <AlertCircle size={16} className="mt-0.5 shrink-0" /> {error}
+            </p>
           )}
 
-          <input
-            className="input-field mb-3"
-            placeholder="Cerca esercizio…"
-            value={exerciseSearch}
-            onChange={(e) => setExerciseSearch(e.target.value)}
-          />
-          <div className="max-h-56 space-y-1 overflow-y-auto">
-            {filteredExercises.map((ex) => {
-              const added = draft.some((d) => d.exercise.id === ex.id);
-              return (
-                <button
-                  type="button"
-                  key={ex.id}
-                  onClick={() => addExercise(ex)}
-                  disabled={added}
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition hover:bg-white/5 disabled:opacity-40"
-                >
-                  <span>
-                    {ex.name} <span className="text-white/40">· {ex.muscle_group}</span>
-                  </span>
-                  <span className="text-white/40">{added ? "✓" : "+"}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {error && (
-          <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>
-        )}
-
-        <button type="submit" className="btn-primary" disabled={saving}>
-          {saving ? "Salvataggio…" : "Salva e assegna scheda"}
-        </button>
-      </form>
-    </div>
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={16} className="animate-spin" />}
+            {saving ? "Salvataggio…" : "Salva e assegna scheda"}
+          </button>
+        </form>
+      </div>
+    </AppShell>
   );
 }
 
@@ -241,14 +273,6 @@ function NumberField({ label, value, onChange, allowEmpty }) {
           onChange(v === "" ? 0 : Number(v));
         }}
       />
-    </div>
-  );
-}
-
-function CenteredSpinner() {
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-brand-orange" />
     </div>
   );
 }
