@@ -1,6 +1,8 @@
 # Vibe Fitness
 
-App Android nativa per il brand di palestre **Vibe Fitness**, pensata per due ruoli: **Allievo** (traccia allenamenti, progressi, dati corporei) e **Personal Trainer** (assegna schede e monitora i propri allievi).
+App Android nativa per il brand di palestre **Vibe Fitness**, dedicata agli **Allievi** (traccia allenamenti, progressi, dati corporei, chat con il proprio PT).
+
+> **Area Personal Trainer:** i PT non usano più l'app. Clienti, schede, programmi, note e abbonamenti si gestiscono dal **gestionale web** (deploy su Vercel) collegato allo stesso backend Supabase: tutto ciò che il PT assegna arriva all'app dell'allievo in tempo reale. Se un account PT accede all'app vede solo una schermata che rimanda al gestionale (URL configurabile con `PT_WEB_APP_URL` in `local.properties` / secret GitHub `PT_WEB_APP_URL`). La registrazione dall'app crea sempre account Allievo.
 
 ## Stack tecnico
 

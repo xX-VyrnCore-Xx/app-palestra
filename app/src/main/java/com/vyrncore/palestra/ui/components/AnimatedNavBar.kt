@@ -32,7 +32,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 data class NavBarItem(
@@ -54,33 +58,34 @@ fun AnimatedNavBar(
     modifier: Modifier = Modifier,
     emphasizedIndex: Int? = null,
 ) {
+    val hairline = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = Color.Transparent,
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 12.dp,
+        tonalElevation = 2.dp,
     ) {
         Box(
             modifier = Modifier
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-                        )
+                // A real 1dp hairline on the top edge only - the previous padding+background
+                // combo tinted the whole bar with the outline color instead of drawing a border.
+                .drawBehind {
+                    drawLine(
+                        color = hairline,
+                        start = Offset(0f, 0f),
+                        end = Offset(size.width, 0f),
+                        strokeWidth = 1.dp.toPx(),
                     )
-                )
-                .padding(top = 1.dp) // Space for the top border
-                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)) // Thin top border effect
+                }
                 // Reserves space for Android's own gesture pill / 3-button bar below the tab
-                // labels, on the outer layer so the background tint extends behind it too -
-                // a fixed .height() on the inner Row used to fight this padding and let the
-                // system bar clip or overlap the last few dp of icons/labels.
+                // labels, on the outer layer so the surface color extends behind it too.
                 .navigationBarsPadding()
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 72.dp)
-                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                    .heightIn(min = 68.dp)
+                    .padding(horizontal = 4.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -129,6 +134,7 @@ private fun EmphasizedNavBarTab(
         modifier = modifier.clickable(
             interactionSource = remember { MutableInteractionSource() },
             indication = null,
+            role = Role.Tab,
             onClick = onClick,
         ),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -142,7 +148,7 @@ private fun EmphasizedNavBarTab(
         ) {
             if (item.badgeCount > 0) {
                 androidx.compose.material3.BadgedBox(
-                    badge = { androidx.compose.material3.Badge { Text("${item.badgeCount}") } },
+                    badge = { androidx.compose.material3.Badge { Text(badgeLabel(item.badgeCount)) } },
                 ) {
                     Icon(item.icon, contentDescription = item.label, tint = contentColor)
                 }
@@ -155,6 +161,8 @@ private fun EmphasizedNavBarTab(
             style = MaterialTheme.typography.labelSmall,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 2.dp),
         )
     }
@@ -192,6 +200,7 @@ private fun NavBarTab(
         modifier = modifier.clickable(
             interactionSource = remember { MutableInteractionSource() },
             indication = null,
+            role = Role.Tab,
             onClick = onClick,
         ),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -215,7 +224,7 @@ private fun NavBarTab(
                 if (item.badgeCount > 0) {
                     androidx.compose.material3.BadgedBox(
                         badge = {
-                            androidx.compose.material3.Badge { Text("${item.badgeCount}") }
+                            androidx.compose.material3.Badge { Text(badgeLabel(item.badgeCount)) }
                         },
                     ) {
                         Icon(item.icon, contentDescription = item.label, tint = contentColor)
@@ -230,7 +239,12 @@ private fun NavBarTab(
             style = MaterialTheme.typography.labelSmall,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             color = contentColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 2.dp),
         )
     }
 }
+
+/** Keeps the badge compact on small screens: anything above 99 reads as "99+". */
+private fun badgeLabel(count: Int): String = if (count > 99) "99+" else count.toString()

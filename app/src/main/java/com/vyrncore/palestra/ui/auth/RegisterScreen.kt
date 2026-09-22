@@ -55,15 +55,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.ui.components.BackendConfigBanner
 import com.vyrncore.palestra.ui.components.VibeWordmark
 
 /**
- * Registration collects the essentials (role, name, email, password) plus optional body metrics,
- * then hands off to the Welcome wizard: [AuthUiState.justRegistered] tells the nav graph to
- * route a fresh ALLIEVO through onboarding before the dashboard, while a PT lands straight on
- * their dashboard.
+ * Registration (allievi only - PT accounts live in the web management app) collects the
+ * essentials (name, email, password) plus optional PT invite code and body metrics, then hands
+ * off to the Welcome wizard via [AuthUiState.justRegistered].
  */
 @Composable
 fun RegisterScreen(
@@ -79,7 +77,6 @@ fun RegisterScreen(
     var ptInviteCode by rememberSaveable { mutableStateOf("") }
     var heightText by rememberSaveable { mutableStateOf("") }
     var weightText by rememberSaveable { mutableStateOf("") }
-    var role by rememberSaveable { mutableStateOf(UserRole.ALLIEVO) }
     val focusManager = LocalFocusManager.current
 
     val submit: () -> Unit = {
@@ -87,7 +84,6 @@ fun RegisterScreen(
             email = email,
             password = password,
             fullName = fullName,
-            role = role,
             ptInviteCode = ptInviteCode,
             heightCm = heightText.toIntOrNull(),
             weightKg = weightText.toDoubleOrNull(),
@@ -140,24 +136,6 @@ fun RegisterScreen(
             ) {
                 GlassCard {
                     Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text("Sei un...", style = MaterialTheme.typography.titleSmall)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            RoleChip(
-                                selected = role == UserRole.ALLIEVO,
-                                label = "Allievo",
-                                icon = Icons.Filled.Person,
-                                onClick = { role = UserRole.ALLIEVO },
-                                modifier = Modifier.weight(1f),
-                            )
-                            RoleChip(
-                                selected = role == UserRole.PT,
-                                label = "Personal Trainer",
-                                icon = Icons.Filled.WorkspacePremium,
-                                onClick = { role = UserRole.PT },
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-
                         AuthTextField(
                             value = fullName,
                             onValueChange = { fullName = it; viewModel.clearErrors() },
@@ -200,44 +178,38 @@ fun RegisterScreen(
                             PasswordStrengthMeter(password = password, modifier = Modifier.padding(top = 2.dp))
                         }
 
-                        AnimatedVisibility(
-                            visible = role == UserRole.ALLIEVO,
-                            enter = fadeIn(tween(250)) + expandVertically(tween(250)),
-                            exit = fadeOut(tween(200)) + shrinkVertically(tween(200)),
-                        ) {
-                            Column {
+                        Column {
+                            AuthTextField(
+                                value = ptInviteCode,
+                                onValueChange = { ptInviteCode = it.uppercase().take(6) },
+                                label = "Codice invito del PT (opzionale)",
+                                leadingIcon = Icons.Filled.Badge,
+                            )
+                            Text(
+                                "Inserisci i tuoi dati corporali per un percorso più preciso (opzionale)",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 AuthTextField(
-                                    value = ptInviteCode,
-                                    onValueChange = { ptInviteCode = it.uppercase().take(6) },
-                                    label = "Codice invito del PT (opzionale)",
-                                    leadingIcon = Icons.Filled.Badge,
+                                    value = heightText,
+                                    onValueChange = { heightText = it.filter(Char::isDigit).take(3) },
+                                    label = "Altezza (cm)",
+                                    leadingIcon = Icons.Filled.Straighten,
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, keyboardType = KeyboardType.Number),
+                                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                                    modifier = Modifier.weight(1f),
                                 )
-                                Text(
-                                    "Inserisci i tuoi dati corporali per un percorso più preciso (opzionale)",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                                AuthTextField(
+                                    value = weightText,
+                                    onValueChange = { weightText = it.filter(Char::isDigit).take(3) },
+                                    label = "Peso (kg)",
+                                    leadingIcon = Icons.Filled.MonitorWeight,
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = KeyboardType.Number),
+                                    keyboardActions = KeyboardActions(onDone = { submit() }),
+                                    modifier = Modifier.weight(1f),
                                 )
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    AuthTextField(
-                                        value = heightText,
-                                        onValueChange = { heightText = it.filter(Char::isDigit).take(3) },
-                                        label = "Altezza (cm)",
-                                        leadingIcon = Icons.Filled.Straighten,
-                                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, keyboardType = KeyboardType.Number),
-                                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    AuthTextField(
-                                        value = weightText,
-                                        onValueChange = { weightText = it.filter(Char::isDigit).take(3) },
-                                        label = "Peso (kg)",
-                                        leadingIcon = Icons.Filled.MonitorWeight,
-                                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = KeyboardType.Number),
-                                        keyboardActions = KeyboardActions(onDone = { submit() }),
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                }
                             }
                         }
 

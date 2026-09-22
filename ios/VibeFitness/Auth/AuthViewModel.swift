@@ -41,7 +41,7 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    func signUp(email: String, password: String, fullName: String, role: String) async {
+    func signUp(email: String, password: String, fullName: String) async {
         guard !email.isEmpty, password.count >= 8, !fullName.isEmpty else {
             errorMessage = "Compila tutti i campi (password: almeno 8 caratteri)."
             return
@@ -56,7 +56,7 @@ final class AuthViewModel: ObservableObject {
                 "id": userId,
                 "email": email,
                 "full_name": fullName,
-                "role": role,
+                "role": "ALLIEVO", // PT accounts are managed from the web app
             ]).execute()
             self.userId = userId
         } catch {

@@ -40,7 +40,7 @@ private val dateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy")
 /**
  * The allievo's membership window (set by their PT) with a status color that does the talking:
  * green while there's real runway left, amber inside the last week, red once it's lapsed. Shown
- * to the allievo (read-only) and to the PT on a client's detail screen (with an edit action).
+ * to the allievo read-only (the PT manages it from the web management app).
  */
 @Composable
 fun MembershipStatusCard(

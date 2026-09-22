@@ -60,7 +60,6 @@ class AuthRepository @Inject constructor(
         email: String,
         password: String,
         fullName: String,
-        role: UserRole,
         ptInviteCode: String?,
         heightCm: Int?,
         weightKg: Double?,
@@ -81,7 +80,8 @@ class AuthRepository @Inject constructor(
             id = userId,
             email = email,
             fullName = fullName,
-            role = role,
+            // Only allievi sign up from the app: PT accounts are managed from the web app.
+            role = UserRole.ALLIEVO,
             ptId = resolvedPtId,
             heightCm = heightCm,
             weightKg = weightKg,
@@ -93,7 +93,7 @@ class AuthRepository @Inject constructor(
         // Best-effort branded welcome email via Resend - registration must never fail on this,
         // Supabase Auth's own built-in email already covers verification/reset.
         runCatching {
-            functions.invoke("send-welcome-email", body = WelcomeEmailRequest(fullName = fullName, role = role.name))
+            functions.invoke("send-welcome-email", body = WelcomeEmailRequest(fullName = fullName, role = UserRole.ALLIEVO.name))
         }
     }
 
@@ -180,16 +180,6 @@ class AuthRepository @Inject constructor(
 
     fun observeProfile(userId: String): Flow<UserProfileEntity?> = userProfileDao.observeById(userId)
 
-    fun observeClients(ptId: String): Flow<List<UserProfileEntity>> = userProfileDao.observeClientsOfPt(ptId)
-
-    /** PT-only: records injuries/limitations for a client so they surface wherever the PT builds a plan. */
-    suspend fun updateInjuries(clientId: String, injuries: String?) {
-        val current = userProfileDao.observeById(clientId).firstOrNull() ?: return
-        userProfileDao.upsert(
-            current.copy(injuries = injuries?.takeIf { it.isNotBlank() }, syncStatus = SyncStatus.PENDING_UPDATE)
-        )
-    }
-
     /** Registers this device's FCM token so the backend can push notifications to it. Kept in
      * device_tokens (one row per user+device, so every installed device gets pushes, not just the
      * last one to register) and mirrored onto profiles.fcm_token for older RPCs/functions that still
@@ -218,35 +208,6 @@ class AuthRepository @Inject constructor(
             val params = buildJsonObject { put("code", code.trim()) }
             postgrest.rpc("resolve_pt_invite_code", params).decodeSingleOrNull<PtInviteMatch>()
         }.getOrNull()
-    }
-
-    /** A PT's own shareable code, generating and persisting one the first time it's needed (e.g.
-     * an existing PT who registered before this feature existed). Retries a handful of times on
-     * the rare collision against another PT's code, since it's random rather than derived. */
-    suspend fun getOrCreateInviteCode(userId: String): String? {
-        val existing = userProfileDao.observeById(userId).firstOrNull()?.inviteCode
-        if (!existing.isNullOrBlank()) return existing
-
-        repeat(5) {
-            val candidate = randomInviteCode()
-            val result = runCatching {
-                postgrest.from("profiles").update(mapOf("invite_code" to candidate)) {
-                    filter { eq("id", userId) }
-                }
-            }
-            if (result.isSuccess) {
-                val current = userProfileDao.observeById(userId).firstOrNull()
-                if (current != null) userProfileDao.upsert(current.copy(inviteCode = candidate))
-                return candidate
-            }
-        }
-        return null
-    }
-
-    private fun randomInviteCode(): String {
-        // Excludes visually ambiguous characters (0/O, 1/I/L) since this gets read aloud/typed by hand.
-        val alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
-        return (1..6).map { alphabet.random() }.joinToString("")
     }
 
     /** Links an already-registered allievo to a PT after the fact (profile screen "Collega PT"),

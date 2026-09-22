@@ -12,8 +12,8 @@ plugins {
 }
 
 // Bump versionCode by 1 on every release; versionName follows semver (MAJOR.MINOR.PATCH).
-val appVersionCode = 2
-val appVersionName = "1.1.0"
+val appVersionCode = 3
+val appVersionName = "1.2.0"
 
 android {
     namespace = "com.vyrncore.palestra"
@@ -50,6 +50,13 @@ android {
             "String",
             "SUPABASE_ANON_KEY",
             "\"${localProperties.getProperty("SUPABASE_ANON_KEY", "")}\""
+        )
+        // URL of the PT web management app (Vercel). PTs no longer use this Android app: when
+        // one signs in they get a screen pointing here instead. Blank = the button is hidden.
+        buildConfigField(
+            "String",
+            "PT_WEB_APP_URL",
+            "\"${localProperties.getProperty("PT_WEB_APP_URL", "")}\""
         )
     }
 

@@ -218,7 +218,7 @@ data class HomeUiState(
     val totalVolumeKg: Double = 0.0,
     val xp: Int = 0,
     val level: Int = 1,
-    val levelTitle: String = "Soldato",
+    val levelTitle: String = "Principiante",
     val xpIntoLevel: Int = 0,
     val nextPlanId: String? = null,
     val nextPlanName: String? = null,

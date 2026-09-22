@@ -178,13 +178,13 @@ class ChatThreadViewModel @Inject constructor(
     private fun attachNoiseProcessing(audioSessionId: Int) {
         runCatching {
             if (android.media.audiofx.NoiseSuppressor.isAvailable()) {
-                noiseSuppressor = android.media.audiofx.NoiseSuppressor.create(audioSessionId)?.apply { enabled = true }
+                noiseSuppressor = android.media.audiofx.NoiseSuppressor.create(audioSessionId)?.apply { setEnabled(true) }
             }
             if (android.media.audiofx.AcousticEchoCanceler.isAvailable()) {
-                echoCanceler = android.media.audiofx.AcousticEchoCanceler.create(audioSessionId)?.apply { enabled = true }
+                echoCanceler = android.media.audiofx.AcousticEchoCanceler.create(audioSessionId)?.apply { setEnabled(true) }
             }
             if (android.media.audiofx.AutomaticGainControl.isAvailable()) {
-                gainControl = android.media.audiofx.AutomaticGainControl.create(audioSessionId)?.apply { enabled = true }
+                gainControl = android.media.audiofx.AutomaticGainControl.create(audioSessionId)?.apply { setEnabled(true) }
             }
         }
     }

@@ -92,45 +92,6 @@ struct VibeButtonStyle: ButtonStyle {
     }
 }
 
-/// Two-option ALLIEVO/PT selector, styled to match the dark brand background - the native
-/// `.segmented` picker renders on a light system material and stands out against `VibeBackground`.
-struct RoleToggle: View {
-    @Binding var role: String
-
-    var body: some View {
-        HStack(spacing: 4) {
-            option(label: "Allievo", value: "ALLIEVO")
-            option(label: "Personal Trainer", value: "PT")
-        }
-        .padding(4)
-        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
-
-    @ViewBuilder
-    private func option(label: String, value: String) -> some View {
-        let isSelected = role == value
-        Button {
-            withAnimation(.easeOut(duration: 0.2)) { role = value }
-        } label: {
-            Text(label)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(isSelected ? .white : .white.opacity(0.6))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .background(
-                    Group {
-                        if isSelected {
-                            LinearGradient(colors: [.vibeOrange, .vibeOrangeDeep], startPoint: .leading, endPoint: .trailing)
-                        } else {
-                            Color.clear
-                        }
-                    },
-                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                )
-        }
-    }
-}
-
 /// Text field styling shared by Login/Register, matching the Android `AuthTextField` look:
 /// rounded, filled, brand-tinted focus ring.
 struct VibeTextFieldStyle: TextFieldStyle {
