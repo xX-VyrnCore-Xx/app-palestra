@@ -35,7 +35,8 @@ const TOOLS = [
 
 const PT_SYSTEM_PROMPT = `Sei l'assistente AI per Personal Trainer di Vibe Fitness, un'app di gestione allenamenti.
 Aiuti il PT a progettare e adattare schede di allenamento, interpretare i progressi degli allievi,
-e dare consigli tecnici su esercizi, volume, intensità e periodizzazione.
+dare consigli tecnici su esercizi, volume, intensità e periodizzazione, e rispondere a domande sulle
+sedi ViBE e sui corsi di gruppo disponibili (vedi contesto sedi/corsi qui sotto).
 Regole importanti:
 - Se l'allievo di cui si parla ha infortuni o limitazioni fisiche note, tienine sempre conto e avvisa
   esplicitamente il PT se un esercizio proposto potrebbe essere rischioso.
@@ -47,7 +48,8 @@ Regole importanti:
 
 const ALLIEVO_SYSTEM_PROMPT = `Sei l'assistente AI personale per l'allievo di Vibe Fitness, un'app di allenamento in palestra.
 Aiuti l'utente a capire la propria scheda, la tecnica degli esercizi, la costanza e la motivazione,
-e rispondi a domande generali su allenamento e stile di vita attivo.
+rispondi a domande generali su allenamento e stile di vita attivo, e a domande sulle sedi ViBE e sui
+corsi di gruppo disponibili (vedi contesto sedi/corsi qui sotto).
 Regole importanti:
 - Sei motivante ma onesto, mai giudicante.
 - Non dai diagnosi mediche o piani nutrizionali clinici: per problemi di salute, dolori o infortuni
@@ -58,6 +60,24 @@ Regole importanti:
 interface ChatRequestBody {
   message: string;
 }
+
+// Real ViBE Fitness club roster and group-class catalog (kept in sync with the Kotlin copy in
+// data/locations/VibeCatalog.kt - both are static content sourced from vibefitness.it, so this
+// string doubles as the source the assistant reads from when asked "che corsi ci sono" or "dov'è
+// la palestra più vicina a Monza", without a network fetch or a DB round trip on every message.
+const LOCATIONS_CONTEXT = `Sedi e corsi ViBE Fitness (dati statici, sempre veri, usali se pertinenti):
+17 club in Lombardia e Piemonte:
+- Torino: Alpignano
+- Milano: Sesto San Giovanni, Paderno Dugnano Calderara, Milano Certosa, Paderno Dugnano Comasina
+- Monza e Brianza: Varedo, Seregno, Lentate sul Seveso, Desio, Busnago, Besana in Brianza, Barlassina, Arcore
+- Como: Erba, Como, Arosio, Albese con Cassano
+Quasi tutti i club sono aperti 24/7 (eccetto Milano Certosa, Sesto San Giovanni e Busnago, con orari più ampi ma non h24).
+Iscrizione annuale include corsi di gruppo illimitati. Corsi disponibili: Stretching & Meditazione, Postural Yoga,
+Yoga Dolce, Yoga del Risveglio, Flexibility (bassa intensità); Salsa, Afrostep Coreografico, Heels, Zumba Fitness,
+Yoga Dinamico, Salsa Base, Hybrid Workout, Fitness Dance, Fitball Training (media intensità); Body Pump, Abs,
+Pole Dance Base, HIIT Functional, Difesa Personale, Boxe (alta intensità).
+Nell'app, la sezione "Sedi & Corsi" (icona nelle azioni rapide della Home) mostra l'elenco completo con indirizzo
+di massima e un pulsante per aprire la sede in Google Maps: rimanda l'utente lì per i dettagli e le indicazioni.`;
 
 function corsHeaders(): HeadersInit {
   return {
@@ -258,6 +278,7 @@ Deno.serve(async (req: Request) => {
   // deno-lint-ignore no-explicit-any
   const nimMessages: any[] = [
     { role: "system", content: systemPrompt },
+    { role: "system", content: LOCATIONS_CONTEXT },
     ...(contextBlock ? [{ role: "system", content: contextBlock }] : []),
     ...orderedHistory.map((m) => ({ role: m.role, content: m.content })),
     { role: "user", content: message },

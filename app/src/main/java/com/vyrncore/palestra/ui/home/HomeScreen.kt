@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -89,6 +90,7 @@ import com.vyrncore.palestra.ui.components.pressScale
 import com.vyrncore.palestra.ui.components.SimpleBarChart
 import com.vyrncore.palestra.ui.components.SimpleLineChart
 import com.vyrncore.palestra.ui.components.WeekOverWeekCard
+import com.vyrncore.palestra.ui.theme.Coral50
 import com.vyrncore.palestra.ui.theme.Gold40
 import com.vyrncore.palestra.ui.theme.Gold50
 import com.vyrncore.palestra.ui.theme.Lime50
@@ -110,6 +112,7 @@ fun HomeScreen(
     onOpenSearch: () -> Unit = {},
     onOpenAssistant: () -> Unit = {},
     onOpenChat: () -> Unit = {},
+    onOpenLocations: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -329,7 +332,10 @@ fun HomeScreen(
             )
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 QuickActionTile(
@@ -337,28 +343,35 @@ fun HomeScreen(
                     label = "Esercizi",
                     accent = MaterialTheme.colorScheme.primary,
                     onClick = onOpenSearch,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.width(84.dp),
                 )
                 QuickActionTile(
                     icon = Icons.Filled.History,
                     label = "Storico",
                     accent = Lime50,
                     onClick = onOpenHistory,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.width(84.dp),
                 )
                 QuickActionTile(
                     icon = Icons.Filled.CalendarMonth,
                     label = "Calendario",
                     accent = Magenta50,
                     onClick = onOpenCalendar,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.width(84.dp),
+                )
+                QuickActionTile(
+                    icon = Icons.Filled.LocationOn,
+                    label = "Sedi",
+                    accent = Coral50,
+                    onClick = onOpenLocations,
+                    modifier = Modifier.width(84.dp),
                 )
                 QuickActionTile(
                     icon = Icons.Filled.AutoAwesome,
                     label = "Assistente",
                     accent = Gold40,
                     onClick = onOpenAssistant,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.width(84.dp),
                 )
             }
 

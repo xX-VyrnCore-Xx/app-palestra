@@ -17,6 +17,7 @@ object Routes {
     const val CHAT_THREAD = "chat_thread/{peerId}"
     const val HISTORY = "history"
     const val CALENDAR = "calendar"
+    const val LOCATIONS = "locations"
     const val SEARCH = "search"
     const val WORKOUT_SUMMARY = "workout_summary/{sessionId}/{planId}"
 

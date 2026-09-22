@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
@@ -101,6 +102,7 @@ fun PtDashboardScreen(
     onOpenClient: (clientId: String) -> Unit,
     onOpenChat: (clientId: String) -> Unit,
     onOpenSearch: () -> Unit,
+    onOpenLocations: () -> Unit,
     onSignedOut: () -> Unit,
     viewModel: PtDashboardViewModel = hiltViewModel(),
 ) {
@@ -135,7 +137,12 @@ fun PtDashboardScreen(
             label = "ptTabContent",
         ) { tab ->
             when (tab) {
-                0 -> PtClientListScreen(onOpenClient = onOpenClient, onOpenSearch = onOpenSearch, viewModel = viewModel)
+                0 -> PtClientListScreen(
+                    onOpenClient = onOpenClient,
+                    onOpenSearch = onOpenSearch,
+                    onOpenLocations = onOpenLocations,
+                    viewModel = viewModel,
+                )
                 1 -> PtPlansScreen(onOpenClient = onOpenClient, viewModel = viewModel)
                 CHAT_TAB_INDEX -> ChatListScreen(onOpenChat = onOpenChat)
                 3 -> AiAssistantScreen(onBack = {})
@@ -218,6 +225,7 @@ private fun PtPlansScreen(
 private fun PtClientListScreen(
     onOpenClient: (clientId: String) -> Unit,
     onOpenSearch: () -> Unit,
+    onOpenLocations: () -> Unit,
     viewModel: PtDashboardViewModel,
 ) {
     val clients by viewModel.clients.collectAsStateWithLifecycle()
@@ -238,6 +246,9 @@ private fun PtClientListScreen(
             TopAppBar(
                 title = { Text("I tuoi clienti") },
                 actions = {
+                    IconButton(onClick = onOpenLocations) {
+                        Icon(Icons.Filled.LocationOn, contentDescription = "Sedi e corsi")
+                    }
                     IconButton(onClick = onOpenSearch) {
                         Icon(Icons.Filled.Search, contentDescription = "Cerca")
                     }

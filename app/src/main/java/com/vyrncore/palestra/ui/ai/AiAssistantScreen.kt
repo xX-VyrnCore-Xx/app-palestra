@@ -1,5 +1,6 @@
 package com.vyrncore.palestra.ui.ai
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,9 +14,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -115,10 +118,20 @@ fun AiAssistantScreen(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (uiState.messages.isEmpty()) {
-                EmptyState(
-                    icon = Icons.Filled.AutoAwesome,
-                    message = "Chiedi consigli su allenamento, esercizi e progressi: l'assistente è privato e vede solo i tuoi dati.",
-                )
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        EmptyState(
+                            icon = Icons.Filled.AutoAwesome,
+                            message = "Chiedi consigli su allenamento, esercizi, progressi, sedi e corsi: l'assistente è privato e vede solo i tuoi dati.",
+                        )
+                    }
+                    SuggestedPrompts(
+                        onPick = { text ->
+                            draft = ""
+                            scope.launch { viewModel.sendMessage(text) }
+                        },
+                    )
+                }
             } else {
                 LazyColumn(
                     state = listState,
@@ -128,6 +141,34 @@ fun AiAssistantScreen(
                     items(uiState.messages) { message -> AiMessageBubble(message) }
                 }
             }
+        }
+    }
+}
+
+private val suggestedPrompts = listOf(
+    "Crea una scheda per me",
+    "Che corsi ci sono in palestra?",
+    "Qual è la sede ViBE più vicina?",
+    "Come sto andando questa settimana?",
+)
+
+/** Quick-start chips shown only on the empty conversation - the fastest way to discover what the
+ * assistant can help with (workout plans, progress, and now locations/courses too) without having
+ * to type a first message from scratch. */
+@Composable
+private fun SuggestedPrompts(onPick: (String) -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        suggestedPrompts.forEach { prompt ->
+            AssistChip(
+                onClick = { onPick(prompt) },
+                label = { Text(prompt) },
+            )
         }
     }
 }

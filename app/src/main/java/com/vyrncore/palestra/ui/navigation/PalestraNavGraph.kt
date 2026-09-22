@@ -29,6 +29,7 @@ import com.vyrncore.palestra.ui.calendar.CalendarScreen
 import com.vyrncore.palestra.ui.chat.ChatThreadScreen
 import com.vyrncore.palestra.ui.dashboard.AllievoDashboardScreen
 import com.vyrncore.palestra.ui.history.HistoryScreen
+import com.vyrncore.palestra.ui.locations.LocationsScreen
 import com.vyrncore.palestra.ui.profile.ProfileScreen
 import com.vyrncore.palestra.ui.pt.PlanEditorScreen
 import com.vyrncore.palestra.ui.pt.ProgramEditorScreen
@@ -108,6 +109,7 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
                     onOpenClient = { clientId -> navController.navigate(Routes.ptClientDetail(clientId)) },
                     onOpenChat = { clientId -> navController.navigate(Routes.chatThread(clientId)) },
                     onOpenSearch = { navController.navigate(Routes.SEARCH) },
+                    onOpenLocations = { navController.navigate(Routes.LOCATIONS) },
                     onSignedOut = { navController.navigate(Routes.LOGIN) { popUpTo(0) } },
                 )
                 UserRole.ALLIEVO -> if (needsOnboarding) {
@@ -121,6 +123,7 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
                         onOpenHistory = { navController.navigate(Routes.HISTORY) },
                         onOpenCalendar = { navController.navigate(Routes.CALENDAR) },
                         onOpenSearch = { navController.navigate(Routes.SEARCH) },
+                        onOpenLocations = { navController.navigate(Routes.LOCATIONS) },
                         onSignedOut = {
                             navController.navigate(Routes.LOGIN) { popUpTo(0) }
                         },
@@ -202,6 +205,9 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
                 onOpenSession = { sessionId, planId -> navController.navigate(Routes.activeWorkout(sessionId, planId)) },
                 onBack = { navController.popBackStack() },
             )
+        }
+        composable(Routes.LOCATIONS) {
+            LocationsScreen(onBack = { navController.popBackStack() })
         }
         composable(Routes.SEARCH) {
             GlobalSearchScreen(
