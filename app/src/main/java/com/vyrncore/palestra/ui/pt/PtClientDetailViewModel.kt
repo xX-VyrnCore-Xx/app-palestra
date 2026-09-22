@@ -66,6 +66,13 @@ class PtClientDetailViewModel @Inject constructor(
     val clientName = authRepository.observeProfile(clientId).map { it?.fullName.orEmpty() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
+    val exerciseCatalog = workoutRepository.observeExercises()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Exercise list for a plan the PT tapped in the "Schede assegnate" list, so they can check
+     * what's actually in it without leaving this screen to open the Plan Editor. */
+    fun observePlanExercises(planId: String) = workoutRepository.observePlanExercises(planId)
+
     fun saveNote(content: String) {
         viewModelScope.launch { ptNotesRepository.saveNote(ptId, clientId, content) }
     }
