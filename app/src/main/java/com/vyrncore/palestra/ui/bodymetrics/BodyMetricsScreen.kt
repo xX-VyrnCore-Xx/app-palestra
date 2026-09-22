@@ -70,8 +70,9 @@ fun BodyMetricsScreen(viewModel: BodyMetricsViewModel = hiltViewModel()) {
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                        shape = MaterialTheme.shapes.medium,
+                        shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text("Andamento peso", style = MaterialTheme.typography.titleSmall)
@@ -87,8 +88,9 @@ fun BodyMetricsScreen(viewModel: BodyMetricsViewModel = hiltViewModel()) {
             items(metrics, key = { it.id }) { metric ->
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    shape = MaterialTheme.shapes.medium,
+                    shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
                 ) {
                     Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(

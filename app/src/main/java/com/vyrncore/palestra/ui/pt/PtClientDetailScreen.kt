@@ -127,7 +127,7 @@ fun PtClientDetailScreen(
           Column(modifier = Modifier.padding(16.dp)) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
                     containerColor = if (!injuries.isNullOrBlank()) {
                         MaterialTheme.colorScheme.errorContainer
@@ -135,6 +135,7 @@ fun PtClientDetailScreen(
                         MaterialTheme.colorScheme.surfaceVariant
                     },
                 ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row {
@@ -196,8 +197,9 @@ fun PtClientDetailScreen(
             if (weightTrend.size >= 2) {
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                    shape = MaterialTheme.shapes.medium,
+                    shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Andamento peso", style = MaterialTheme.typography.titleSmall)
@@ -219,8 +221,9 @@ fun PtClientDetailScreen(
                 programs.forEach { program ->
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                        shape = MaterialTheme.shapes.medium,
+                        shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(program.name, style = MaterialTheme.typography.titleSmall)
@@ -250,8 +253,9 @@ fun PtClientDetailScreen(
                 standalonePlans.forEach { plan ->
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                        shape = MaterialTheme.shapes.medium,
+                        shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
                         onClick = { inspectedPlan = plan },
                     ) {
                         Row(
@@ -280,8 +284,9 @@ fun PtClientDetailScreen(
             )
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
@@ -414,8 +419,9 @@ private fun AllievoProfileCard(
 
     Card(
         modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {

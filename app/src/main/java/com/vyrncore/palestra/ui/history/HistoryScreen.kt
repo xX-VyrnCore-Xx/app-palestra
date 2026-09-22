@@ -72,8 +72,9 @@ fun HistoryScreen(onBack: (() -> Unit)? = null, viewModel: HistoryViewModel = hi
                 items(history, key = { it.sessionId }) { item ->
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                        shape = MaterialTheme.shapes.medium,
+                        shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(
