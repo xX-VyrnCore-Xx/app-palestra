@@ -86,6 +86,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.vyrncore.palestra.ui.components.CircularProgressRing
 import com.vyrncore.palestra.ui.components.DifficultyRank
 import com.vyrncore.palestra.ui.components.ExercisePatternAnimation
 import com.vyrncore.palestra.ui.components.InAppVideoDialog
@@ -155,12 +156,12 @@ fun ActiveWorkoutScreen(
                     shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column {
                             Text(
                                 "PROGRESSO ALLENAMENTO",
                                 style = MaterialTheme.typography.labelSmall,
@@ -171,30 +172,27 @@ fun ActiveWorkoutScreen(
                             Text(
                                 "$doneCount / ${uiState.exercises.size} ESERCIZI",
                                 style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 2.dp),
                             )
                         }
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(10.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+                        CircularProgressRing(
+                            progress = overallProgress,
+                            size = 52.dp,
+                            strokeWidth = 6.dp,
+                            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                            progressBrush = Brush.sweepGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.tertiary,
+                                    MaterialTheme.colorScheme.primary,
+                                )
+                            ),
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(overallProgress.coerceIn(0f, 1f))
-                                    .fillMaxHeight()
-                                    .clip(CircleShape)
-                                    .background(
-                                        Brush.horizontalGradient(
-                                            colors = listOf(
-                                                MaterialTheme.colorScheme.primary,
-                                                MaterialTheme.colorScheme.tertiary
-                                            )
-                                        )
-                                    )
+                            Text(
+                                "${(overallProgress * 100).toInt()}%",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
                             )
                         }
                     }
