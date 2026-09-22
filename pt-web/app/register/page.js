@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { User, Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 
 export default function RegisterPage() {
@@ -32,7 +33,11 @@ export default function RegisterPage() {
 
     if (signUpError) {
       setLoading(false);
-      setError(signUpError.message);
+      setError(
+        signUpError.message.includes("already registered") || signUpError.message.includes("already exists")
+          ? "Esiste già un account con questa email."
+          : signUpError.message
+      );
       return;
     }
 
@@ -63,7 +68,7 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-sm animate-fade-in">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-orange to-brand-orangeDeep text-2xl font-bold shadow-lg shadow-brand-orange/30">
             V
@@ -77,38 +82,44 @@ export default function RegisterPage() {
             <label className="label-text" htmlFor="fullName">
               Nome completo
             </label>
-            <input
-              id="fullName"
-              type="text"
-              autoComplete="name"
-              className="input-field"
-              placeholder="Mario Rossi"
-              value={fullName}
-              onChange={(e) => {
-                setFullName(e.target.value);
-                setError(null);
-              }}
-            />
+            <div className="relative">
+              <User size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35" />
+              <input
+                id="fullName"
+                type="text"
+                autoComplete="name"
+                className="input-field pl-10"
+                placeholder="Mario Rossi"
+                value={fullName}
+                onChange={(e) => {
+                  setFullName(e.target.value);
+                  setError(null);
+                }}
+              />
+            </div>
           </div>
 
           <div>
             <label className="label-text" htmlFor="email">
               Email
             </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              autoCapitalize="none"
-              autoCorrect="off"
-              className="input-field"
-              placeholder="tu@esempio.it"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setError(null);
-              }}
-            />
+            <div className="relative">
+              <Mail size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35" />
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                className="input-field pl-10"
+                placeholder="tu@esempio.it"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError(null);
+                }}
+              />
+            </div>
           </div>
 
           <div>
@@ -116,11 +127,12 @@ export default function RegisterPage() {
               Password (min. 8 caratteri)
             </label>
             <div className="relative">
+              <Lock size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35" />
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
-                className="input-field pr-11"
+                className="input-field pl-10 pr-11"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => {
@@ -131,9 +143,10 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-white/50 hover:text-white/80"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80"
+                aria-label={showPassword ? "Nascondi password" : "Mostra password"}
               >
-                {showPassword ? "Nascondi" : "Mostra"}
+                {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>
             </div>
             {password.length > 0 && (
@@ -143,9 +156,7 @@ export default function RegisterPage() {
                     <div
                       key={i}
                       className={`flex-1 rounded-full transition-colors ${
-                        i < passwordStrength.score
-                          ? passwordStrength.color
-                          : "bg-white/10"
+                        i < passwordStrength.score ? passwordStrength.color : "bg-white/10"
                       }`}
                     />
                   ))}
@@ -156,12 +167,13 @@ export default function RegisterPage() {
           </div>
 
           {error && (
-            <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-              {error}
+            <p className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm text-red-300">
+              <AlertCircle size={16} className="mt-0.5 shrink-0" /> {error}
             </p>
           )}
 
           <button type="submit" className="btn-primary" disabled={loading}>
+            {loading && <Loader2 size={16} className="animate-spin" />}
             {loading ? "Creazione account…" : "Registrati"}
           </button>
         </form>
