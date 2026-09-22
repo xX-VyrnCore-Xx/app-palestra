@@ -14,6 +14,10 @@ data class ExerciseMedia(
     /** Demo video URL: a verified official video when one exists, otherwise a curated YouTube
      * search that includes the machine brand, so results show the exact equipment in use. */
     val videoUrl: String,
+    /** True only for a hand-verified official tutorial ([verifiedVideos]); false means [videoUrl]
+     * is a search results page, not a specific video - the UI must label these differently so
+     * "VIDEO TUTORIAL" never overpromises a search link as a checked demo. */
+    val isVerified: Boolean,
     /** Brand of the machine this exercise is best performed on, null for free-weight/bodyweight. */
     val machineBrand: MachineBrand?,
     /** What the machine is called in the brand's catalog, shown on the exercise sheet. */
@@ -115,6 +119,7 @@ fun exerciseMedia(name: String, equipment: String?): ExerciseMedia {
 
     return ExerciseMedia(
         videoUrl = videoUrl,
+        isVerified = verified != null,
         machineBrand = brand,
         machineName = (machineLabel ?: machineNameFor(name))?.let { mn ->
             brand?.takeIf { !mn.contains(it.displayName, ignoreCase = true) }?.let { b -> "${b.displayName} $mn" } ?: mn

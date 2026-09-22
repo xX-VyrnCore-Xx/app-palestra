@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -108,15 +109,18 @@ fun ExerciseDetailSheet(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            Icons.Filled.PlayArrow,
-                            contentDescription = "Guarda il video dimostrativo",
+                            if (media.isVerified) Icons.Filled.PlayArrow else Icons.Filled.Search,
+                            contentDescription = if (media.isVerified) "Guarda il video dimostrativo" else "Cerca il tutorial su YouTube",
                             tint = Color.Black,
-                            modifier = Modifier.size(40.dp),
+                            modifier = Modifier.size(if (media.isVerified) 40.dp else 32.dp),
                         )
                     }
                 }
                 Text(
-                    "VIDEO TUTORIAL",
+                    // Only a hand-checked video earns "VIDEO TUTORIAL" - otherwise this opens a
+                    // YouTube search, not a specific vetted demo, and saying so up front instead
+                    // of after the tap is what "migliora... i link agli esercizi" asked for here.
+                    if (media.isVerified) "VIDEO TUTORIAL" else "CERCA SU YOUTUBE",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 1.5.sp,
