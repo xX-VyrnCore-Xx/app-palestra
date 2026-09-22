@@ -14,5 +14,8 @@ struct ContentView: View {
                 LoginView(onNavigateToRegister: { showRegister = true })
             }
         }
+        .animation(.easeInOut(duration: 0.3), value: auth.userId)
+        .animation(.easeInOut(duration: 0.3), value: showRegister)
+        .preferredColorScheme(.dark)
     }
 }
