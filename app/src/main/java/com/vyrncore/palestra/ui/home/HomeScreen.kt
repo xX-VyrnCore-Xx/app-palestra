@@ -5,6 +5,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -68,6 +69,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -88,6 +90,8 @@ import com.vyrncore.palestra.ui.components.SimpleLineChart
 import com.vyrncore.palestra.ui.components.WeekOverWeekCard
 import com.vyrncore.palestra.ui.theme.Gold40
 import com.vyrncore.palestra.ui.theme.Gold50
+import com.vyrncore.palestra.ui.theme.Lime50
+import com.vyrncore.palestra.ui.theme.Magenta50
 import com.vyrncore.palestra.ui.home.HomeSuggestionAction.Assistant
 import com.vyrncore.palestra.ui.home.HomeSuggestionAction.ChatPt
 import com.vyrncore.palestra.ui.home.HomeSuggestionAction.History
@@ -317,26 +321,52 @@ fun HomeScreen(
             }
 
             Text(
-                "I TUOI PROGRESSI",
+                "AZIONI RAPIDE",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp),
             )
 
-            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                QuickLinkCard(
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                QuickActionTile(
+                    icon = Icons.Filled.Search,
+                    label = "Esercizi",
+                    accent = MaterialTheme.colorScheme.primary,
+                    onClick = onOpenSearch,
+                    modifier = Modifier.weight(1f),
+                )
+                QuickActionTile(
                     icon = Icons.Filled.History,
-                    label = "Cronologia",
+                    label = "Storico",
+                    accent = Lime50,
                     onClick = onOpenHistory,
                     modifier = Modifier.weight(1f),
                 )
-                QuickLinkCard(
+                QuickActionTile(
                     icon = Icons.Filled.CalendarMonth,
                     label = "Calendario",
+                    accent = Magenta50,
                     onClick = onOpenCalendar,
-                    modifier = Modifier.weight(1f).padding(start = 12.dp),
+                    modifier = Modifier.weight(1f),
+                )
+                QuickActionTile(
+                    icon = Icons.Filled.AutoAwesome,
+                    label = "Assistente",
+                    accent = Gold40,
+                    onClick = onOpenAssistant,
+                    modifier = Modifier.weight(1f),
                 )
             }
+
+            Text(
+                "I TUOI PROGRESSI",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp),
+            )
 
             if (weeklyVolume.size >= 2) {
                 val (previous, current) = weeklyVolume.takeLast(2)
@@ -599,35 +629,45 @@ private fun NoMissionCard(
     }
 }
 
-/** A compact entry point into a full-screen destination that used to live in its own "Progressi"
- * tab - folded into Home so the allievo never has to hunt for a separate nav slot for it. */
+/** A square icon-badge action tile for the Home "quick actions" row - entry points into
+ * full-screen destinations (exercise search, history, calendar, AI assistant) that don't have
+ * their own bottom-nav slot, styled like a fitness-app-kit shortcut grid. */
 @Composable
-private fun QuickLinkCard(
+private fun QuickActionTile(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
+    accent: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
         onClick = onClick,
     ) {
-        Row(
-            modifier = Modifier.padding(14.dp).fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(accent.copy(alpha = 0.16f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(22.dp))
+            }
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 label,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(start = 10.dp).weight(1f),
-            )
-            Icon(
-                Icons.Filled.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

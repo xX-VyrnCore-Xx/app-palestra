@@ -171,8 +171,9 @@ private fun PtPlansScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 6.dp)
                             .pressScale(interactionSource),
-                        shape = MaterialTheme.shapes.medium,
+                        shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
                         interactionSource = interactionSource,
                         onClick = { onOpenClient(overview.clientId) },
                     ) {
@@ -362,8 +363,9 @@ private fun PtClientListScreen(
                             .padding(horizontal = 16.dp, vertical = 6.dp)
                             .animateItem()
                             .pressScale(interactionSource),
-                        shape = MaterialTheme.shapes.medium,
+                        shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
                         interactionSource = interactionSource,
                         onClick = { onOpenClient(client.clientId) },
                     ) {
@@ -460,8 +462,9 @@ private fun timeAgo(iso: String?): String {
 private fun PlotoneFeedCard(posts: List<PlotoneFeedPost>, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -501,8 +504,9 @@ private fun WeeklyRankingCard(ranking: List<ClientRanking>, modifier: Modifier =
     val medalColors = listOf(Gold40, Silver40, Bronze40)
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
