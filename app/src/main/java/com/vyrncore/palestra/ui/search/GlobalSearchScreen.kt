@@ -12,11 +12,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -25,10 +27,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -37,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -56,6 +61,7 @@ fun GlobalSearchScreen(
     val results by viewModel.results.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
     var detailExercise by remember { mutableStateOf<com.vyrncore.palestra.data.local.entity.ExerciseEntity?>(null) }
+    var templateDialog by remember { mutableStateOf<SearchResult.Template?>(null) }
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
@@ -92,21 +98,34 @@ fun GlobalSearchScreen(
                 modifier = Modifier.padding(padding).fillMaxSize(),
             )
         } else {
+            val grouped = results.groupBy { it.sectionTitle() }
             LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
-                items(results, key = { it.hashCode() }) { result ->
-                    SearchResultRow(
-                        result = result,
-                        onClick = {
-                            when (result) {
-                                is SearchResult.Plan -> viewModel.startWorkout(result.planId) { sessionId ->
-                                    onStartSession(sessionId, result.planId)
+                grouped.forEach { (section, sectionResults) ->
+                    item(key = "header_$section") {
+                        Text(
+                            section,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                        )
+                    }
+                    items(sectionResults, key = { it.hashCode() }) { result ->
+                        SearchResultRow(
+                            result = result,
+                            onClick = {
+                                when (result) {
+                                    is SearchResult.Plan -> viewModel.startWorkout(result.planId) { sessionId ->
+                                        onStartSession(sessionId, result.planId)
+                                    }
+                                    is SearchResult.Template -> templateDialog = result
+                                    is SearchResult.Client -> onOpenClient(result.clientId)
+                                    is SearchResult.Contact -> onOpenChat(result.peerId)
+                                    is SearchResult.Exercise -> detailExercise = result.entity
                                 }
-                                is SearchResult.Client -> onOpenClient(result.clientId)
-                                is SearchResult.Contact -> onOpenChat(result.peerId)
-                                is SearchResult.Exercise -> detailExercise = result.entity
-                            }
-                        },
-                    )
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -118,6 +137,35 @@ fun GlobalSearchScreen(
             onDismiss = { detailExercise = null },
         )
     }
+
+    templateDialog?.let { template ->
+        var exerciseCount by remember(template.templateId) { mutableIntStateOf(-1) }
+        LaunchedEffect(template.templateId) {
+            exerciseCount = viewModel.templateExerciseCount(template.templateId)
+        }
+        AlertDialog(
+            onDismissRequest = { templateDialog = null },
+            title = { Text(template.name) },
+            text = {
+                Text(
+                    if (exerciseCount < 0) "Caricamento…" else "$exerciseCount esercizi · ${template.subtitle}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { templateDialog = null }) { Text("Chiudi") }
+            },
+        )
+    }
+}
+
+private fun SearchResult.sectionTitle(): String = when (this) {
+    is SearchResult.Plan -> "Schede"
+    is SearchResult.Template -> "Libreria template"
+    is SearchResult.Exercise -> "Esercizi"
+    is SearchResult.Client -> "Clienti"
+    is SearchResult.Contact -> "Contatti"
 }
 
 private data class SearchRowContent(
@@ -131,6 +179,7 @@ private data class SearchRowContent(
 
 private fun SearchResult.toRowContent(): SearchRowContent = when (this) {
     is SearchResult.Plan -> SearchRowContent(Icons.Filled.FitnessCenter, name, subtitle, Icons.Filled.PlayArrow)
+    is SearchResult.Template -> SearchRowContent(Icons.Filled.Description, name, subtitle)
     is SearchResult.Exercise -> SearchRowContent(null, entity.name, entity.muscleGroup, muscleGroup = entity.muscleGroup)
     is SearchResult.Client -> SearchRowContent(Icons.Filled.People, fullName, email)
     is SearchResult.Contact -> SearchRowContent(Icons.Filled.Forum, fullName, "Il tuo Personal Trainer", Icons.Filled.Forum)

@@ -2,6 +2,7 @@ package com.vyrncore.palestra.ui.pt
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -49,6 +50,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -228,6 +230,7 @@ private fun PtClientListScreen(
     val weeklyRanking by viewModel.weeklyRanking.collectAsStateWithLifecycle()
     val feed by viewModel.feed.collectAsStateWithLifecycle()
     val inviteCode by viewModel.inviteCode.collectAsStateWithLifecycle()
+    val filterMode by viewModel.filterMode.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -259,24 +262,32 @@ private fun PtClientListScreen(
                         shape = RoundedCornerShape(24.dp),
                     )
 
+                    val animatedTotal by animateIntAsState(clients.size, label = "clientsTotal")
+                    val animatedActive by animateIntAsState(activeThisWeek, label = "clientsActive")
+                    val animatedInactive by animateIntAsState(inactiveCount, label = "clientsInactive")
                     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                         MetricCard(
                             icon = Icons.Filled.People,
-                            value = "${clients.size}",
+                            value = "$animatedTotal",
                             label = "TOTALI",
                             modifier = Modifier.weight(1f),
+                            onClick = { viewModel.toggleFilterMode(ClientFilterMode.ALL) },
                         )
                         MetricCard(
                             icon = Icons.Filled.Whatshot,
-                            value = "$activeThisWeek",
+                            value = "$animatedActive",
                             label = "ATTIVE 7GG",
                             modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+                            selected = filterMode == ClientFilterMode.ACTIVE_THIS_WEEK,
+                            onClick = { viewModel.toggleFilterMode(ClientFilterMode.ACTIVE_THIS_WEEK) },
                         )
                         MetricCard(
                             icon = Icons.Filled.EventBusy,
-                            value = "$inactiveCount",
+                            value = "$animatedInactive",
                             label = "FERME",
                             modifier = Modifier.weight(1f),
+                            selected = filterMode == ClientFilterMode.INACTIVE,
+                            onClick = { viewModel.toggleFilterMode(ClientFilterMode.INACTIVE) },
                         )
                     }
 
@@ -286,6 +297,23 @@ private fun PtClientListScreen(
 
                     if (feed.isNotEmpty()) {
                         PlotoneFeedCard(posts = feed, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+                    }
+
+                    if (filterMode != ClientFilterMode.ALL) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                        ) {
+                            Text(
+                                if (filterMode == ClientFilterMode.INACTIVE) "Mostro solo i clienti fermi" else "Mostro solo gli attivi negli ultimi 7 giorni",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(onClick = { viewModel.toggleFilterMode(ClientFilterMode.ALL) }) {
+                                Text("Rimuovi filtro")
+                            }
+                        }
                     }
 
                     if (clients.isNotEmpty()) {
