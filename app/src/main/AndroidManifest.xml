@@ -30,6 +30,17 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Password-reset deep link: the "Reimposta password" button in the branded reset
+                 email opens Supabase's verify endpoint, which - after checking the recovery token
+                 server-side - redirects the browser here with the new session in the URL fragment
+                 (see request-password-reset/index.ts and ResetPasswordScreen). -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="vibefitness" android:host="reset-password" />
+            </intent-filter>
         </activity>
 
         <service

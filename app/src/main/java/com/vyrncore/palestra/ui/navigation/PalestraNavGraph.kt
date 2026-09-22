@@ -24,6 +24,7 @@ import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.ui.RootViewModel
 import com.vyrncore.palestra.ui.auth.LoginScreen
 import com.vyrncore.palestra.ui.auth.RegisterScreen
+import com.vyrncore.palestra.ui.auth.ResetPasswordScreen
 import com.vyrncore.palestra.ui.bodymetrics.BodyMetricsScreen
 import com.vyrncore.palestra.ui.calendar.CalendarScreen
 import com.vyrncore.palestra.ui.chat.ChatThreadScreen
@@ -47,6 +48,7 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
     val role by rootViewModel.role.collectAsStateWithLifecycle()
     val needsOnboarding by rootViewModel.needsOnboarding.collectAsStateWithLifecycle()
     val pendingChatPeerId by rootViewModel.pendingChatPeerId.collectAsStateWithLifecycle()
+    val pendingRecoveryAccessToken by rootViewModel.pendingRecoveryAccessToken.collectAsStateWithLifecycle()
 
     val startDestination = if (rootViewModel.startUserId != null) "home" else Routes.LOGIN
 
@@ -59,6 +61,15 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
             navController.navigate(Routes.chatThread(peerId))
         }
         if (role != null) rootViewModel.consumeChatDeepLink()
+    }
+
+    // Fires from any screen (including the login/register flow, since a signed-out user is
+    // exactly who taps a password-reset link) - navigating here doesn't depend on `role` the way
+    // the chat deep link does, so it doesn't need to wait for one.
+    androidx.compose.runtime.LaunchedEffect(pendingRecoveryAccessToken) {
+        val token = pendingRecoveryAccessToken ?: return@LaunchedEffect
+        navController.navigate(Routes.resetPassword(token))
+        rootViewModel.consumePasswordRecovery()
     }
 
     NavHost(
@@ -208,6 +219,19 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
         }
         composable(Routes.LOCATIONS) {
             LocationsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(
+            Routes.RESET_PASSWORD,
+            arguments = listOf(navArgument("accessToken") { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val accessToken = checkNotNull(backStackEntry.arguments?.getString("accessToken"))
+            ResetPasswordScreen(
+                accessToken = accessToken,
+                onPasswordUpdated = { userId ->
+                    rootViewModel.setLoggedInUser(userId)
+                    navController.navigate("home") { popUpTo(0) { inclusive = true } }
+                },
+            )
         }
         composable(Routes.SEARCH) {
             GlobalSearchScreen(

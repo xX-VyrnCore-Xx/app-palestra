@@ -31,13 +31,38 @@ function jsonResponse(body: unknown, status = 200): Response {
 function welcomeHtml(fullName: string, role: "PT" | "ALLIEVO"): string {
   const firstName = fullName.trim().split(" ")[0] || "a bordo";
   const roleLine = role === "PT"
-    ? "Da qui puoi creare le schede per i tuoi allievi e seguirne i progressi in tempo reale."
-    : "Il tuo personal trainer potrà assegnarti schede e seguire i tuoi allenamenti da qui.";
+    ? "Da qui crei le schede per i tuoi allievi e segui i loro progressi in tempo reale."
+    : "Il tuo personal trainer ti assegnerà le schede e seguirà i tuoi allenamenti da qui.";
+  const checklist = role === "PT"
+    ? [
+      "Genera il tuo codice invito dal Profilo e condividilo con i tuoi allievi",
+      "Crea la prima scheda, anche con l'aiuto dell'assistente AI",
+      "Tieni d'occhio chi è attivo e chi si è fermato dalla tua dashboard",
+    ]
+    : [
+      "Collega il tuo PT con il codice invito che ti ha dato",
+      "Registra il tuo primo allenamento non appena ricevi una scheda",
+      "Esplora sedi e corsi ViBE dalle azioni rapide della Home",
+    ];
+  const checklistHtml = checklist
+    .map((item) => `
+      <tr>
+        <td style="padding:6px 0;vertical-align:top;width:20px;color:#f76b15;font-weight:700">&#8226;</td>
+        <td style="padding:6px 0;color:#c8c8d0;font-size:14px;line-height:1.5">${item}</td>
+      </tr>`)
+    .join("");
+
   return `
-    <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0f0f14;color:#f5f5f7;border-radius:16px">
-      <h1 style="font-size:22px;margin:0 0 12px">Benvenuto su Vibe Fitness, ${firstName}!</h1>
-      <p style="font-size:15px;line-height:1.5;color:#c8c8d0">${roleLine}</p>
-      <p style="font-size:13px;line-height:1.5;color:#8a8a95;margin-top:24px">Se non hai creato tu questo account, ignora pure questa email.</p>
+    <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:36px 28px;background:#0f0f14;color:#f5f5f7;border-radius:20px">
+      <p style="font-size:22px;font-weight:800;color:#f76b15;margin:0 0 24px;letter-spacing:-0.5px">ViBE</p>
+      <h1 style="font-size:21px;margin:0 0 12px;font-weight:700">Benvenuto, ${firstName}!</h1>
+      <p style="font-size:15px;line-height:1.6;color:#c8c8d0;margin:0 0 22px">${roleLine}</p>
+      <table role="presentation" style="width:100%;border-collapse:collapse;margin-bottom:8px">
+        ${checklistHtml}
+      </table>
+      <p style="font-size:13px;line-height:1.6;color:#8a8a95;margin-top:28px">
+        Se non hai creato tu questo account, ignora pure questa email: non è stato attivato nulla.
+      </p>
     </div>`;
 }
 

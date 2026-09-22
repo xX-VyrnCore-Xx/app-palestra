@@ -150,6 +150,29 @@ class AuthViewModel @Inject constructor(
     fun resetPasswordResetState() {
         _passwordResetState.value = PasswordResetState.Idle
     }
+
+    private val _setNewPasswordState = MutableStateFlow<SetNewPasswordState>(SetNewPasswordState.Idle)
+    val setNewPasswordState: StateFlow<SetNewPasswordState> = _setNewPasswordState.asStateFlow()
+
+    /** Final step of the password-reset deep link flow (see ResetPasswordScreen): [accessToken]
+     * is the short-lived recovery credential from the link, never a normal session. */
+    fun setNewPassword(accessToken: String, newPassword: String, confirmPassword: String) {
+        val error = when {
+            newPassword.length < 8 -> "La password deve avere almeno 8 caratteri"
+            newPassword != confirmPassword -> "Le due password non coincidono"
+            else -> null
+        }
+        if (error != null) {
+            _setNewPasswordState.value = SetNewPasswordState.Error(error)
+            return
+        }
+        _setNewPasswordState.value = SetNewPasswordState.Saving
+        viewModelScope.launch {
+            runCatching { authRepository.updatePasswordWithRecoveryToken(accessToken, newPassword) }
+                .onSuccess { userId -> _setNewPasswordState.value = SetNewPasswordState.Done(userId) }
+                .onFailure { e -> _setNewPasswordState.value = SetNewPasswordState.Error(friendlyError(e)) }
+        }
+    }
 }
 
 sealed interface PasswordResetState {
@@ -157,4 +180,11 @@ sealed interface PasswordResetState {
     data object Sending : PasswordResetState
     data object Sent : PasswordResetState
     data class Error(val message: String) : PasswordResetState
+}
+
+sealed interface SetNewPasswordState {
+    data object Idle : SetNewPasswordState
+    data object Saving : SetNewPasswordState
+    data class Done(val userId: String) : SetNewPasswordState
+    data class Error(val message: String) : SetNewPasswordState
 }

@@ -19,6 +19,7 @@ object Routes {
     const val CALENDAR = "calendar"
     const val LOCATIONS = "locations"
     const val SEARCH = "search"
+    const val RESET_PASSWORD = "reset_password/{accessToken}"
     const val WORKOUT_SUMMARY = "workout_summary/{sessionId}/{planId}"
 
     fun activeWorkout(sessionId: String, planId: String) = "active_workout/$sessionId/$planId"
@@ -28,4 +29,5 @@ object Routes {
     fun restTimer(seconds: Int) = "rest_timer/$seconds"
     fun chatThread(peerId: String) = "chat_thread/$peerId"
     fun workoutSummary(sessionId: String, planId: String) = "workout_summary/$sessionId/$planId"
+    fun resetPassword(accessToken: String) = "reset_password/$accessToken"
 }

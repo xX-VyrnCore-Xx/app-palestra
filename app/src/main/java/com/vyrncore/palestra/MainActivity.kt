@@ -3,6 +3,7 @@ package com.vyrncore.palestra
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -46,6 +47,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         consumeChatDeepLink(intent)
+        consumePasswordRecoveryDeepLink(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -53,6 +55,7 @@ class MainActivity : ComponentActivity() {
         // The app was already running (warm start) when a chat notification was tapped -
         // onCreate's setContent already ran, so rootViewModel is ready to receive this directly.
         consumeChatDeepLink(intent)
+        consumePasswordRecoveryDeepLink(intent)
     }
 
     /** Tapping a chat-message notification should open straight into that conversation, not just
@@ -60,6 +63,24 @@ class MainActivity : ComponentActivity() {
     private fun consumeChatDeepLink(intent: Intent) {
         intent.getStringExtra(EXTRA_OPEN_CHAT_PEER_ID)?.let { peerId ->
             if (::rootViewModel.isInitialized) rootViewModel.requestOpenChat(peerId)
+        }
+    }
+
+    /** Supabase's verify endpoint redirects here after checking a password-reset link, appending
+     * the recovery session as a URL fragment (`#access_token=...&type=recovery`) rather than a
+     * query string - fragments are never sent to a server, so this is the only place they can be
+     * read. [Uri.getFragment] on the deep-link data URI gives us that raw fragment string. */
+    private fun consumePasswordRecoveryDeepLink(intent: Intent) {
+        val data = intent.data ?: return
+        if (data.scheme != "vibefitness" || data.host != "reset-password") return
+        val fragment = data.fragment ?: data.encodedQuery ?: return
+        val params = fragment.split("&").mapNotNull { pair ->
+            val parts = pair.split("=", limit = 2)
+            if (parts.size == 2) parts[0] to Uri.decode(parts[1]) else null
+        }.toMap()
+        val accessToken = params["access_token"]
+        if (accessToken != null && params["type"] == "recovery" && ::rootViewModel.isInitialized) {
+            rootViewModel.requestPasswordRecovery(accessToken)
         }
     }
 

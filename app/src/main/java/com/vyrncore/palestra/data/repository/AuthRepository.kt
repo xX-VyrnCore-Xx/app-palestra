@@ -1,5 +1,6 @@
 package com.vyrncore.palestra.data.repository
 
+import com.vyrncore.palestra.BuildConfig
 import com.vyrncore.palestra.data.local.SyncStatus
 import com.vyrncore.palestra.data.local.dao.UserProfileDao
 import com.vyrncore.palestra.data.local.entity.UserProfileEntity
@@ -12,12 +13,15 @@ import io.github.jan.supabase.postgrest.from
 import com.vyrncore.palestra.data.remote.dto.UserProfileDto
 import com.vyrncore.palestra.data.remote.toEntity
 import io.github.jan.supabase.storage.Storage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import org.json.JSONObject
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,6 +34,9 @@ data class PtInviteMatch(
 
 @Serializable
 private data class WelcomeEmailRequest(val fullName: String, val role: String)
+
+@Serializable
+private data class PasswordResetRequest(val email: String)
 
 @Singleton
 class AuthRepository @Inject constructor(
@@ -106,10 +113,48 @@ class AuthRepository @Inject constructor(
         }.onSuccess { dto -> userProfileDao.upsert(dto.toEntity()) }
     }
 
-    /** Sends the Supabase Auth password-reset email - "Password dimenticata?" on the Login screen
-     * used to call a default no-op callback that wasn't wired to anything. */
+    /** Sends the password-reset email - "Password dimenticata?" on the Login screen. Routed
+     * through the request-password-reset edge function rather than calling
+     * [io.github.jan.supabase.auth.Auth.resetPasswordForEmail] directly: the function mints the
+     * recovery link itself and delivers it through the branded Resend template (falling back to
+     * Supabase's own plain email only if Resend isn't configured), and never reveals whether
+     * [email] is actually registered. */
     suspend fun sendPasswordResetEmail(email: String) {
-        auth.resetPasswordForEmail(email)
+        functions.invoke("request-password-reset", body = PasswordResetRequest(email = email))
+    }
+
+    /** Sets a new password using the short-lived recovery access token from the
+     * "vibefitness://reset-password" deep link (see MainActivity/RootViewModel/ResetPasswordScreen).
+     * A plain REST call to Supabase Auth's own `PUT /auth/v1/user` endpoint - the exact request the
+     * official SDKs make for updateUser() - rather than importing the token as a supabase-kt
+     * session, since it's never persisted locally until this call actually succeeds.
+     * @return the user's id, so the caller can sign them in for real afterwards.
+     */
+    suspend fun updatePasswordWithRecoveryToken(accessToken: String, newPassword: String): String = withContext(Dispatchers.IO) {
+        if (newPassword.length < 8) throw IllegalArgumentException("La password deve essere di almeno 8 caratteri.")
+        val connection = (java.net.URL("${BuildConfig.SUPABASE_URL}/auth/v1/user").openConnection() as java.net.HttpURLConnection).apply {
+            requestMethod = "PUT"
+            doOutput = true
+            connectTimeout = 15_000
+            readTimeout = 15_000
+            setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("apikey", BuildConfig.SUPABASE_ANON_KEY)
+            setRequestProperty("Authorization", "Bearer $accessToken")
+        }
+        try {
+            connection.outputStream.use {
+                it.write("{\"password\":${JSONObject.quote(newPassword)}}".toByteArray(Charsets.UTF_8))
+            }
+            val responseCode = connection.responseCode
+            val stream = if (responseCode in 200..299) connection.inputStream else connection.errorStream
+            val responseBody = stream.bufferedReader().use { it.readText() }
+            if (responseCode !in 200..299) {
+                throw IllegalStateException("Il link non è più valido: richiedine uno nuovo dalla schermata di accesso.")
+            }
+            JSONObject(responseBody).getString("id")
+        } finally {
+            connection.disconnect()
+        }
     }
 
     /** Clears this device's push token(s) from the outgoing user before signing out - without this,

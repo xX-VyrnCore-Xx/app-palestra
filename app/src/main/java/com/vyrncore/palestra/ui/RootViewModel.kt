@@ -105,4 +105,22 @@ class RootViewModel @Inject constructor(
     fun consumeChatDeepLink() {
         _pendingChatPeerId.value = null
     }
+
+    private val _pendingRecoveryAccessToken = MutableStateFlow<String?>(null)
+
+    /** Set when the "vibefitness://reset-password" deep link is opened (from the branded reset
+     * email) - the nav graph navigates to [com.vyrncore.palestra.ui.navigation.Routes.RESET_PASSWORD]
+     * once this is non-null, then clears it via [consumePasswordRecovery]. Deliberately does NOT
+     * go through [setLoggedInUser]: this access token is a short-lived recovery credential, not a
+     * normal session, so the rest of the app (chat listeners, FCM registration, sync) stays off
+     * until ResetPasswordScreen actually finishes and signs the user in for real. */
+    val pendingRecoveryAccessToken: StateFlow<String?> = _pendingRecoveryAccessToken.asStateFlow()
+
+    fun requestPasswordRecovery(accessToken: String) {
+        _pendingRecoveryAccessToken.value = accessToken
+    }
+
+    fun consumePasswordRecovery() {
+        _pendingRecoveryAccessToken.value = null
+    }
 }
