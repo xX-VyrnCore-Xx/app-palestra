@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vyrncore.palestra.ui.components.BackendConfigBanner
@@ -128,6 +129,11 @@ fun LoginScreen(
                             leadingIcon = Icons.Filled.Email,
                             isError = uiState.emailError != null,
                             errorMessage = uiState.emailError,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Email,
+                                imeAction = ImeAction.Next,
+                                autoCorrect = false,
+                            ),
                             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                         )
                         AuthTextField(

@@ -152,6 +152,11 @@ fun RegisterScreen(
                             leadingIcon = Icons.Filled.Email,
                             isError = uiState.emailError != null,
                             errorMessage = uiState.emailError,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Email,
+                                imeAction = ImeAction.Next,
+                                autoCorrect = false,
+                            ),
                             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                         )
                         AuthTextField(

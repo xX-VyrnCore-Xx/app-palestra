@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+body {
+  background:
+    radial-gradient(circle at 15% -10%, rgba(255, 122, 26, 0.18), transparent 45%),
+    radial-gradient(circle at 85% 0%, rgba(124, 58, 237, 0.16), transparent 40%),
+    #0f0b17;
+}
+
+@layer components {
+  .glass-card {
+    @apply rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-2xl shadow-black/40;
+  }
+
+  .input-field {
+    @apply w-full rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder-white/40 outline-none transition focus:border-brand-orange/70 focus:bg-white/[0.09] focus:ring-2 focus:ring-brand-orange/30;
+  }
+
+  .btn-primary {
+    @apply inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-orange to-brand-orangeDeep px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-orange/20 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/10 active:scale-[0.98];
+  }
+
+  .label-text {
+    @apply mb-1.5 block text-xs font-medium uppercase tracking-wide text-white/50;
+  }
+}

@@ -40,7 +40,6 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> local.properties
           echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> local.properties
-          echo "PT_WEB_APP_URL=${{ secrets.PT_WEB_APP_URL }}" >> local.properties
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew

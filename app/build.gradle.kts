@@ -51,13 +51,6 @@ android {
             "SUPABASE_ANON_KEY",
             "\"${localProperties.getProperty("SUPABASE_ANON_KEY", "")}\""
         )
-        // URL of the PT web management app (Vercel). PTs no longer use this Android app: when
-        // one signs in they get a screen pointing here instead. Blank = the button is hidden.
-        buildConfigField(
-            "String",
-            "PT_WEB_APP_URL",
-            "\"${localProperties.getProperty("PT_WEB_APP_URL", "")}\""
-        )
     }
 
     // Release signing: reads from env vars (CI) or local.properties (local release builds).
