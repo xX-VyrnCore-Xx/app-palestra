@@ -241,8 +241,9 @@ fun ProfileScreen(
                     modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
                 )
                 Card(
-                    shape = MaterialTheme.shapes.medium,
+                    shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -287,8 +288,9 @@ fun ProfileScreen(
                     modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
                 )
                 Card(
-                    shape = MaterialTheme.shapes.medium,
+                    shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         var codeDraft by remember { mutableStateOf("") }
@@ -362,8 +364,9 @@ fun ProfileScreen(
                 modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
             )
             Card(
-                shape = MaterialTheme.shapes.medium,
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     SwitchRow("Messaggi chat", chatNotificationsEnabled, viewModel::setChatNotificationsEnabled)
@@ -379,8 +382,9 @@ fun ProfileScreen(
                     modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
                 )
                 Card(
-                    shape = MaterialTheme.shapes.medium,
+                    shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         SwitchRow("Promemoria attivo", remindersEnabled, viewModel::setRemindersEnabled)

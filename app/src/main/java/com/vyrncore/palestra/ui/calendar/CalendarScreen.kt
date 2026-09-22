@@ -19,8 +19,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -92,6 +94,7 @@ fun CalendarScreen(
                 shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
@@ -232,35 +235,58 @@ fun CalendarScreen(
                     daySessions.forEach { session ->
                         val timeFormat = remember { java.text.SimpleDateFormat("HH:mm", Locale.ITALY) }
                         val durationMinutes = session.endedAtEpochMs?.let { (it - session.startedAtEpochMs) / 60_000 }
+                        val isDone = session.endedAtEpochMs != null
                         Card(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            shape = MaterialTheme.shapes.medium,
+                            shape = MaterialTheme.shapes.large,
                             colors = CardDefaults.cardColors(
-                                containerColor = if (session.endedAtEpochMs != null) {
+                                containerColor = if (isDone) {
                                     MaterialTheme.colorScheme.tertiaryContainer
                                 } else {
                                     MaterialTheme.colorScheme.surface
                                 },
                             ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
+                            ),
                             onClick = { session.planId?.let { onOpenSession(session.id, it) } },
                         ) {
                             Row(
-                                modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.padding(14.dp).fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text(
-                                    if (session.endedAtEpochMs != null) "Allenamento completato" else "Allenamento in corso",
-                                    style = MaterialTheme.typography.titleSmall,
-                                )
-                                Text(
-                                    listOfNotNull(
-                                        timeFormat.format(Date(session.startedAtEpochMs)),
-                                        durationMinutes?.let { "$it min" },
-                                    ).joinToString(" · "),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (isDone) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.22f)
+                                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                                        ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        if (isDone) Icons.Filled.CheckCircle else Icons.Filled.Schedule,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                        tint = if (isDone) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                                Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+                                    Text(
+                                        if (isDone) "Allenamento completato" else "Allenamento in corso",
+                                        style = MaterialTheme.typography.titleSmall,
+                                    )
+                                    Text(
+                                        listOfNotNull(
+                                            timeFormat.format(Date(session.startedAtEpochMs)),
+                                            durationMinutes?.let { "$it min" },
+                                        ).joinToString(" · "),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
                     }

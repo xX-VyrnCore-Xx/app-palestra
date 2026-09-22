@@ -83,7 +83,7 @@ fun ChatListScreen(
                             .padding(horizontal = 16.dp, vertical = 6.dp)
                             .animateItem(placementSpec = tween(220))
                             .pressScale(interactionSource),
-                        shape = MaterialTheme.shapes.medium,
+                        shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.cardColors(
                             containerColor = if (conversation.unreadCount > 0) {
                                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
@@ -92,6 +92,10 @@ fun ChatListScreen(
                             },
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = if (conversation.unreadCount > 0) 3.dp else 1.dp),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
+                        ),
                         interactionSource = interactionSource,
                         onClick = { onOpenChat(conversation.peerId) },
                     ) {
