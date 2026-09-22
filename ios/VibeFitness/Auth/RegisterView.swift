@@ -25,12 +25,8 @@ struct RegisterView: View {
                         .opacity(appeared ? 1 : 0)
                         .animation(.easeOut(duration: 0.5), value: appeared)
 
-                    Picker("Sei un...", selection: $role) {
-                        Text("Allievo").tag("ALLIEVO")
-                        Text("Personal Trainer").tag("PT")
-                    }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal, 24)
+                    RoleToggle(role: $role)
+                        .padding(.horizontal, 24)
 
                     GlassCard {
                         VStack(spacing: 14) {
