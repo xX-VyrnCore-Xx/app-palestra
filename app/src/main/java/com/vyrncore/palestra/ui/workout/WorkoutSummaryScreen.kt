@@ -82,7 +82,7 @@ fun WorkoutSummaryScreen(
                 modifier = Modifier.size(56.dp).padding(top = 16.dp),
             )
             Text(
-                "Missione completata!",
+                "Allenamento completato!",
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(top = 12.dp, bottom = 24.dp),
             )

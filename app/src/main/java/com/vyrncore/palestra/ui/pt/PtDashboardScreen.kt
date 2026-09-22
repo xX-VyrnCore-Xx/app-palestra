@@ -13,6 +13,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -86,7 +87,7 @@ private data class PtTab(val label: String, val icon: ImageVector)
 private const val CHAT_TAB_INDEX = 2
 
 private val tabs = listOf(
-    PtTab("Plotone", Icons.Filled.People),
+    PtTab("Home", Icons.Filled.People),
     PtTab("Schede", Icons.Filled.FitnessCenter),
     PtTab("Chat", Icons.Filled.Forum),
     PtTab("Assistente", Icons.Filled.AutoAwesome),
@@ -149,7 +150,10 @@ private fun PtPlansScreen(
 ) {
     val overviews by viewModel.clientPlanOverviews.collectAsStateWithLifecycle()
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Schede") }) }) { padding ->
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Schede") }) },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+    ) { padding ->
         if (overviews.isEmpty()) {
             EmptyState(
                 icon = Icons.Filled.FitnessCenter,
@@ -228,7 +232,7 @@ private fun PtClientListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Il tuo plotone") },
+                title = { Text("I tuoi clienti") },
                 actions = {
                     IconButton(onClick = onOpenSearch) {
                         Icon(Icons.Filled.Search, contentDescription = "Cerca")
@@ -236,6 +240,7 @@ private fun PtClientListScreen(
                 },
             )
         },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { padding ->
       PullToRefreshBox(
         isRefreshing = isSyncing,
@@ -434,7 +439,7 @@ private fun PlotoneFeedCard(posts: List<PlotoneFeedPost>, modifier: Modifier = M
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.DynamicFeed, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Text(
-                    "Bacheca del plotone",
+                    "Bacheca del team",
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(start = 8.dp),
                 )
@@ -479,7 +484,7 @@ private fun WeeklyRankingCard(ranking: List<ClientRanking>, modifier: Modifier =
                     tint = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
                 Text(
-                    "Classifica del plotone",
+                    "Classifica del team",
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
                     modifier = Modifier.padding(start = 8.dp),

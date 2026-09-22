@@ -6,6 +6,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -62,7 +63,10 @@ fun ChatListScreen(
 ) {
     val conversations by viewModel.conversations.collectAsStateWithLifecycle()
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Messaggi") }) }) { padding ->
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Messaggi") }) },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+    ) { padding ->
         if (conversations.isEmpty()) {
             EmptyState(
                 icon = Icons.Filled.Forum,

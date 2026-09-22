@@ -103,7 +103,7 @@ fun WelcomeScreen(
             .imePadding(),
     ) {
         GradientHeader(
-            title = "Benvenuto reclut@!",
+            title = "Benvenuto!",
             subtitle = "Qualche domanda veloce per costruirti un percorso su misura",
         )
 
@@ -480,7 +480,7 @@ private fun WizardNavigation(
             Spacer(Modifier.weight(1f))
         }
         GradientButton(
-            text = if (step == lastStep) "Arruolati" else "Avanti",
+            text = if (step == lastStep) "Inizia" else "Avanti",
             onClick = if (step == lastStep) onFinish else onNext,
             enabled = !isSaving,
             isLoading = isSaving,

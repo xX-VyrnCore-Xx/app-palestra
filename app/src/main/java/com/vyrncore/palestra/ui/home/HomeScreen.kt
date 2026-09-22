@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -119,7 +120,11 @@ fun HomeScreen(
         else -> "Buonasera"
     }
 
-    Scaffold { padding ->
+    // The parent dashboard's own Scaffold (bottomBar) already applies the safe-area insets to
+    // every tab's content; without this override, this nested Scaffold re-applied them again,
+    // stacking a second status-bar-height gap on top of the first - most visible here since Home
+    // has no topBar to visually absorb the extra space.
+    Scaffold(contentWindowInsets = WindowInsets(0, 0, 0, 0)) { padding ->
       PullToRefreshBox(
         isRefreshing = isSyncing,
         onRefresh = { viewModel.refresh() },
@@ -144,9 +149,9 @@ fun HomeScreen(
                 GradientHeader(
                     title = "$greeting${if (uiState.fullName.isNotBlank()) ", ${uiState.fullName.substringBefore(' ')}" else ""}",
                     subtitle = if (uiState.streakDays > 0) {
-                        "🎖️ ${uiState.streakDays} giorni di servizio consecutivi, avanti così!"
+                        "🔥 ${uiState.streakDays} giorni di fila, continua così!"
                     } else {
-                        "Pronto per la prossima missione?"
+                        "Pronto per il prossimo allenamento?"
                     },
                 )
                 IconButton(
@@ -169,7 +174,7 @@ fun HomeScreen(
                 MetricCard(
                     icon = Icons.Filled.LocalFireDepartment,
                     value = "${uiState.streakDays}",
-                    label = "GIORNI DI SERVIZIO",
+                    label = "GIORNI DI FILA",
                     modifier = Modifier.weight(1f),
                 )
                 WeeklyGoalCard(
@@ -228,7 +233,7 @@ fun HomeScreen(
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
-                            "PROSSIMA MISSIONE",
+                            "PROSSIMO ALLENAMENTO",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -256,7 +261,7 @@ fun HomeScreen(
                             modifier = Modifier.fillMaxWidth().height(52.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         ) {
-                            Text("PARTI IN MISSIONE", style = MaterialTheme.typography.labelLarge, color = Color.White)
+                            Text("INIZIA ALLENAMENTO", style = MaterialTheme.typography.labelLarge, color = Color.White)
                         }
                     }
                 }
@@ -497,7 +502,7 @@ private fun HomeSuggestionAction.icon() = when (this) {
     ChatPt -> Icons.Filled.Chat
 }
 
-/** Dead-end replacement for the old "nessuna missione" label: explains what's missing and offers
+/** Dead-end replacement for the old generic empty-state label: explains what's missing and offers
  * two tappable ways out — asking the PT for a plan, or letting the assistant suggest one. */
 @Composable
 private fun NoMissionCard(
@@ -520,7 +525,7 @@ private fun NoMissionCard(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                "Nessuna missione assegnata ancora",
+                "Nessun allenamento assegnato ancora",
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.padding(top = 8.dp),
             )
@@ -669,7 +674,7 @@ private fun MedalSummaryCard(
                 )
             } else {
                 Text(
-                    "Massimo Grado",
+                    "Livello massimo",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 4.dp),
@@ -718,7 +723,7 @@ private fun RankCard(level: Int, rankTitle: String, stars: Int, xpIntoLevel: Int
                             letterSpacing = 2.sp
                         )
                         Text(
-                            "Grado $level",
+                            "Livello $level",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -758,7 +763,7 @@ private fun RankCard(level: Int, rankTitle: String, stars: Int, xpIntoLevel: Int
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        "XP MISSIONE",
+                        "XP LIVELLO",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -973,7 +978,7 @@ private fun PlotoneFeedCard(posts: List<PlotoneFeedPost>, modifier: Modifier = M
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.DynamicFeed, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Text(
-                    "Bacheca del plotone",
+                    "Bacheca del team",
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(start = 8.dp),
                 )
@@ -1022,7 +1027,7 @@ private fun WeeklyRankingCard(ranking: List<WeeklyRankingEntry>, myName: String,
                     tint = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
                 Text(
-                    "Classifica del plotone",
+                    "Classifica del team",
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
                     modifier = Modifier.padding(start = 8.dp),
