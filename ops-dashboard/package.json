@@ -1,9 +1,0 @@
-{
-  "name": "vibe-ops-dashboard",
-  "private": true,
-  "version": "1.0.0",
-  "description": "Read-only infrastructure monitoring dashboard for the Vibe Fitness Supabase project - DB/storage usage, automated cleanup status, activity counts. No user PII.",
-  "engines": {
-    "node": ">=20"
-  }
-}
