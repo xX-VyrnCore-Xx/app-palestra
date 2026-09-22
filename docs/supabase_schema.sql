@@ -273,6 +273,16 @@ create policy "plan_exercises_write" on public.plan_exercises
     for insert with check (
         exists (select 1 from public.workout_plans p where p.id = plan_id and p.created_by_pt_id = auth.uid())
     );
+-- Update rights cover both the owning PT (editing a scheda) and the assigned allievo (the
+-- proactive small progression nudge on target_reps/target_weight_kg after a clean session) -
+-- without this, that client-side auto-bump would fail to sync back to Supabase.
+create policy "plan_exercises_update" on public.plan_exercises
+    for update using (
+        exists (
+            select 1 from public.workout_plans p
+            where p.id = plan_id and (p.created_by_pt_id = auth.uid() or p.assigned_to_user_id = auth.uid())
+        )
+    );
 
 -- workout_sessions: owned by the training user; their PT can read (via join on profiles.pt_id).
 create policy "sessions_select" on public.workout_sessions

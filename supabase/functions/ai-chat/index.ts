@@ -26,7 +26,7 @@ const TOOLS = [
       name: "get_my_stats",
       description:
         "Restituisce statistiche reali e aggiornate sull'utente che sta chattando (allievo o PT): " +
-        "allenamenti recenti, aderenza, o stato del plotone. Usalo se hai bisogno di dati più " +
+        "allenamenti recenti, aderenza, o stato dei clienti. Usalo se hai bisogno di dati più " +
         "aggiornati di quelli già forniti all'inizio della conversazione.",
       parameters: { type: "object", properties: {}, required: [] },
     },
@@ -78,7 +78,7 @@ function jsonResponse(body: unknown, status = 200): Response {
  * runs through userClient (RLS-scoped to this user), so it can never leak another user's rows. */
 // deno-lint-ignore no-explicit-any
 async function buildAllievoContext(userClient: any, userId: string): Promise<string | null> {
-  const [{ data: sessions }, { data: plans }, { data: metrics }] = await Promise.all([
+  const [{ data: sessions }, { data: plans }, { data: metrics }, { data: profile }] = await Promise.all([
     userClient
       .from("workout_sessions")
       .select("started_at, ended_at")
@@ -97,6 +97,7 @@ async function buildAllievoContext(userClient: any, userId: string): Promise<str
       .eq("user_id", userId)
       .order("date", { ascending: false })
       .limit(1),
+    userClient.from("profiles").select("injuries").eq("id", userId).single(),
   ]);
 
   const completed = (sessions ?? []).filter((s: { ended_at: string | null }) => s.ended_at);
@@ -119,6 +120,7 @@ async function buildAllievoContext(userClient: any, userId: string): Promise<str
         ? "- Ultimo allenamento: oggi"
         : `- Ultimo allenamento: ${daysSinceLastSession} giorni fa`,
     latestWeight ? `- Ultimo peso corporeo registrato: ${latestWeight} kg` : null,
+    profile?.injuries ? `- Infortuni/limitazioni riportate: ${profile.injuries} (tienine sempre conto nei consigli)` : null,
   ].filter((line): line is string => line !== null);
 
   return lines.join("\n");
@@ -131,10 +133,10 @@ async function buildAllievoContext(userClient: any, userId: string): Promise<str
 async function buildPtContext(userClient: any, ptId: string): Promise<string | null> {
   const { data: clients } = await userClient
     .from("profiles")
-    .select("id, full_name")
+    .select("id, full_name, injuries")
     .eq("pt_id", ptId);
   if (!clients || clients.length === 0) {
-    return "Contesto PT: nessuna recluta arruolata ancora.";
+    return "Contesto PT: nessun cliente ancora.";
   }
 
   const clientIds = clients.map((c: { id: string }) => c.id);
@@ -154,7 +156,7 @@ async function buildPtContext(userClient: any, ptId: string): Promise<string | n
   const weekAgo = Date.now() - 7 * 24 * 3600_000;
   const inactive: string[] = [];
   let activeThisWeek = 0;
-  for (const client of clients as { id: string; full_name: string }[]) {
+  for (const client of clients as { id: string; full_name: string; injuries: string | null }[]) {
     const lastActive = lastActiveByClient.get(client.id);
     if (lastActive && lastActive > weekAgo) {
       activeThisWeek++;
@@ -163,14 +165,21 @@ async function buildPtContext(userClient: any, ptId: string): Promise<string | n
     }
   }
 
+  const withInjuries = (clients as { full_name: string; injuries: string | null }[])
+    .filter((c) => c.injuries)
+    .map((c) => `${c.full_name} (${c.injuries})`);
+
   const lines = [
-    "Contesto PT (dati reali e aggiornati sul tuo plotone, usali per rispondere senza dover chiedere di nuovo):",
-    `- Reclute totali: ${clients.length}`,
-    `- Attive negli ultimi 7 giorni: ${activeThisWeek}`,
+    "Contesto PT (dati reali e aggiornati sui tuoi clienti, usali per rispondere senza dover chiedere di nuovo):",
+    `- Clienti totali: ${clients.length}`,
+    `- Attivi negli ultimi 7 giorni: ${activeThisWeek}`,
     inactive.length > 0
-      ? `- Ferme da più di 7 giorni (o mai attive): ${inactive.join(", ")}`
-      : "- Tutte le reclute si sono allenate negli ultimi 7 giorni",
-  ];
+      ? `- Fermi da più di 7 giorni (o mai attivi): ${inactive.join(", ")}`
+      : "- Tutti i clienti si sono allenati negli ultimi 7 giorni",
+    withInjuries.length > 0
+      ? `- Infortuni/limitazioni note: ${withInjuries.join("; ")} - tienine sempre conto se si parla di loro`
+      : null,
+  ].filter((line): line is string => line !== null);
   return lines.join("\n");
 }
 

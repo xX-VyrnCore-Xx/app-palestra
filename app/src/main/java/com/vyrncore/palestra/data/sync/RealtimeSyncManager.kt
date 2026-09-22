@@ -16,6 +16,9 @@ import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -26,6 +29,12 @@ import javax.inject.Singleton
  * on the allievo's device immediately, instead of waiting for [SyncManager]'s periodic pull.
  * RLS already scopes which rows Realtime delivers to each connected user, so no extra
  * server-side filtering is needed here beyond what postgres_changes already enforces.
+ *
+ * The underlying websocket does not always resume its subscriptions on its own after the phone's
+ * network drops and comes back (screen off overnight, a tunnel, switching wifi/data) - without
+ * [observeConnectivity], the app would silently stop receiving live updates until the next app
+ * restart even though [ConnectivityObserver] reports it's back online, so a PT's edit would sit
+ * unseen until [SyncManager]'s next periodic pull instead of arriving immediately as intended.
  */
 @Singleton
 class RealtimeSyncManager @Inject constructor(
@@ -33,10 +42,34 @@ class RealtimeSyncManager @Inject constructor(
     private val workoutPlanDao: WorkoutPlanDao,
     private val planExerciseDao: PlanExerciseDao,
     private val bodyMetricDao: BodyMetricDao,
+    private val connectivityObserver: ConnectivityObserver,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var channel: RealtimeChannel? = null
     private var listeningUserId: String? = null
+
+    init {
+        observeConnectivity()
+    }
+
+    /** Whenever connectivity comes back and the realtime client isn't actually connected, force a
+     * fresh connect + resubscribe of the current channel instead of waiting for it to notice on
+     * its own. [drop]\(1\) skips the observer's initial replayed value so this only reacts to real
+     * transitions, not the state at startup (already handled by [startListening]). */
+    private fun observeConnectivity() {
+        scope.launch {
+            connectivityObserver.isOnline
+                .distinctUntilChanged()
+                .drop(1)
+                .filter { online -> online }
+                .collect {
+                    if (realtime.status.value != Realtime.Status.CONNECTED) {
+                        runCatching { realtime.connect() }
+                    }
+                    runCatching { channel?.subscribe() }
+                }
+        }
+    }
 
     fun startListening(userId: String) {
         if (listeningUserId == userId) return

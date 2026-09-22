@@ -247,6 +247,37 @@ class WorkoutRepository @Inject constructor(
                 syncStatus = SyncStatus.PENDING_UPDATE,
             )
         )
+        session.planId?.let { applyAutoProgression(it, session.id) }
+    }
+
+    /** Small, automatic progressive-overload nudge - the PT owns swapping/restructuring a scheda,
+     * but bumping the load or reps a notch once an exercise stops being a real challenge shouldn't
+     * need a PT to notice and go edit it by hand. Fires once per exercise per completed session:
+     * only when every logged set for it met or beat both the prescribed reps and weight (a "clean"
+     * session), the next session's target nudges up by one small, safe increment - never a full
+     * plan change, and always something the PT can see (and override) synced onto the same row. */
+    private suspend fun applyAutoProgression(planId: String, sessionId: String) {
+        val planExercises = planExerciseDao.observeForPlan(planId).first()
+        if (planExercises.isEmpty()) return
+        val loggedSets = setEntryDao.observeForSession(sessionId).first()
+        if (loggedSets.isEmpty()) return
+        val setsByExercise = loggedSets.groupBy { it.exerciseId }
+
+        for (planExercise in planExercises) {
+            val sets = setsByExercise[planExercise.exerciseId] ?: continue
+            if (sets.size < planExercise.targetSets) continue
+            val metReps = sets.all { it.reps >= planExercise.targetReps }
+            val targetWeight = planExercise.targetWeightKg
+            val metWeight = targetWeight == null || sets.all { it.weightKg >= targetWeight }
+            if (!metReps || !metWeight) continue
+
+            val progressed = if (targetWeight != null) {
+                planExercise.copy(targetWeightKg = targetWeight + 2.5, syncStatus = SyncStatus.PENDING_UPDATE)
+            } else {
+                planExercise.copy(targetReps = planExercise.targetReps + 1, syncStatus = SyncStatus.PENDING_UPDATE)
+            }
+            planExerciseDao.upsert(progressed)
+        }
     }
 
     /** Best estimated 1RM for [exerciseId] across every session of this user EXCEPT [sessionId]
