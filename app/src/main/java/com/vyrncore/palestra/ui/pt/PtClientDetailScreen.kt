@@ -18,9 +18,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.HealthAndSafety
-import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -40,9 +42,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vyrncore.palestra.data.local.entity.WorkoutPlanEntity
 import com.vyrncore.palestra.ui.components.GradientHeader
 import com.vyrncore.palestra.ui.components.MetricCard
 import com.vyrncore.palestra.ui.components.SimpleLineChart
@@ -76,6 +80,7 @@ fun PtClientDetailScreen(
 
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
+    var inspectedPlan by remember { mutableStateOf<WorkoutPlanEntity?>(null) }
 
     Scaffold(
         topBar = {
@@ -247,8 +252,23 @@ fun PtClientDetailScreen(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
                         shape = MaterialTheme.shapes.medium,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        onClick = { inspectedPlan = plan },
                     ) {
-                        Text(plan.name, modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleSmall)
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                plan.name,
+                                style = MaterialTheme.typography.titleSmall,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Icon(
+                                Icons.Filled.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
@@ -323,6 +343,64 @@ fun PtClientDetailScreen(
           }
         }
     }
+
+    inspectedPlan?.let { plan ->
+        PlanExercisesDialog(
+            plan = plan,
+            viewModel = viewModel,
+            onDismiss = { inspectedPlan = null },
+        )
+    }
+}
+
+/** Read-only rundown of a plan's exercises, so a PT can check what they already assigned without
+ * leaving this screen for the Plan Editor. */
+@Composable
+private fun PlanExercisesDialog(
+    plan: WorkoutPlanEntity,
+    viewModel: PtClientDetailViewModel,
+    onDismiss: () -> Unit,
+) {
+    val exercises by viewModel.observePlanExercises(plan.id).collectAsStateWithLifecycle(initialValue = emptyList())
+    val catalog by viewModel.exerciseCatalog.collectAsStateWithLifecycle()
+    val namesById = remember(catalog) { catalog.associateBy({ it.id }, { it.name }) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(plan.name) },
+        text = {
+            if (exercises.isEmpty()) {
+                Text(
+                    "Nessun esercizio in questa scheda.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                Column {
+                    exercises.sortedBy { it.orderIndex }.forEach { exercise ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                namesById[exercise.exerciseId] ?: "Esercizio",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Text(
+                                "${exercise.targetSets}×${exercise.targetReps}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Chiudi") }
+        },
+    )
 }
 
 /** What the allievo told us in the Welcome questionnaire - shown to the PT to build a plan that
@@ -341,7 +419,7 @@ private fun AllievoProfileCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Icon(Icons.Filled.MilitaryTech, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Filled.Badge, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Text(
                     "Profilo cliente",
                     style = MaterialTheme.typography.titleSmall,
