@@ -39,8 +39,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             rootViewModel = hiltViewModel()
             val themeMode by rootViewModel.themeMode.collectAsStateWithLifecycle()
-            val role by rootViewModel.role.collectAsStateWithLifecycle()
-            PalestraTheme(themeMode = themeMode, role = role) {
+            PalestraTheme(themeMode = themeMode) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     PalestraNavGraph(rootViewModel = rootViewModel)
                 }

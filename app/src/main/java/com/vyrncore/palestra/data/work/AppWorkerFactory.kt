@@ -5,7 +5,6 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.vyrncore.palestra.data.notification.NotificationHelper
-import com.vyrncore.palestra.data.notification.PtNoteReminderWorker
 import com.vyrncore.palestra.data.notification.ReminderWorker
 import com.vyrncore.palestra.data.notification.RestTimerWorker
 import com.vyrncore.palestra.data.notification.WeeklyDigestWorker
@@ -54,11 +53,6 @@ class AppWorkerFactory @Inject constructor() : WorkerFactory() {
                 appContext,
                 workerParameters,
                 entryPoint.syncManager(),
-            )
-            PtNoteReminderWorker::class.java.name -> PtNoteReminderWorker(
-                appContext,
-                workerParameters,
-                entryPoint.notificationHelper(),
             )
             WeeklyDigestWorker::class.java.name -> WeeklyDigestWorker(
                 appContext,

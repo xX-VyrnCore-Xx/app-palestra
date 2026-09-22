@@ -11,7 +11,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /** Schedules the daily [ReminderWorker] check for an inactive Allievo, the weekly activity
- * digest, and one-off [PtNoteReminderWorker] reminders a PT sets on a client's note. */
+ * digest and the rest-timer notification. */
 @Singleton
 class ReminderScheduler @Inject constructor(
     private val workManager: WorkManager,
@@ -24,25 +24,6 @@ class ReminderScheduler @Inject constructor(
     fun scheduleWeeklyDigest() {
         val request = PeriodicWorkRequestBuilder<WeeklyDigestWorker>(7, TimeUnit.DAYS).build()
         workManager.enqueueUniquePeriodicWork(DIGEST_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
-    }
-
-    /** Replaces any pending reminder for this client's note - saving a new reminder date always
-     * supersedes the old one instead of stacking notifications. */
-    fun schedulePtNoteReminder(clientId: String, clientName: String, message: String, delayMs: Long) {
-        val request = OneTimeWorkRequestBuilder<PtNoteReminderWorker>()
-            .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
-            .setInputData(
-                Data.Builder()
-                    .putString(PtNoteReminderWorker.KEY_CLIENT_NAME, clientName)
-                    .putString(PtNoteReminderWorker.KEY_MESSAGE, message)
-                    .build(),
-            )
-            .build()
-        workManager.enqueueUniqueWork("pt_note_reminder_$clientId", ExistingWorkPolicy.REPLACE, request)
-    }
-
-    fun cancelPtNoteReminder(clientId: String) {
-        workManager.cancelUniqueWork("pt_note_reminder_$clientId")
     }
 
     /** (Re)schedules the "recupero terminato" notification for [remainingSeconds] from now,

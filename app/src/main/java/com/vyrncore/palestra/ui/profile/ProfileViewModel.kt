@@ -43,7 +43,7 @@ class ProfileViewModel @Inject constructor(
     private val _membership = MutableStateFlow<MembershipInfo?>(null)
     val membership: StateFlow<MembershipInfo?> = _membership.asStateFlow()
 
-    /** Called once the screen knows the user's role - PT has no membership of their own to show. */
+    /** Called once the profile has loaded. */
     fun loadMembership() {
         viewModelScope.launch { _membership.value = runCatching { membershipRepository.getCurrentMembership(userId) }.getOrNull() }
     }
@@ -160,15 +160,6 @@ class ProfileViewModel @Inject constructor(
         com.google.firebase.messaging.FirebaseMessaging.getInstance().token
             .addOnSuccessListener { cont.resume(it, null) }
             .addOnFailureListener { cont.cancel(it) }
-    }
-
-    private val _inviteCode = MutableStateFlow<String?>(null)
-
-    /** A PT's shareable code, generated lazily the first time the profile screen loads it. */
-    val inviteCode: StateFlow<String?> = _inviteCode.asStateFlow()
-
-    fun loadInviteCode() {
-        viewModelScope.launch { _inviteCode.value = authRepository.getOrCreateInviteCode(userId) }
     }
 
     private val _linkPtResult = MutableStateFlow<LinkPtResult?>(null)

@@ -93,7 +93,6 @@ fun ProfileScreen(
     val chatNotificationsEnabled by viewModel.chatNotificationsEnabled.collectAsStateWithLifecycle()
     val planNotificationsEnabled by viewModel.planNotificationsEnabled.collectAsStateWithLifecycle()
     val achievementNotificationsEnabled by viewModel.achievementNotificationsEnabled.collectAsStateWithLifecycle()
-    val inviteCode by viewModel.inviteCode.collectAsStateWithLifecycle()
     val linkPtResult by viewModel.linkPtResult.collectAsStateWithLifecycle()
     val membership by viewModel.membership.collectAsStateWithLifecycle()
     var showNameDialog by remember { mutableStateOf(false) }
@@ -102,7 +101,6 @@ fun ProfileScreen(
     val context = LocalContext.current
 
     LaunchedEffect(profile?.role) {
-        if (profile?.role == UserRole.PT) viewModel.loadInviteCode()
         if (profile?.role == UserRole.ALLIEVO) viewModel.loadMembership()
     }
 
@@ -187,13 +185,13 @@ fun ProfileScreen(
                             enabled = false,
                             label = {
                                 Text(
-                                    if (profile?.role == UserRole.PT) "Personal Trainer" else "Allievo",
+                                    "Allievo",
                                     style = MaterialTheme.typography.labelMedium,
                                 )
                             },
                             leadingIcon = {
                                 Icon(
-                                    if (profile?.role == UserRole.PT) Icons.Filled.WorkspacePremium else Icons.Filled.Person,
+                                    Icons.Filled.Person,
                                     contentDescription = null,
                                     modifier = Modifier.size(16.dp),
                                 )
@@ -238,53 +236,6 @@ fun ProfileScreen(
                     membership = membership,
                     modifier = Modifier.padding(top = 12.dp),
                 )
-            }
-
-            if (profile?.role == UserRole.PT) {
-                Text(
-                    "Il tuo codice invito",
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
-                )
-                Card(
-                    shape = MaterialTheme.shapes.large,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                inviteCode ?: "Generazione…",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                            Text(
-                                "Dallo ai tuoi allievi per collegarli al volo, in registrazione o dal loro profilo.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 2.dp),
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                inviteCode?.let { code ->
-                                    val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                        type = "text/plain"
-                                        putExtra(android.content.Intent.EXTRA_TEXT, "Collegati a me su Vibe Fitness con il codice: $code")
-                                    }
-                                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Condividi codice invito"))
-                                }
-                            },
-                            enabled = inviteCode != null,
-                        ) {
-                            Icon(Icons.Filled.Share, contentDescription = "Condividi codice")
-                        }
-                    }
-                }
             }
 
             if (profile?.role == UserRole.ALLIEVO && profile?.ptId == null) {

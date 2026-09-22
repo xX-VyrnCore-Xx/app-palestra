@@ -6,7 +6,6 @@ struct RegisterView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var passwordVisible = false
-    @State private var role = "ALLIEVO"
     @State private var appeared = false
     var onNavigateToLogin: () -> Void
 
@@ -24,9 +23,6 @@ struct RegisterView: View {
                         .multilineTextAlignment(.center)
                         .opacity(appeared ? 1 : 0)
                         .animation(.easeOut(duration: 0.5), value: appeared)
-
-                    RoleToggle(role: $role)
-                        .padding(.horizontal, 24)
 
                     GlassCard {
                         VStack(spacing: 14) {
@@ -66,7 +62,7 @@ struct RegisterView: View {
                             }
 
                             Button {
-                                Task { await auth.signUp(email: email, password: password, fullName: fullName, role: role) }
+                                Task { await auth.signUp(email: email, password: password, fullName: fullName) }
                             } label: {
                                 if auth.isLoading {
                                     ProgressView().tint(.white)

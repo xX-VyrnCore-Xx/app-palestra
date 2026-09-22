@@ -155,7 +155,6 @@ class ChatThreadViewModel @Inject constructor(
             recorder = rec
             recordingFile = file
             recordingStartMs = System.currentTimeMillis()
-            attachNoiseProcessing(rec.audioSessionId)
             _isRecording.value = true
             _recordingSeconds.value = 0
             recordingTickJob = viewModelScope.launch {
@@ -165,37 +164,6 @@ class ChatThreadViewModel @Inject constructor(
                 }
             }
         }.onFailure { rec.release() }
-    }
-
-    private var noiseSuppressor: android.media.audiofx.NoiseSuppressor? = null
-    private var echoCanceler: android.media.audiofx.AcousticEchoCanceler? = null
-    private var gainControl: android.media.audiofx.AutomaticGainControl? = null
-
-    /** VOICE_COMMUNICATION already engages the device's audio HAL processing, but these
-     * platform-level effects stack on top where the hardware supports them - most phones do, some
-     * budget/older devices don't, hence the availability checks (each `create()` degrades to a
-     * silent no-op object if the effect can't actually be applied on this device). */
-    private fun attachNoiseProcessing(audioSessionId: Int) {
-        runCatching {
-            if (android.media.audiofx.NoiseSuppressor.isAvailable()) {
-                noiseSuppressor = android.media.audiofx.NoiseSuppressor.create(audioSessionId)?.apply { enabled = true }
-            }
-            if (android.media.audiofx.AcousticEchoCanceler.isAvailable()) {
-                echoCanceler = android.media.audiofx.AcousticEchoCanceler.create(audioSessionId)?.apply { enabled = true }
-            }
-            if (android.media.audiofx.AutomaticGainControl.isAvailable()) {
-                gainControl = android.media.audiofx.AutomaticGainControl.create(audioSessionId)?.apply { enabled = true }
-            }
-        }
-    }
-
-    private fun releaseNoiseProcessing() {
-        runCatching { noiseSuppressor?.release() }
-        runCatching { echoCanceler?.release() }
-        runCatching { gainControl?.release() }
-        noiseSuppressor = null
-        echoCanceler = null
-        gainControl = null
     }
 
     /** Stops recording and sends the clip as a VOICE attachment - a tap under 1s is treated as an
@@ -208,7 +176,6 @@ class ChatThreadViewModel @Inject constructor(
         runCatching { recorder?.stop() }
         recorder?.release()
         recorder = null
-        releaseNoiseProcessing()
         _isRecording.value = false
         _recordingSeconds.value = 0
         if (peer == null || file == null || durationMs < 1000) {
@@ -227,7 +194,6 @@ class ChatThreadViewModel @Inject constructor(
         runCatching { recorder?.stop() }
         recorder?.release()
         recorder = null
-        releaseNoiseProcessing()
         _isRecording.value = false
         _recordingSeconds.value = 0
         recordingFile?.delete()

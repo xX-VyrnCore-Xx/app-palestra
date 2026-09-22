@@ -61,8 +61,7 @@ class RootViewModel @Inject constructor(
 
     /** True only while an ALLIEVO who just registered in this app install hasn't finished the
      * private Welcome questionnaire yet - never re-derived from a network fetch, so a returning
-     * user is never nagged again just because a completion check failed to load (e.g. offline).
-     * Never triggers for a PT - their role short-circuits the check. */
+     * user is never nagged again just because a completion check failed to load (e.g. offline). */
     val needsOnboarding: StateFlow<Boolean> = combine(
         userId, role, onboardingCompletedOverride, themeRepository.pendingOnboardingUserId,
     ) { id, r, override, pendingId ->
@@ -88,14 +87,24 @@ class RootViewModel @Inject constructor(
         viewModelScope.launch { themeRepository.setPendingOnboardingUserId(id) }
     }
 
+    /** Used by the PT notice screen: PT accounts are managed from the web app, not here. */
+    fun signOut(onSignedOut: () -> Unit) {
+        viewModelScope.launch {
+            runCatching { authRepository.signOut() }
+            userId.value = null
+            onSignedOut()
+        }
+    }
+
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { themeRepository.setThemeMode(mode) }
     }
 
     private val _pendingChatPeerId = MutableStateFlow<String?>(null)
 
-    /** Set when a chat-message notification is tapped (cold or warm start) - the nav graph
-     * navigates to this peer's thread once it's non-null, then clears it via [consumeChatDeepLink]. */
+    /** Set when a chat-message notification is tapped (cold or warm start). An allievo's chat is
+     * a tab on Home (single conversation with their own PT), so the nav graph just clears it via
+     * [consumeChatDeepLink] once the user lands there. */
     val pendingChatPeerId: StateFlow<String?> = _pendingChatPeerId.asStateFlow()
 
     fun requestOpenChat(peerId: String) {

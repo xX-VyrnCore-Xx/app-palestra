@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Placeholder post-login shell. The Android app's real Home (streak, weekly goal, next workout,
-/// PT dashboard, chat, plan editor, ...) isn't ported yet - this view exists so the iOS pipeline
+/// chat, ...; the PT side lives in the web management app) isn't ported yet - this view exists so the iOS pipeline
 /// (XcodeGen -> SPM -> Codemagic build -> TestFlight) has something real to build and sign while
 /// the rest of the feature set gets ported screen by screen.
 struct HomeView: View {

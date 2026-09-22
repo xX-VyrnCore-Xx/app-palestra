@@ -53,7 +53,6 @@ import com.vyrncore.palestra.ui.components.MuscleGroupArtwork
 fun GlobalSearchScreen(
     onBack: () -> Unit,
     onStartSession: (sessionId: String, planId: String) -> Unit,
-    onOpenClient: (clientId: String) -> Unit,
     onOpenChat: (peerId: String) -> Unit,
     viewModel: GlobalSearchViewModel = hiltViewModel(),
 ) {
@@ -61,7 +60,6 @@ fun GlobalSearchScreen(
     val results by viewModel.results.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
     var detailExercise by remember { mutableStateOf<com.vyrncore.palestra.data.local.entity.ExerciseEntity?>(null) }
-    var templateDialog by remember { mutableStateOf<SearchResult.Template?>(null) }
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
@@ -118,8 +116,6 @@ fun GlobalSearchScreen(
                                     is SearchResult.Plan -> viewModel.startWorkout(result.planId) { sessionId ->
                                         onStartSession(sessionId, result.planId)
                                     }
-                                    is SearchResult.Template -> templateDialog = result
-                                    is SearchResult.Client -> onOpenClient(result.clientId)
                                     is SearchResult.Contact -> onOpenChat(result.peerId)
                                     is SearchResult.Exercise -> detailExercise = result.entity
                                 }
@@ -137,34 +133,11 @@ fun GlobalSearchScreen(
             onDismiss = { detailExercise = null },
         )
     }
-
-    templateDialog?.let { template ->
-        var exerciseCount by remember(template.templateId) { mutableIntStateOf(-1) }
-        LaunchedEffect(template.templateId) {
-            exerciseCount = viewModel.templateExerciseCount(template.templateId)
-        }
-        AlertDialog(
-            onDismissRequest = { templateDialog = null },
-            title = { Text(template.name) },
-            text = {
-                Text(
-                    if (exerciseCount < 0) "Caricamento…" else "$exerciseCount esercizi · ${template.subtitle}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { templateDialog = null }) { Text("Chiudi") }
-            },
-        )
-    }
 }
 
 private fun SearchResult.sectionTitle(): String = when (this) {
     is SearchResult.Plan -> "Schede"
-    is SearchResult.Template -> "Libreria template"
     is SearchResult.Exercise -> "Esercizi"
-    is SearchResult.Client -> "Clienti"
     is SearchResult.Contact -> "Contatti"
 }
 
@@ -179,9 +152,7 @@ private data class SearchRowContent(
 
 private fun SearchResult.toRowContent(): SearchRowContent = when (this) {
     is SearchResult.Plan -> SearchRowContent(Icons.Filled.FitnessCenter, name, subtitle, Icons.Filled.PlayArrow)
-    is SearchResult.Template -> SearchRowContent(Icons.Filled.Description, name, subtitle)
     is SearchResult.Exercise -> SearchRowContent(null, entity.name, entity.muscleGroup, muscleGroup = entity.muscleGroup)
-    is SearchResult.Client -> SearchRowContent(Icons.Filled.People, fullName, email)
     is SearchResult.Contact -> SearchRowContent(Icons.Filled.Forum, fullName, "Il tuo Personal Trainer", Icons.Filled.Forum)
 }
 

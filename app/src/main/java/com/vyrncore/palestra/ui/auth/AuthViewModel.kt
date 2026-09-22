@@ -2,7 +2,6 @@ package com.vyrncore.palestra.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.sync.SyncScheduler
 import com.vyrncore.palestra.util.friendlyError
@@ -19,8 +18,6 @@ data class AuthUiState(
     val loggedInUserId: String? = null,
     /** True right after a fresh sign-up: drives the Welcome onboarding wizard for ALLIEVI. */
     val justRegistered: Boolean = false,
-    /** Which role the fresh sign-up chose, so the nav graph can branch allievo vs PT. */
-    val registeredRole: UserRole = UserRole.ALLIEVO,
     /** Per-field validation messages, shown inline under the offending input. */
     val emailError: String? = null,
     val passwordError: String? = null,
@@ -32,7 +29,7 @@ private fun isValidEmail(email: String): Boolean =
 
 /**
  * Login is a two-field form and never asks anything else on top; Register collects the basics
- * (name, email, password, role) plus optional body metrics up front, and after a successful
+ * (name, email, password) plus optional body metrics up front, and after a successful
  * sign-up flags [AuthUiState.justRegistered] so the nav graph routes ALLIEVI through the
  * Welcome wizard before the dashboard. Existing users logging in skip onboarding entirely:
  * either they completed it once (persisted server-side) or they explicitly skipped it.
@@ -75,7 +72,6 @@ class AuthViewModel @Inject constructor(
         email: String,
         password: String,
         fullName: String,
-        role: UserRole,
         ptInviteCode: String?,
         heightCm: Int?,
         weightKg: Double?,
@@ -104,7 +100,6 @@ class AuthViewModel @Inject constructor(
                     email = email.trim(),
                     password = password,
                     fullName = fullName.trim(),
-                    role = role,
                     ptInviteCode = ptInviteCode?.takeIf { it.isNotBlank() },
                     heightCm = heightCm,
                     weightKg = weightKg,
@@ -116,7 +111,6 @@ class AuthViewModel @Inject constructor(
                     _uiState.value = AuthUiState(
                         loggedInUserId = authRepository.currentUserId,
                         justRegistered = true,
-                        registeredRole = role,
                     )
                 }
                 .onFailure { e ->

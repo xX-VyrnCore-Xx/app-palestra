@@ -23,6 +23,7 @@ import androidx.navigation.navArgument
 import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.ui.RootViewModel
 import com.vyrncore.palestra.ui.auth.LoginScreen
+import com.vyrncore.palestra.ui.auth.PtWebAppScreen
 import com.vyrncore.palestra.ui.auth.RegisterScreen
 import com.vyrncore.palestra.ui.auth.ResetPasswordScreen
 import com.vyrncore.palestra.ui.bodymetrics.BodyMetricsScreen
@@ -32,10 +33,6 @@ import com.vyrncore.palestra.ui.dashboard.AllievoDashboardScreen
 import com.vyrncore.palestra.ui.history.HistoryScreen
 import com.vyrncore.palestra.ui.locations.LocationsScreen
 import com.vyrncore.palestra.ui.profile.ProfileScreen
-import com.vyrncore.palestra.ui.pt.PlanEditorScreen
-import com.vyrncore.palestra.ui.pt.ProgramEditorScreen
-import com.vyrncore.palestra.ui.pt.PtClientDetailScreen
-import com.vyrncore.palestra.ui.pt.PtDashboardScreen
 import com.vyrncore.palestra.ui.search.GlobalSearchScreen
 import com.vyrncore.palestra.ui.timer.RestTimerScreen
 import com.vyrncore.palestra.ui.welcome.WelcomeScreen
@@ -52,15 +49,10 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
 
     val startDestination = if (rootViewModel.startUserId != null) "home" else Routes.LOGIN
 
-    // Tapping a chat notification deep-links straight into that thread - only meaningful for a
-    // PT, who has one CHAT_THREAD destination per client; an allievo's chat is a fixed bottom-nav
-    // tab on Home (single conversation, their own PT) reachable as soon as they land there.
+    // Tapping a chat notification: the allievo's chat is a tab on Home, so there's nothing to
+    // navigate to - just clear the pending request once the role is known.
     androidx.compose.runtime.LaunchedEffect(pendingChatPeerId, role) {
-        val peerId = pendingChatPeerId ?: return@LaunchedEffect
-        if (role == UserRole.PT) {
-            navController.navigate(Routes.chatThread(peerId))
-        }
-        if (role != null) rootViewModel.consumeChatDeepLink()
+        if (pendingChatPeerId != null && role != null) rootViewModel.consumeChatDeepLink()
     }
 
     // Fires from any screen (including the login/register flow, since a signed-out user is
@@ -107,7 +99,7 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
         composable(Routes.REGISTER) {
             RegisterScreen(
                 onRegistered = { userId ->
-                    // A fresh ALLIEVO lands on the Welcome wizard; a PT lands on their dashboard.
+                    // A fresh allievo lands on the Welcome wizard.
                     rootViewModel.setNewlyRegisteredUser(userId)
                     navController.navigate("home") { popUpTo(Routes.LOGIN) { inclusive = true } }
                 },
@@ -116,12 +108,11 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
         }
         composable("home") {
             when (role) {
-                UserRole.PT -> PtDashboardScreen(
-                    onOpenClient = { clientId -> navController.navigate(Routes.ptClientDetail(clientId)) },
-                    onOpenChat = { clientId -> navController.navigate(Routes.chatThread(clientId)) },
-                    onOpenSearch = { navController.navigate(Routes.SEARCH) },
-                    onOpenLocations = { navController.navigate(Routes.LOCATIONS) },
-                    onSignedOut = { navController.navigate(Routes.LOGIN) { popUpTo(0) } },
+                // PTs work from the web management app: the Android app is for allievi only.
+                UserRole.PT -> PtWebAppScreen(
+                    onSignOut = {
+                        rootViewModel.signOut { navController.navigate(Routes.LOGIN) { popUpTo(0) } }
+                    },
                 )
                 UserRole.ALLIEVO -> if (needsOnboarding) {
                     WelcomeScreen(onFinished = { rootViewModel.markOnboardingComplete() })
@@ -180,28 +171,6 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
             RestTimerScreen(onClose = { navController.popBackStack() })
         }
         composable(
-            Routes.PT_CLIENT_DETAIL,
-            arguments = listOf(navArgument("clientId") { type = NavType.StringType }),
-        ) {
-            PtClientDetailScreen(
-                onCreatePlan = { clientId -> navController.navigate(Routes.planEditor(clientId)) },
-                onCreateProgram = { clientId -> navController.navigate(Routes.programEditor(clientId)) },
-                onOpenChat = { clientId -> navController.navigate(Routes.chatThread(clientId)) },
-            )
-        }
-        composable(
-            Routes.PLAN_EDITOR,
-            arguments = listOf(navArgument("clientId") { type = NavType.StringType }),
-        ) {
-            PlanEditorScreen(onSaved = { navController.popBackStack() })
-        }
-        composable(
-            Routes.PROGRAM_EDITOR,
-            arguments = listOf(navArgument("clientId") { type = NavType.StringType }),
-        ) {
-            ProgramEditorScreen(onSaved = { navController.popBackStack() })
-        }
-        composable(
             Routes.CHAT_THREAD,
             arguments = listOf(navArgument("peerId") { type = NavType.StringType }),
         ) { backStackEntry ->
@@ -238,9 +207,6 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
                 onBack = { navController.popBackStack() },
                 onStartSession = { sessionId, planId ->
                     navController.navigate(Routes.activeWorkout(sessionId, planId)) { popUpTo(Routes.SEARCH) { inclusive = true } }
-                },
-                onOpenClient = { clientId ->
-                    navController.navigate(Routes.ptClientDetail(clientId)) { popUpTo(Routes.SEARCH) { inclusive = true } }
                 },
                 onOpenChat = { peerId ->
                     navController.navigate(Routes.chatThread(peerId)) { popUpTo(Routes.SEARCH) { inclusive = true } }

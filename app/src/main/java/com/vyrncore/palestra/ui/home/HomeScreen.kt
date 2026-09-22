@@ -462,7 +462,7 @@ fun HomeScreen(
             ) {
                 MedalSummaryCard(
                     icon = Icons.Filled.LocalFireDepartment,
-                    title = "Servizio",
+                    title = "Costanza",
                     unlockedCount = uiState.unlockedBadges.size,
                     totalCount = BADGE_MILESTONES.size,
                     nextMilestone = BADGE_MILESTONES.firstOrNull { it > uiState.longestStreakDays },
@@ -472,7 +472,7 @@ fun HomeScreen(
                 )
                 MedalSummaryCard(
                     icon = Icons.Filled.MilitaryTech,
-                    title = "Operative",
+                    title = "Allenamenti",
                     unlockedCount = uiState.unlockedWorkoutCountBadges.size,
                     totalCount = WORKOUT_COUNT_MILESTONES.size,
                     nextMilestone = WORKOUT_COUNT_MILESTONES.firstOrNull { it > uiState.totalWorkouts },
@@ -947,7 +947,7 @@ private fun WeeklyGoalCard(completed: Int, goal: Int, modifier: Modifier = Modif
                             letterSpacing = 1.sp
                         )
                         Text(
-                            if (isComplete) "Missione Compiuta!" else "Ancora $completed su $goal missioni",
+                            if (isComplete) "Obiettivo raggiunto!" else "Ancora $completed su $goal allenamenti",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = if (isComplete) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface

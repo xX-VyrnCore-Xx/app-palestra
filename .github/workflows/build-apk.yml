@@ -11,6 +11,16 @@ on:
       - "gradle/**"
       - ".github/workflows/build-release-aab.yml"
       - ".github/workflows/build-apk.yml"
+  # Compile check on PRs (no release published) so a broken build is caught before merge.
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - ".github/workflows/build-apk.yml"
   workflow_dispatch:
 
 permissions:
@@ -46,6 +56,7 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> local.properties
           echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> local.properties
+          echo "PT_WEB_APP_URL=${{ secrets.PT_WEB_APP_URL }}" >> local.properties
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -66,12 +77,14 @@ jobs:
           if-no-files-found: error
 
       - name: Read app version
+        if: github.event_name != 'pull_request'
         id: version
         run: |
           VERSION=$(grep -oP '(?<=val appVersionName = ")[^"]+' app/build.gradle.kts)
           echo "name=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Publish GitHub Release
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.name }}-${{ github.run_number }}
