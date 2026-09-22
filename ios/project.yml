@@ -1,0 +1,61 @@
+# XcodeGen spec (https://github.com/yonaskolb/XcodeGen). We check this in instead of a hand-made
+# .xcodeproj because a hand-crafted pbxproj is fragile to edit by hand and impossible to validate
+# from this sandbox (no macOS/Xcode here) - Codemagic's Mac runner installs xcodegen and runs
+# `xcodegen generate` right before the build, so the .xcodeproj is always freshly regenerated from
+# this file and never committed itself (see .gitignore).
+name: VibeFitness
+
+options:
+  bundleIdPrefix: com.vyrncore
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: 2.5.0
+
+targets:
+  VibeFitness:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: VibeFitness
+        excludes:
+          - "Resources/Secrets.plist.example"
+    resources:
+      - path: VibeFitness/Resources/Assets.xcassets
+      - path: VibeFitness/Resources/Secrets.plist
+        optional: true
+    dependencies:
+      - package: Supabase
+        product: Supabase
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.vyrncore.palestra
+        MARKETING_VERSION: "1.1.0"
+        CURRENT_PROJECT_VERSION: "2"
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+        INFOPLIST_KEY_CFBundleDisplayName: "Vibe Fitness"
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    info:
+      path: VibeFitness/Info.plist
+      properties:
+        UILaunchScreen: {}
+        ITSAppUsesNonExemptEncryption: false
+
+schemes:
+  VibeFitness:
+    build:
+      targets:
+        VibeFitness: all
+    run:
+      config: Debug
+    archive:
+      config: Release
