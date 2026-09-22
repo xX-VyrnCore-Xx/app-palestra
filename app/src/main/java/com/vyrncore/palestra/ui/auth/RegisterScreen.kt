@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -195,6 +196,10 @@ fun RegisterScreen(
                             keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                         )
 
+                        AnimatedVisibility(visible = password.isNotEmpty()) {
+                            PasswordStrengthMeter(password = password, modifier = Modifier.padding(top = 2.dp))
+                        }
+
                         AnimatedVisibility(
                             visible = role == UserRole.ALLIEVO,
                             enter = fadeIn(tween(250)) + expandVertically(tween(250)),
@@ -263,5 +268,53 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(24.dp))
         }
+    }
+}
+
+private enum class PasswordStrength(val label: String, val color: androidx.compose.ui.graphics.Color, val segments: Int) {
+    WEAK("Debole", androidx.compose.ui.graphics.Color(0xFFE53935), 1),
+    MEDIUM("Media", androidx.compose.ui.graphics.Color(0xFFFFA726), 2),
+    STRONG("Forte", androidx.compose.ui.graphics.Color(0xFF43A047), 3),
+}
+
+private fun passwordStrength(password: String): PasswordStrength {
+    var score = 0
+    if (password.length >= 8) score++
+    if (password.length >= 12) score++
+    if (password.any(Char::isDigit) && password.any(Char::isLetter)) score++
+    if (password.any { !it.isLetterOrDigit() }) score++
+    if (password.any(Char::isUpperCase) && password.any(Char::isLowerCase)) score++
+    return when {
+        score <= 1 -> PasswordStrength.WEAK
+        score <= 3 -> PasswordStrength.MEDIUM
+        else -> PasswordStrength.STRONG
+    }
+}
+
+/** Quick visual feedback while typing a new password, instead of only finding out it's too weak
+ * after hitting "Registrati" and reading a generic error. */
+@Composable
+private fun PasswordStrengthMeter(password: String, modifier: Modifier = Modifier) {
+    val strength = remember(password) { passwordStrength(password) }
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
+            repeat(3) { index ->
+                androidx.compose.foundation.layout.Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(4.dp)
+                        .background(
+                            if (index < strength.segments) strength.color else MaterialTheme.colorScheme.surfaceVariant,
+                            androidx.compose.foundation.shape.RoundedCornerShape(2.dp),
+                        ),
+                )
+            }
+        }
+        Text(
+            "Sicurezza password: ${strength.label}",
+            style = MaterialTheme.typography.labelSmall,
+            color = strength.color,
+            modifier = Modifier.padding(top = 4.dp),
+        )
     }
 }

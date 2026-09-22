@@ -1,17 +1,23 @@
 package com.vyrncore.palestra.ui.pt
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -38,7 +44,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
@@ -111,46 +120,87 @@ fun PlanEditorScreen(
             }
 
             Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
-                Button(onClick = { showPicker = true }) {
+                Button(
+                    onClick = { showPicker = true },
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.weight(1f),
+                ) {
                     Icon(Icons.Filled.Add, contentDescription = null)
-                    Text("Aggiungi esercizio", modifier = Modifier.padding(start = 4.dp))
+                    Text("Aggiungi", modifier = Modifier.padding(start = 4.dp))
                 }
-                OutlinedButton(onClick = { showTemplatePicker = true }, modifier = Modifier.padding(start = 8.dp)) {
+                OutlinedButton(
+                    onClick = { showTemplatePicker = true },
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.weight(1f).padding(start = 8.dp),
+                ) {
                     Icon(Icons.Filled.Bookmark, contentDescription = null)
-                    Text("Usa modello", modifier = Modifier.padding(start = 4.dp))
+                    Text("Modello", modifier = Modifier.padding(start = 4.dp))
                 }
             }
 
-            OutlinedButton(
+            Button(
                 onClick = { showAiDialog = true },
+                shape = MaterialTheme.shapes.medium,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                ),
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             ) {
                 Icon(Icons.Filled.AutoAwesome, contentDescription = null)
-                Text("Crea con AI", modifier = Modifier.padding(start = 4.dp))
+                Text("Crea con AI", modifier = Modifier.padding(start = 4.dp), fontWeight = FontWeight.Bold)
             }
 
             if (draft.isNotEmpty()) {
-                TextButton(
-                    onClick = { showSaveTemplateDialog = true },
-                    modifier = Modifier.padding(top = 4.dp),
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 4.dp),
                 ) {
-                    Icon(Icons.Filled.BookmarkAdd, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
-                    Text("Salva come modello riutilizzabile")
+                    Text(
+                        "ESERCIZI (${draft.size})",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { showSaveTemplateDialog = true }) {
+                        Icon(Icons.Filled.BookmarkAdd, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
+                        Text("Salva modello")
+                    }
                 }
             }
 
-            LazyColumn(modifier = Modifier.weight(1f).padding(top = 8.dp)) {
-                items(draft, key = { it.exerciseId }) { exercise ->
-                    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row {
+            LazyColumn(modifier = Modifier.weight(1f).padding(top = 4.dp)) {
+                itemsIndexed(draft, key = { _, item -> item.exerciseId }) { index, exercise ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                        shape = MaterialTheme.shapes.large,
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(28.dp)
+                                        .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        "${index + 1}",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    )
+                                }
                                 Text(
                                     exercise.exerciseName,
                                     style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier.weight(1f),
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.weight(1f).padding(start = 10.dp),
                                 )
                                 IconButton(onClick = { viewModel.removeExercise(exercise.exerciseId) }) {
-                                    Icon(Icons.Filled.Delete, contentDescription = "Rimuovi")
+                                    Icon(Icons.Filled.Delete, contentDescription = "Rimuovi", tint = MaterialTheme.colorScheme.error)
                                 }
                             }
                             Row(modifier = Modifier.padding(top = 4.dp)) {
