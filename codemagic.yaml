@@ -53,7 +53,13 @@ workflows:
             -scheme "$XCODE_SCHEME" \
             -sdk iphonesimulator \
             -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO
+
+      - name: Zip the simulator .app for download
+        script: |
+          cd "$CM_BUILD_DIR/ios/build/Build/Products/Debug-iphonesimulator"
+          ditto -c -k --sequesterRsrc --keepParent "VibeFitness.app" "$CM_BUILD_DIR/ios/VibeFitness-simulator.zip"
 
       # Once App Store Connect signing is wired up (see the commented `integrations` block
       # above), replace the simulator build above with a real device archive + IPA export, e.g.:
@@ -75,13 +81,14 @@ workflows:
       #       -exportOptionsPlist /Users/builder/export_options.plist
 
     artifacts:
+      - ios/VibeFitness-simulator.zip
       - ios/build/**/*.xcarchive
       - ios/build/ipa/*.ipa
 
     publishing:
       email:
         recipients:
-          - user@example.com # replace with your own email in the Codemagic UI, or delete this block
+          - mattskylab09@gmail.com
         notify:
           success: true
           failure: true
