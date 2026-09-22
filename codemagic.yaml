@@ -1,0 +1,84 @@
+workflows:
+  ios-vibefitness:
+    name: Vibe Fitness iOS
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      # Add these two in the Codemagic UI (App settings -> Environment variables), grouped e.g.
+      # as "supabase" and marked Secure - never commit real values here.
+      #   SUPABASE_URL           https://qibthdzydlyvdknimfoj.supabase.co (not secret, but keep with the key for convenience)
+      #   SUPABASE_ANON_KEY      the project's anon/publishable key (Secure)
+      vars:
+        BUNDLE_ID: "com.vyrncore.palestra"
+        XCODE_SCHEME: "VibeFitness"
+      xcode: latest
+      # Code signing: simplest path is Codemagic's automatic iOS signing, which needs an
+      # App Store Connect API key configured once in Codemagic (Team settings -> Code signing
+      # identities) and referenced via `integrations.app_store_connect` below - uncomment once
+      # that's set up. Until then this workflow builds and archives but does not export a signed
+      # IPA, which is enough to prove the pipeline compiles before wiring up distribution.
+      # integrations:
+      #   app_store_connect: codemagic
+
+    scripts:
+      - name: Write Secrets.plist from Codemagic environment variables
+        script: |
+          set -e
+          PLIST="$CM_BUILD_DIR/ios/VibeFitness/Resources/Secrets.plist"
+          /usr/libexec/PlistBuddy -c "Add :SUPABASE_URL string $SUPABASE_URL" "$PLIST" 2>/dev/null || \
+            (plutil -create xml1 "$PLIST" && /usr/libexec/PlistBuddy -c "Add :SUPABASE_URL string $SUPABASE_URL" "$PLIST")
+          /usr/libexec/PlistBuddy -c "Add :SUPABASE_ANON_KEY string $SUPABASE_ANON_KEY" "$PLIST"
+
+      - name: Install XcodeGen
+        script: brew install xcodegen
+
+      - name: Generate Xcode project
+        script: |
+          cd "$CM_BUILD_DIR/ios"
+          xcodegen generate
+
+      - name: Resolve Swift Package dependencies
+        script: |
+          cd "$CM_BUILD_DIR/ios"
+          xcodebuild -resolvePackageDependencies -project VibeFitness.xcodeproj
+
+      - name: Build (Debug, simulator SDK - no signing required)
+        script: |
+          cd "$CM_BUILD_DIR/ios"
+          xcodebuild build \
+            -project VibeFitness.xcodeproj \
+            -scheme "$XCODE_SCHEME" \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO
+
+      # Once App Store Connect signing is wired up (see the commented `integrations` block
+      # above), replace the simulator build above with a real device archive + IPA export, e.g.:
+      #
+      # - name: Archive (device, signed)
+      #   script: |
+      #     cd "$CM_BUILD_DIR/ios"
+      #     xcode-project use-profiles
+      #     xcodebuild archive \
+      #       -project VibeFitness.xcodeproj \
+      #       -scheme "$XCODE_SCHEME" \
+      #       -archivePath build/VibeFitness.xcarchive
+      # - name: Export IPA
+      #   script: |
+      #     cd "$CM_BUILD_DIR/ios"
+      #     xcodebuild -exportArchive \
+      #       -archivePath build/VibeFitness.xcarchive \
+      #       -exportPath build/ipa \
+      #       -exportOptionsPlist /Users/builder/export_options.plist
+
+    artifacts:
+      - ios/build/**/*.xcarchive
+      - ios/build/ipa/*.ipa
+
+    publishing:
+      email:
+        recipients:
+          - user@example.com # replace with your own email in the Codemagic UI, or delete this block
+        notify:
+          success: true
+          failure: true
