@@ -4,10 +4,13 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
-      # Add these two in the Codemagic UI (App settings -> Environment variables), grouped e.g.
-      # as "supabase" and marked Secure - never commit real values here.
-      #   SUPABASE_URL           https://qibthdzydlyvdknimfoj.supabase.co (not secret, but keep with the key for convenience)
+      # Add these two in the Codemagic UI (App settings -> Environment variables) under a group
+      # named "supabase" (mark SUPABASE_ANON_KEY Secure) - never commit real values here. The
+      # group is created automatically the first time you save a variable under that name.
+      #   SUPABASE_URL           https://qibthdzydlyvdknimfoj.supabase.co
       #   SUPABASE_ANON_KEY      the project's anon/publishable key (Secure)
+      groups:
+        - supabase
       vars:
         BUNDLE_ID: "com.vyrncore.palestra"
         XCODE_SCHEME: "VibeFitness"
