@@ -24,7 +24,7 @@ a fix-and-repush cycle, same as any new project's first CI run.
 ios/
   project.yml              XcodeGen spec — the source of truth, NOT the .xcodeproj itself
   VibeFitness/
-    App/                    App entry point, Supabase client, Secrets loader, root view
+    App/                    App entry point, Supabase client, Secrets loader, root view, brand theme
     Auth/                   Login/Register views + view model
     Home/                   Placeholder post-login screen
     Resources/
