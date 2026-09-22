@@ -1,7 +1,5 @@
 package com.vyrncore.palestra.ui.auth
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,22 +19,20 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.vyrncore.palestra.BuildConfig
 import com.vyrncore.palestra.ui.components.VibeWordmark
 
 /**
- * Shown when a Personal Trainer account signs in: the PT side now lives entirely in the web
- * management app (Vercel), connected to the same Supabase backend, so this Android app is for
- * allievi only. Offers a shortcut to the web app (when its URL is configured) and a sign-out.
+ * Shown when a Personal Trainer account signs in: the PT side now lives entirely in a separate
+ * web management app, connected to the same Supabase backend, so this Android app is for allievi
+ * only. Deliberately does NOT show or link that app's address anywhere in this screen (or
+ * anywhere else in the app/APK) - it stays out of band, known only to the PTs who already have
+ * it, rather than discoverable by decompiling this build. Just explains the situation and signs
+ * the PT out.
  */
 @Composable
 fun PtWebAppScreen(onSignOut: () -> Unit) {
-    val context = LocalContext.current
-    val webUrl = BuildConfig.PT_WEB_APP_URL
-
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedAuthBackground()
         Column(
@@ -69,16 +65,6 @@ fun PtWebAppScreen(onSignOut: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                     )
-                    if (webUrl.isNotBlank()) {
-                        GradientButton(
-                            text = "Apri il gestionale web",
-                            onClick = {
-                                runCatching {
-                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(webUrl)))
-                                }
-                            },
-                        )
-                    }
                     TextButton(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
                         Text("Esci e accedi con un altro account")
                     }
