@@ -919,40 +919,28 @@ private fun WeeklyGoalCard(completed: Int, goal: Int, modifier: Modifier = Modif
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(20.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.CenterStart
+                CircularProgressRing(
+                    progress = progress,
+                    size = 104.dp,
+                    strokeWidth = 12.dp,
+                    trackColor = (if (isComplete) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface)
+                        .copy(alpha = 0.12f),
+                    progressBrush = Brush.sweepGradient(
+                        if (isComplete) listOf(Gold50, Gold40, Gold50) else listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.tertiary,
+                            MaterialTheme.colorScheme.primary,
+                        )
+                    ),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(progress)
-                            .fillMaxHeight()
-                            .clip(CircleShape)
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = if (isComplete) {
-                                        listOf(Gold50, Gold40)
-                                    } else {
-                                        listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary)
-                                    }
-                                )
-                            )
-                            .drawBehind {
-                                if (progress > 0f) {
-                                    drawCircle(
-                                        color = Color.White.copy(alpha = 0.3f),
-                                        radius = 4.dp.toPx(),
-                                        center = center.copy(x = size.width - 10.dp.toPx())
-                                    )
-                                }
-                            }
+                    Text(
+                        "${(progress * 100).toInt()}%",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isComplete) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                
+
                 if (isComplete) {
                     Text(
                         "Complimenti, hai superato le aspettative questa settimana!",
