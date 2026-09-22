@@ -510,29 +510,43 @@ grant execute on function public.resolve_pt_invite_code(text) to authenticated;
 
 -- Chat attachments storage ---------------------------------------------------
 -- Public bucket (object names are random UUIDs, so effectively unguessable) keeps
--- read access simple; write is restricted to signed-in users.
+-- read access simple; write is restricted to the uploader's own "<user_id>/..."
+-- folder - the path convention alone used to be documented but not enforced, so
+-- any signed-in user could write into another user's folder.
 
 insert into storage.buckets (id, name, public)
 values ('chat-attachments', 'chat-attachments', true)
 on conflict (id) do nothing;
 
 create policy "chat_attachments_insert" on storage.objects
-    for insert with check (bucket_id = 'chat-attachments' and auth.role() = 'authenticated');
+    for insert with check (
+        bucket_id = 'chat-attachments'
+        and auth.role() = 'authenticated'
+        and (storage.foldername(name))[1] = (select auth.uid())::text
+    );
 create policy "chat_attachments_select" on storage.objects
     for select using (bucket_id = 'chat-attachments');
 
 -- Profile avatars storage -----------------------------------------------------
--- Same shape as chat-attachments: public read, signed-in write. Objects live under
--- <user_id>/<uuid>.jpg so a user can only overwrite their own past uploads by path.
+-- Same shape as chat-attachments: public read, write scoped to the uploader's own
+-- "<user_id>/..." folder so a user can only overwrite their own past uploads.
 
 insert into storage.buckets (id, name, public)
 values ('avatars', 'avatars', true)
 on conflict (id) do nothing;
 
 create policy "avatars_insert" on storage.objects
-    for insert with check (bucket_id = 'avatars' and auth.role() = 'authenticated');
+    for insert with check (
+        bucket_id = 'avatars'
+        and auth.role() = 'authenticated'
+        and (storage.foldername(name))[1] = (select auth.uid())::text
+    );
 create policy "avatars_update" on storage.objects
-    for update using (bucket_id = 'avatars' and auth.role() = 'authenticated');
+    for update using (
+        bucket_id = 'avatars'
+        and auth.role() = 'authenticated'
+        and (storage.foldername(name))[1] = (select auth.uid())::text
+    );
 create policy "avatars_select" on storage.objects
     for select using (bucket_id = 'avatars');
 
