@@ -3,6 +3,7 @@ package com.vyrncore.palestra.ui.home
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -170,10 +171,15 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
             )
 
+            val animatedStreak by animateIntAsState(
+                targetValue = uiState.streakDays,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                label = "streakDays",
+            )
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                 MetricCard(
                     icon = Icons.Filled.LocalFireDepartment,
-                    value = "${uiState.streakDays}",
+                    value = "$animatedStreak",
                     label = "GIORNI DI FILA",
                     modifier = Modifier.weight(1f),
                 )
@@ -228,19 +234,55 @@ fun HomeScreen(
             if (uiState.nextPlanId != null) {
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = MaterialTheme.shapes.large,
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
                 ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Text(
-                            "PROSSIMO ALLENAMENTO",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                                        MaterialTheme.colorScheme.tertiary.copy(alpha = 0.10f),
+                                    ),
+                                ),
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                                shape = MaterialTheme.shapes.large,
+                            )
+                            .padding(20.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    Icons.Filled.FitnessCenter,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                            Text(
+                                "PROSSIMO ALLENAMENTO",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 10.dp),
+                            )
+                        }
                         Text(
                             uiState.nextPlanName.orEmpty(),
                             style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.padding(top = 4.dp),
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 10.dp),
                         )
                         if (uiState.activeProgramName != null) {
                             Text(
@@ -259,6 +301,7 @@ fun HomeScreen(
                                 }
                             },
                             modifier = Modifier.fillMaxWidth().height(52.dp),
+                            shape = MaterialTheme.shapes.medium,
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         ) {
                             Text("INIZIA ALLENAMENTO", style = MaterialTheme.typography.labelLarge, color = Color.White)

@@ -61,7 +61,7 @@ Le entità Room hanno indici e foreign key sulle relazioni possedute nello stess
 
 ## Setup
 
-Un progetto Supabase dedicato (`app-palestra`, org VyrnCore IT) è già stato creato e lo schema di `docs/supabase_schema.sql` (tabelle + Row Level Security) è già stato applicato. Per motivi di sicurezza URL e anon key **non sono committati** nel repository: vanno impostati localmente.
+Un progetto Supabase dedicato (`app-palestra`) è già stato creato e lo schema di `docs/supabase_schema.sql` (tabelle + Row Level Security) è già stato applicato. Per motivi di sicurezza URL e anon key **non sono committati** nel repository: vanno impostati localmente.
 
 1. Copia `local.properties.example` in `local.properties` e imposta `sdk.dir`, `SUPABASE_URL` e `SUPABASE_ANON_KEY` (chiedi le credenziali del progetto `app-palestra` al proprietario, oppure creane uno tuo come descritto sotto).
 2. Apri il progetto in Android Studio (Iguana o successivo) e lascia sincronizzare Gradle.
@@ -120,10 +120,12 @@ Senza questo secret l'assistente risponde con un errore "non configurato", il re
 ## Notifiche push (Firebase Cloud Messaging)
 
 Oltre alla Realtime (attiva solo mentre l'app è aperta), un messaggio in chat innesca anche una
-push FCM verso il dispositivo del destinatario tramite l'Edge Function Supabase `send-push`
-(`supabase/functions/send-push`), così arriva anche ad app chiusa. Lato client, `FcmService`
-riceve il payload e mostra la notifica; il token del dispositivo viene salvato in automatico su
-`profiles.fcm_token` al login.
+push FCM verso **tutti i dispositivi** su cui il destinatario ha installato l'app, tramite l'Edge
+Function Supabase `send-push` (`supabase/functions/send-push`), così arriva anche ad app chiusa.
+Lato client, `FcmService` riceve il payload e mostra la notifica; il token del dispositivo viene
+salvato in automatico su `device_tokens` (una riga per utente+dispositivo, non un unico campo) al
+login, con pulizia automatica dei token non più validi (app disinstallata) e rimozione del token
+di questo dispositivo al logout.
 
 Per attivarla, genera una chiave service account su Firebase (Project Settings → Service accounts
 → Generate new private key) e impostala come secret sul progetto Supabase:
@@ -131,6 +133,22 @@ Per attivarla, genera una chiave service account su Firebase (Project Settings �
 supabase secrets set FIREBASE_SERVICE_ACCOUNT_JSON='<contenuto del file json>' --project-ref qibthdzydlyvdknimfoj
 ```
 Senza questo secret la funzione risponde con un no-op silenzioso: l'app funziona comunque, solo senza push.
+
+## Email di benvenuto (Resend)
+
+Dopo la registrazione, l'app invia un'email di benvenuto tramite l'Edge Function Supabase
+`send-welcome-email` (`supabase/functions/send-welcome-email`), best-effort (non blocca né fa
+fallire la registrazione). Supabase Auth continua a gestire da solo le email funzionali
+(verifica, reset password) tramite il proprio SMTP: questa è solo un'email di benvenuto brandizzata
+aggiuntiva via [Resend](https://resend.com).
+
+Per attivarla, imposta due secret sul progetto Supabase (serve un account Resend con un dominio
+mittente verificato):
+```
+supabase secrets set RESEND_API_KEY=<la-tua-chiave> --project-ref qibthdzydlyvdknimfoj
+supabase secrets set RESEND_FROM_ADDRESS='Vibe Fitness <no-reply@tuodominio.it>' --project-ref qibthdzydlyvdknimfoj
+```
+Senza questi secret la funzione risponde con un no-op silenzioso.
 
 ## Pubblicazione su Google Play Store
 
