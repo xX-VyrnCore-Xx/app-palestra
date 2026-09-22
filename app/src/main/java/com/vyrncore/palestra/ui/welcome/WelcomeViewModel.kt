@@ -141,7 +141,7 @@ class WelcomeViewModel @Inject constructor(
                 body = SendPushRequest(
                     recipientId = ptId,
                     type = "plan_update",
-                    title = "Nuova recluta pronta",
+                    title = "Nuovo allievo pronto",
                     body = "${profile.fullName} ha completato il proprio profilo: dai un'occhiata prima di assegnare la scheda.",
                 ),
             )

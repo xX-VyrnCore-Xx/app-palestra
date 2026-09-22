@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -48,8 +49,12 @@ fun WorkoutPlansScreen(
         if (suggestedPlanId == null) plans else plans.sortedByDescending { it.id == suggestedPlanId }
     }
 
+    // contentWindowInsets = 0: the parent dashboard Scaffold already applies the safe-area
+    // insets to every tab; without this, this nested Scaffold re-applied the top inset again,
+    // pushing the whole tab an extra status-bar's-height further down than intended.
     Scaffold(
         topBar = { TopAppBar(title = { Text("Le tue schede") }) },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { padding ->
         if (plans.isEmpty()) {
             EmptyState(

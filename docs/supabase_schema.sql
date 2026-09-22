@@ -428,27 +428,55 @@ create table if not exists public.plan_template_exercises (
 
 create index if not exists idx_plan_templates_pt_id on public.plan_templates (pt_id);
 create index if not exists idx_plan_template_exercises_template_id on public.plan_template_exercises (template_id);
+-- Covering index for the exercise_id FK (perf advisor finding).
+create index if not exists idx_plan_template_exercises_exercise_id on public.plan_template_exercises (exercise_id);
 
 alter table public.plan_templates enable row level security;
 alter table public.plan_template_exercises enable row level security;
 
+-- auth.uid() wrapped in (select ...) so RLS evaluates it once per query instead of once per row
+-- (perf advisor finding).
 create policy "plan_templates_select" on public.plan_templates
-    for select using (auth.uid() = pt_id);
+    for select using ((select auth.uid()) = pt_id);
 create policy "plan_templates_insert" on public.plan_templates
-    for insert with check (auth.uid() = pt_id);
+    for insert with check ((select auth.uid()) = pt_id);
 create policy "plan_templates_update" on public.plan_templates
-    for update using (auth.uid() = pt_id);
+    for update using ((select auth.uid()) = pt_id);
 create policy "plan_templates_delete" on public.plan_templates
-    for delete using (auth.uid() = pt_id);
+    for delete using ((select auth.uid()) = pt_id);
 
 create policy "plan_template_exercises_select" on public.plan_template_exercises
-    for select using (exists (select 1 from public.plan_templates t where t.id = template_id and t.pt_id = auth.uid()));
+    for select using (exists (select 1 from public.plan_templates t where t.id = template_id and t.pt_id = (select auth.uid())));
 create policy "plan_template_exercises_insert" on public.plan_template_exercises
-    for insert with check (exists (select 1 from public.plan_templates t where t.id = template_id and t.pt_id = auth.uid()));
+    for insert with check (exists (select 1 from public.plan_templates t where t.id = template_id and t.pt_id = (select auth.uid())));
 create policy "plan_template_exercises_update" on public.plan_template_exercises
-    for update using (exists (select 1 from public.plan_templates t where t.id = template_id and t.pt_id = auth.uid()));
+    for update using (exists (select 1 from public.plan_templates t where t.id = template_id and t.pt_id = (select auth.uid())));
 create policy "plan_template_exercises_delete" on public.plan_template_exercises
-    for delete using (exists (select 1 from public.plan_templates t where t.id = template_id and t.pt_id = auth.uid()));
+    for delete using (exists (select 1 from public.plan_templates t where t.id = template_id and t.pt_id = (select auth.uid())));
+
+-- Device push tokens -----------------------------------------------------------
+-- profiles.fcm_token only ever held one device; this lets every device a user is signed into
+-- (phone, tablet, ...) receive pushes, not just whichever last overwrote the single column.
+create table if not exists public.device_tokens (
+    user_id uuid not null references public.profiles (id) on delete cascade,
+    fcm_token text not null,
+    platform text not null default 'android',
+    updated_at timestamptz not null default now(),
+    primary key (user_id, fcm_token)
+);
+
+create index if not exists idx_device_tokens_user_id on public.device_tokens (user_id);
+
+alter table public.device_tokens enable row level security;
+
+create policy "device_tokens_select" on public.device_tokens
+    for select using ((select auth.uid()) = user_id);
+create policy "device_tokens_insert" on public.device_tokens
+    for insert with check ((select auth.uid()) = user_id);
+create policy "device_tokens_update" on public.device_tokens
+    for update using ((select auth.uid()) = user_id);
+create policy "device_tokens_delete" on public.device_tokens
+    for delete using ((select auth.uid()) = user_id);
 
 -- PT invite codes -------------------------------------------------------------
 -- SECURITY DEFINER so any signed-in user can resolve a PT's short invite code to their id/name

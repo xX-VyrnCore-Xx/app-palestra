@@ -110,7 +110,7 @@ fun ActiveWorkoutScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("MISSIONE IN CORSO", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.sp) },
+                    title = { Text("ALLENAMENTO IN CORSO", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, letterSpacing = 1.sp) },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface,
                         titleContentColor = MaterialTheme.colorScheme.onSurface
@@ -162,7 +162,7 @@ fun ActiveWorkoutScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "PROGRESSO MISSIONE",
+                                "PROGRESSO ALLENAMENTO",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary,
@@ -221,7 +221,7 @@ fun ActiveWorkoutScreen(
                         .height(56.dp),
                     shape = MaterialTheme.shapes.large
                 ) {
-                    Text("TERMINA MISSIONE", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    Text("TERMINA ALLENAMENTO", fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                 }
             }
         }

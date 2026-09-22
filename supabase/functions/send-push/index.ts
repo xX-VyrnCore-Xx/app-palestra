@@ -129,45 +129,65 @@ Deno.serve(async (req: Request) => {
   }
 
   const serviceClient = createClient(supabaseUrl, serviceRoleKey);
-  const { data: profile } = await serviceClient
-    .from("profiles")
+  // Fan out to every device this user is signed into (phone, tablet, ...), not just the last one
+  // to register - device_tokens holds one row per user+device instead of profiles' single column.
+  const { data: devices } = await serviceClient
+    .from("device_tokens")
     .select("fcm_token")
-    .eq("id", body.recipientId)
-    .single();
-  const token = profile?.fcm_token as string | undefined;
-  if (!token) return jsonResponse({ skipped: "recipient has no registered device" }, 200);
+    .eq("user_id", body.recipientId);
+  const tokens = (devices ?? []).map((d) => d.fcm_token as string).filter(Boolean);
+  if (tokens.length === 0) return jsonResponse({ skipped: "recipient has no registered device" }, 200);
 
   const account: ServiceAccount = JSON.parse(serviceAccountJson);
   const accessToken = await getAccessToken(account);
 
-  const fcmResponse = await fetch(
-    `https://fcm.googleapis.com/v1/projects/${account.project_id}/messages:send`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: {
-          token,
-          data: {
-            type: body.type,
-            title: body.title,
-            body: body.body,
-            senderName: body.title,
-            conversationId: userData.user.id,
-          },
+  const staleTokens: string[] = [];
+  let sentCount = 0;
+  for (const token of tokens) {
+    const fcmResponse = await fetch(
+      `https://fcm.googleapis.com/v1/projects/${account.project_id}/messages:send`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
         },
-      }),
-    },
-  );
+        body: JSON.stringify({
+          message: {
+            token,
+            data: {
+              type: body.type,
+              title: body.title,
+              body: body.body,
+              senderName: body.title,
+              conversationId: userData.user.id,
+            },
+          },
+        }),
+      },
+    );
 
-  if (!fcmResponse.ok) {
+    if (fcmResponse.ok) {
+      sentCount++;
+      continue;
+    }
     const detail = await fcmResponse.text();
     console.error("FCM error", fcmResponse.status, detail);
-    return jsonResponse({ error: "Push delivery failed" }, 502);
+    // UNREGISTERED/INVALID_ARGUMENT means the app was uninstalled or the token rotated - prune it
+    // so future sends don't keep paying the round trip for a dead device.
+    if (fcmResponse.status === 404 || detail.includes("UNREGISTERED")) {
+      staleTokens.push(token);
+    }
   }
 
-  return jsonResponse({ sent: true });
+  if (staleTokens.length > 0) {
+    await serviceClient
+      .from("device_tokens")
+      .delete()
+      .eq("user_id", body.recipientId)
+      .in("fcm_token", staleTokens);
+  }
+
+  if (sentCount === 0) return jsonResponse({ error: "Push delivery failed" }, 502);
+  return jsonResponse({ sent: true, devices: sentCount });
 });

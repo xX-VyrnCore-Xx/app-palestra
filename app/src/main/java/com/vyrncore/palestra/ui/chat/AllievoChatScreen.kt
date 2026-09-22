@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -50,7 +51,10 @@ fun AllievoChatScreen(ptId: String?, ptName: String) {
     if (openThread) {
         ChatThreadScreen(peerId = ptId, onBack = { openThread = false })
     } else {
-        Scaffold(topBar = { TopAppBar(title = { Text("Messaggi") }) }) { padding ->
+        Scaffold(
+            topBar = { TopAppBar(title = { Text("Messaggi") }) },
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        ) { padding ->
             Column(modifier = Modifier.fillMaxSize().padding(padding)) {
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),

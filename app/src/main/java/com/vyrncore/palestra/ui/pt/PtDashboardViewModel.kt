@@ -29,6 +29,11 @@ data class ClientRanking(val clientId: String, val fullName: String, val workout
 
 enum class ClientSortMode { LAST_ACTIVE, NAME }
 
+/** Backs the tap-to-filter behavior on the roster's stat row: tapping "ATTIVE 7GG"/"FERME" narrows
+ * the list instead of just displaying a count, so a PT can go straight from "3 clienti fermi" to
+ * seeing who they are without typing a search. */
+enum class ClientFilterMode { ALL, ACTIVE_THIS_WEEK, INACTIVE }
+
 /** One client's plan/program library, for the PT-side "Schede" tab. */
 data class ClientPlanOverview(
     val clientId: String,
@@ -71,12 +76,20 @@ class PtDashboardViewModel @Inject constructor(
     private val _sortMode = MutableStateFlow(ClientSortMode.LAST_ACTIVE)
     val sortMode: StateFlow<ClientSortMode> = _sortMode.asStateFlow()
 
+    private val _filterMode = MutableStateFlow(ClientFilterMode.ALL)
+    val filterMode: StateFlow<ClientFilterMode> = _filterMode.asStateFlow()
+
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
     }
 
     fun setSortMode(mode: ClientSortMode) {
         _sortMode.value = mode
+    }
+
+    /** Tapping an already-active filter clears it, so the stat cards work as a toggle. */
+    fun toggleFilterMode(mode: ClientFilterMode) {
+        _filterMode.value = if (_filterMode.value == mode) ClientFilterMode.ALL else mode
     }
 
     private val _inviteCode = MutableStateFlow<String?>(null)
@@ -136,10 +149,18 @@ class PtDashboardViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val visibleClients: StateFlow<List<ClientOverview>> = combine(
-        clientOverviews, _searchQuery, _sortMode,
-    ) { overviews, query, sort ->
+        clientOverviews, _searchQuery, _sortMode, _filterMode,
+    ) { overviews, query, sort, filter ->
+        val weekAgo = System.currentTimeMillis() - 7L * 24 * 3600 * 1000
         overviews
             .filter { it.fullName.contains(query, ignoreCase = true) || it.email.contains(query, ignoreCase = true) }
+            .filter { client ->
+                when (filter) {
+                    ClientFilterMode.ALL -> true
+                    ClientFilterMode.ACTIVE_THIS_WEEK -> client.workoutsThisWeek > 0
+                    ClientFilterMode.INACTIVE -> (client.lastActiveEpochMs ?: 0) < weekAgo
+                }
+            }
             .let { filtered ->
                 when (sort) {
                     ClientSortMode.NAME -> filtered.sortedBy { it.fullName.lowercase() }

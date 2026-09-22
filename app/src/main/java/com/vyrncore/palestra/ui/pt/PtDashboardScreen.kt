@@ -2,6 +2,7 @@ package com.vyrncore.palestra.ui.pt
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -13,6 +14,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -48,6 +50,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -86,7 +89,7 @@ private data class PtTab(val label: String, val icon: ImageVector)
 private const val CHAT_TAB_INDEX = 2
 
 private val tabs = listOf(
-    PtTab("Plotone", Icons.Filled.People),
+    PtTab("Home", Icons.Filled.People),
     PtTab("Schede", Icons.Filled.FitnessCenter),
     PtTab("Chat", Icons.Filled.Forum),
     PtTab("Assistente", Icons.Filled.AutoAwesome),
@@ -149,7 +152,10 @@ private fun PtPlansScreen(
 ) {
     val overviews by viewModel.clientPlanOverviews.collectAsStateWithLifecycle()
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Schede") }) }) { padding ->
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Schede") }) },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+    ) { padding ->
         if (overviews.isEmpty()) {
             EmptyState(
                 icon = Icons.Filled.FitnessCenter,
@@ -224,11 +230,12 @@ private fun PtClientListScreen(
     val weeklyRanking by viewModel.weeklyRanking.collectAsStateWithLifecycle()
     val feed by viewModel.feed.collectAsStateWithLifecycle()
     val inviteCode by viewModel.inviteCode.collectAsStateWithLifecycle()
+    val filterMode by viewModel.filterMode.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Il tuo plotone") },
+                title = { Text("I tuoi clienti") },
                 actions = {
                     IconButton(onClick = onOpenSearch) {
                         Icon(Icons.Filled.Search, contentDescription = "Cerca")
@@ -236,6 +243,7 @@ private fun PtClientListScreen(
                 },
             )
         },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { padding ->
       PullToRefreshBox(
         isRefreshing = isSyncing,
@@ -254,24 +262,32 @@ private fun PtClientListScreen(
                         shape = RoundedCornerShape(24.dp),
                     )
 
+                    val animatedTotal by animateIntAsState(clients.size, label = "clientsTotal")
+                    val animatedActive by animateIntAsState(activeThisWeek, label = "clientsActive")
+                    val animatedInactive by animateIntAsState(inactiveCount, label = "clientsInactive")
                     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                         MetricCard(
                             icon = Icons.Filled.People,
-                            value = "${clients.size}",
+                            value = "$animatedTotal",
                             label = "TOTALI",
                             modifier = Modifier.weight(1f),
+                            onClick = { viewModel.toggleFilterMode(ClientFilterMode.ALL) },
                         )
                         MetricCard(
                             icon = Icons.Filled.Whatshot,
-                            value = "$activeThisWeek",
+                            value = "$animatedActive",
                             label = "ATTIVE 7GG",
                             modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+                            selected = filterMode == ClientFilterMode.ACTIVE_THIS_WEEK,
+                            onClick = { viewModel.toggleFilterMode(ClientFilterMode.ACTIVE_THIS_WEEK) },
                         )
                         MetricCard(
                             icon = Icons.Filled.EventBusy,
-                            value = "$inactiveCount",
+                            value = "$animatedInactive",
                             label = "FERME",
                             modifier = Modifier.weight(1f),
+                            selected = filterMode == ClientFilterMode.INACTIVE,
+                            onClick = { viewModel.toggleFilterMode(ClientFilterMode.INACTIVE) },
                         )
                     }
 
@@ -281,6 +297,23 @@ private fun PtClientListScreen(
 
                     if (feed.isNotEmpty()) {
                         PlotoneFeedCard(posts = feed, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+                    }
+
+                    if (filterMode != ClientFilterMode.ALL) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                        ) {
+                            Text(
+                                if (filterMode == ClientFilterMode.INACTIVE) "Mostro solo i clienti fermi" else "Mostro solo gli attivi negli ultimi 7 giorni",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(onClick = { viewModel.toggleFilterMode(ClientFilterMode.ALL) }) {
+                                Text("Rimuovi filtro")
+                            }
+                        }
                     }
 
                     if (clients.isNotEmpty()) {
@@ -434,7 +467,7 @@ private fun PlotoneFeedCard(posts: List<PlotoneFeedPost>, modifier: Modifier = M
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.DynamicFeed, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Text(
-                    "Bacheca del plotone",
+                    "Bacheca del team",
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(start = 8.dp),
                 )
@@ -479,7 +512,7 @@ private fun WeeklyRankingCard(ranking: List<ClientRanking>, modifier: Modifier =
                     tint = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
                 Text(
-                    "Classifica del plotone",
+                    "Classifica del team",
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
                     modifier = Modifier.padding(start = 8.dp),

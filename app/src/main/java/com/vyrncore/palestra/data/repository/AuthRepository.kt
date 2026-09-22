@@ -6,6 +6,7 @@ import com.vyrncore.palestra.data.local.entity.UserProfileEntity
 import com.vyrncore.palestra.data.local.entity.UserRole
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import com.vyrncore.palestra.data.remote.dto.UserProfileDto
@@ -27,12 +28,16 @@ data class PtInviteMatch(
     @SerialName("full_name") val fullName: String,
 )
 
+@Serializable
+private data class WelcomeEmailRequest(val fullName: String, val role: String)
+
 @Singleton
 class AuthRepository @Inject constructor(
     private val auth: Auth,
     private val postgrest: Postgrest,
     private val storage: Storage,
     private val userProfileDao: UserProfileDao,
+    private val functions: Functions,
 ) {
     private companion object {
         const val AVATARS_BUCKET = "avatars"
@@ -77,6 +82,12 @@ class AuthRepository @Inject constructor(
             syncStatus = SyncStatus.PENDING_CREATE,
         )
         userProfileDao.upsert(profile)
+
+        // Best-effort branded welcome email via Resend - registration must never fail on this,
+        // Supabase Auth's own built-in email already covers verification/reset.
+        runCatching {
+            functions.invoke("send-welcome-email", body = WelcomeEmailRequest(fullName = fullName, role = role.name))
+        }
     }
 
     suspend fun signIn(email: String, password: String) {
@@ -101,13 +112,19 @@ class AuthRepository @Inject constructor(
         auth.resetPasswordForEmail(email)
     }
 
-    /** Clears this device's FCM token from the outgoing user's profile before signing out - without
-     * this, a device shared between accounts (PT signs out, allievo signs in) keeps delivering push
-     * notifications for BOTH accounts, since the token would otherwise stay registered on the old
-     * profile row until it happens to be overwritten by a future login. */
-    suspend fun signOut() {
+    /** Clears this device's push token(s) from the outgoing user before signing out - without this,
+     * a device shared between accounts (PT signs out, allievo signs in) keeps delivering push
+     * notifications for BOTH accounts, since the token would otherwise stay registered until a
+     * future login happens to overwrite it. Every device this user is signed into keeps its own row
+     * in device_tokens, so only this device's is removed here. */
+    suspend fun signOut(deviceToken: String? = null) {
         currentUserId?.let { userId ->
             runCatching {
+                if (deviceToken != null) {
+                    postgrest.from("device_tokens").delete {
+                        filter { eq("user_id", userId); eq("fcm_token", deviceToken) }
+                    }
+                }
                 postgrest.from("profiles").update(mapOf("fcm_token" to null)) {
                     filter { eq("id", userId) }
                 }
@@ -128,9 +145,19 @@ class AuthRepository @Inject constructor(
         )
     }
 
-    /** Registers this device's FCM token so the backend can push notifications to it. */
+    /** Registers this device's FCM token so the backend can push notifications to it. Kept in
+     * device_tokens (one row per user+device, so every installed device gets pushes, not just the
+     * last one to register) and mirrored onto profiles.fcm_token for older RPCs/functions that still
+     * read the single-device column. If this token was previously another user's device (shared
+     * device, different account signed in), that stale row is dropped first. */
     suspend fun updateFcmToken(userId: String, token: String) {
         runCatching {
+            postgrest.from("device_tokens").delete {
+                filter { eq("fcm_token", token); neq("user_id", userId) }
+            }
+            postgrest.from("device_tokens").upsert(
+                mapOf("user_id" to userId, "fcm_token" to token, "platform" to "android"),
+            )
             postgrest.from("profiles").update(mapOf("fcm_token" to token)) {
                 filter { eq("id", userId) }
             }

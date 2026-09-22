@@ -136,9 +136,19 @@ class ProfileViewModel @Inject constructor(
 
     fun signOut(onSignedOut: () -> Unit) {
         viewModelScope.launch {
-            authRepository.signOut()
+            val deviceToken = runCatching { currentFcmToken() }.getOrNull()
+            authRepository.signOut(deviceToken)
             onSignedOut()
         }
+    }
+
+    /** Firebase's Task API has no suspend equivalent wired into this project (no
+     * kotlinx-coroutines-play-services dependency), so this bridges the one-shot callback itself
+     * rather than pull in a dependency for a single call site. */
+    private suspend fun currentFcmToken(): String = kotlinx.coroutines.suspendCancellableCoroutine { cont ->
+        com.google.firebase.messaging.FirebaseMessaging.getInstance().token
+            .addOnSuccessListener { cont.resume(it, null) }
+            .addOnFailureListener { cont.cancel(it) }
     }
 
     private val _inviteCode = MutableStateFlow<String?>(null)
