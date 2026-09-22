@@ -1,17 +1,24 @@
 package com.vyrncore.palestra.ui.pt
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarViewWeek
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -25,9 +32,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vyrncore.palestra.ui.components.EmptyState
 
 @Composable
 fun ProgramEditorScreen(
@@ -76,23 +86,55 @@ fun ProgramEditorScreen(
                 }
             }
 
-            Button(onClick = { showPicker = true }, modifier = Modifier.padding(top = 16.dp)) {
+            Button(
+                onClick = { showPicker = true },
+                shape = MaterialTheme.shapes.large,
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+            ) {
                 Icon(Icons.Filled.Add, contentDescription = null)
                 Text("Aggiungi esercizio", modifier = Modifier.padding(start = 4.dp))
             }
 
             LazyColumn(modifier = Modifier.weight(1f).padding(top = 8.dp)) {
-                items(draft, key = { it.exerciseId }) { exercise ->
-                    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row {
+                if (draft.isEmpty()) {
+                    item {
+                        EmptyState(
+                            icon = Icons.Filled.CalendarViewWeek,
+                            message = "Aggiungi gli esercizi che si ripeteranno ogni settimana: il carico crescerà da solo secondo l'incremento impostato sopra.",
+                            modifier = Modifier.fillParentMaxSize(),
+                        )
+                    }
+                }
+                itemsIndexed(draft, key = { _, item -> item.exerciseId }) { index, exercise ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                        shape = MaterialTheme.shapes.large,
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(28.dp)
+                                        .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        "${index + 1}",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    )
+                                }
                                 Text(
                                     exercise.exerciseName,
                                     style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier.weight(1f),
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.weight(1f).padding(start = 10.dp),
                                 )
                                 IconButton(onClick = { viewModel.removeExercise(exercise.exerciseId) }) {
-                                    Icon(Icons.Filled.Delete, contentDescription = "Rimuovi")
+                                    Icon(Icons.Filled.Delete, contentDescription = "Rimuovi", tint = MaterialTheme.colorScheme.error)
                                 }
                             }
                             Row(modifier = Modifier.padding(top = 4.dp)) {

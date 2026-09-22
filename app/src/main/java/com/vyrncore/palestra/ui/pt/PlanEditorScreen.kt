@@ -29,6 +29,9 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.CircularProgressIndicator
@@ -63,6 +66,7 @@ fun PlanEditorScreen(
     val templates by viewModel.templates.collectAsStateWithLifecycle()
     val aiGenerating by viewModel.aiGenerating.collectAsStateWithLifecycle()
     val aiError by viewModel.aiError.collectAsStateWithLifecycle()
+    val aiSuggestedMeta by viewModel.aiSuggestedMeta.collectAsStateWithLifecycle()
     var planName by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var showPicker by remember { mutableStateOf(false) }
@@ -70,12 +74,23 @@ fun PlanEditorScreen(
     var showSaveTemplateDialog by remember { mutableStateOf(false) }
     var showAiDialog by remember { mutableStateOf(false) }
 
+    // Pre-fills what the AI already decided instead of making the PT retype it: only touches
+    // fields the PT hasn't already set by hand, so it never clobbers a name/category they chose
+    // themselves before generating.
+    androidx.compose.runtime.LaunchedEffect(aiSuggestedMeta) {
+        val (suggestedName, suggestedCategory) = aiSuggestedMeta ?: return@LaunchedEffect
+        if (planName.isBlank() && !suggestedName.isNullOrBlank()) planName = suggestedName
+        if (selectedCategory == null && suggestedCategory != null && suggestedCategory in PLAN_CATEGORIES) {
+            selectedCategory = suggestedCategory
+        }
+    }
+
     Scaffold(topBar = { TopAppBar(title = { Text("Nuova scheda") }) }) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
             if (!clientInjuries.isNullOrBlank()) {
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                    shape = MaterialTheme.shapes.medium,
+                    shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                 ) {
                     Row(modifier = Modifier.padding(12.dp)) {
@@ -123,7 +138,7 @@ fun PlanEditorScreen(
             Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
                 Button(
                     onClick = { showPicker = true },
-                    shape = MaterialTheme.shapes.medium,
+                    shape = MaterialTheme.shapes.large,
                     modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Filled.Add, contentDescription = null)
@@ -131,7 +146,7 @@ fun PlanEditorScreen(
                 }
                 OutlinedButton(
                     onClick = { showTemplatePicker = true },
-                    shape = MaterialTheme.shapes.medium,
+                    shape = MaterialTheme.shapes.large,
                     modifier = Modifier.weight(1f).padding(start = 8.dp),
                 ) {
                     Icon(Icons.Filled.Bookmark, contentDescription = null)
@@ -141,7 +156,7 @@ fun PlanEditorScreen(
 
             Button(
                 onClick = { showAiDialog = true },
-                shape = MaterialTheme.shapes.medium,
+                shape = MaterialTheme.shapes.large,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
@@ -157,8 +172,11 @@ fun PlanEditorScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 4.dp),
                 ) {
+                    // Same "~1.5 min per set" estimate used to fill estimatedMinutes on save
+                    // (see PlanEditorViewModel.savePlan), shown live so the PT sees it forming.
+                    val estimatedMinutes = draft.sumOf { it.targetSets } * 3 / 2
                     Text(
-                        "ESERCIZI (${draft.size})",
+                        "ESERCIZI (${draft.size}) · ~$estimatedMinutes MIN",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
@@ -172,12 +190,22 @@ fun PlanEditorScreen(
             }
 
             LazyColumn(modifier = Modifier.weight(1f).padding(top = 4.dp)) {
+                if (draft.isEmpty()) {
+                    item {
+                        com.vyrncore.palestra.ui.components.EmptyState(
+                            icon = Icons.Filled.FitnessCenter,
+                            message = "Aggiungi esercizi dal catalogo, parti da un modello o lascia che l'AI proponga una scheda completa.",
+                            modifier = Modifier.fillParentMaxSize(),
+                        )
+                    }
+                }
                 itemsIndexed(draft, key = { _, item -> item.exerciseId }) { index, exercise ->
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
                         shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -200,6 +228,30 @@ fun PlanEditorScreen(
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.weight(1f).padding(start = 10.dp),
                                 )
+                                Column {
+                                    IconButton(
+                                        onClick = { viewModel.moveExercise(exercise.exerciseId, -1) },
+                                        enabled = index > 0,
+                                        modifier = Modifier.size(22.dp),
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.KeyboardArrowUp,
+                                            contentDescription = "Sposta su",
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { viewModel.moveExercise(exercise.exerciseId, 1) },
+                                        enabled = index < draft.lastIndex,
+                                        modifier = Modifier.size(22.dp),
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.KeyboardArrowDown,
+                                            contentDescription = "Sposta giù",
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                    }
+                                }
                                 IconButton(onClick = { viewModel.removeExercise(exercise.exerciseId) }) {
                                     Icon(Icons.Filled.Delete, contentDescription = "Rimuovi", tint = MaterialTheme.colorScheme.error)
                                 }

@@ -141,6 +141,12 @@ class PlanEditorViewModel @Inject constructor(
     private val _aiError = MutableStateFlow<String?>(null)
     val aiError: StateFlow<String?> = _aiError.asStateFlow()
 
+    /** The name/category the AI proposed alongside the exercises on the last successful
+     * generation - the screen pre-fills its own name field/category chip from this instead of
+     * making the PT retype what the AI already suggested. Null fields mean "leave as is". */
+    private val _aiSuggestedMeta = MutableStateFlow<Pair<String?, String?>?>(null)
+    val aiSuggestedMeta: StateFlow<Pair<String?, String?>?> = _aiSuggestedMeta.asStateFlow()
+
     /** Replaces the draft with exercises the AI proposed for [goal] - always still just a draft
      * the PT reviews (sets/reps/rest are editable, nothing is saved until "Salva scheda"). */
     fun generateWithAi(goal: String) {
@@ -161,10 +167,24 @@ class PlanEditorViewModel @Inject constructor(
                             restSeconds = suggested.restSeconds,
                         )
                     }
+                    _aiSuggestedMeta.value = suggestion.planName to suggestion.category
                 }
                 .onFailure { e -> _aiError.value = e.message ?: "Errore durante la generazione della scheda." }
             _aiGenerating.value = false
         }
+    }
+
+    /** Move an exercise one position up (-1) or down (+1) in the draft order - the order is what
+     * gets persisted as each row's orderIndex, so this is the only way to reorder a plan short of
+     * removing and re-adding exercises. No-op past either end of the list. */
+    fun moveExercise(exerciseId: String, delta: Int) {
+        val list = _draftExercises.value.toMutableList()
+        val from = list.indexOfFirst { it.exerciseId == exerciseId }
+        val to = from + delta
+        if (from == -1 || to < 0 || to >= list.size) return
+        val item = list.removeAt(from)
+        list.add(to, item)
+        _draftExercises.value = list
     }
 
     fun clearAiError() {
