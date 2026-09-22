@@ -95,6 +95,7 @@ fun ProfileScreen(
     val achievementNotificationsEnabled by viewModel.achievementNotificationsEnabled.collectAsStateWithLifecycle()
     val inviteCode by viewModel.inviteCode.collectAsStateWithLifecycle()
     val linkPtResult by viewModel.linkPtResult.collectAsStateWithLifecycle()
+    val membership by viewModel.membership.collectAsStateWithLifecycle()
     var showNameDialog by remember { mutableStateOf(false) }
     var showSignOutDialog by remember { mutableStateOf(false) }
     var showEditProfileSheet by remember { mutableStateOf(false) }
@@ -102,6 +103,7 @@ fun ProfileScreen(
 
     LaunchedEffect(profile?.role) {
         if (profile?.role == UserRole.PT) viewModel.loadInviteCode()
+        if (profile?.role == UserRole.ALLIEVO) viewModel.loadMembership()
     }
 
     val avatarPicker = rememberLauncherForActivityResult(
@@ -232,6 +234,10 @@ fun ProfileScreen(
                     Icon(Icons.Filled.FitnessCenter, contentDescription = null, modifier = Modifier.size(18.dp))
                     Text("Dati corporei e progressi", modifier = Modifier.padding(start = 8.dp))
                 }
+                com.vyrncore.palestra.ui.components.MembershipStatusCard(
+                    membership = membership,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
             }
 
             if (profile?.role == UserRole.PT) {

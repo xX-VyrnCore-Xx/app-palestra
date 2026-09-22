@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.BodyMetricsRepository
 import com.vyrncore.palestra.data.repository.DEFAULT_REMINDER_THRESHOLD_DAYS
+import com.vyrncore.palestra.data.repository.MembershipInfo
+import com.vyrncore.palestra.data.repository.MembershipRepository
 import com.vyrncore.palestra.data.repository.ThemeMode
 import com.vyrncore.palestra.data.repository.ThemeRepository
 import com.vyrncore.palestra.data.repository.WorkoutRepository
@@ -29,6 +31,7 @@ class ProfileViewModel @Inject constructor(
     private val themeRepository: ThemeRepository,
     private val workoutRepository: WorkoutRepository,
     private val bodyMetricsRepository: BodyMetricsRepository,
+    private val membershipRepository: MembershipRepository,
     @ApplicationContext private val context: android.content.Context,
 ) : ViewModel() {
 
@@ -36,6 +39,14 @@ class ProfileViewModel @Inject constructor(
 
     val profile = authRepository.observeProfile(authRepository.currentUserId.orEmpty())
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    private val _membership = MutableStateFlow<MembershipInfo?>(null)
+    val membership: StateFlow<MembershipInfo?> = _membership.asStateFlow()
+
+    /** Called once the screen knows the user's role - PT has no membership of their own to show. */
+    fun loadMembership() {
+        viewModelScope.launch { _membership.value = runCatching { membershipRepository.getCurrentMembership(userId) }.getOrNull() }
+    }
 
     val themeMode = themeRepository.themeMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.SYSTEM)

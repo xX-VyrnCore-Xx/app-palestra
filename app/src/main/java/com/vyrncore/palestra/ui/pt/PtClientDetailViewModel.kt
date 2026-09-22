@@ -8,6 +8,8 @@ import com.vyrncore.palestra.data.repository.AllievoPrivateProfile
 import com.vyrncore.palestra.data.repository.AllievoProfileRepository
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.BodyMetricsRepository
+import com.vyrncore.palestra.data.repository.MembershipInfo
+import com.vyrncore.palestra.data.repository.MembershipRepository
 import com.vyrncore.palestra.data.repository.PtNotesRepository
 import com.vyrncore.palestra.data.repository.WorkoutRepository
 import com.vyrncore.palestra.util.PdfReportGenerator
@@ -31,6 +33,7 @@ class PtClientDetailViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val allievoProfileRepository: AllievoProfileRepository,
     private val reminderScheduler: ReminderScheduler,
+    private val membershipRepository: MembershipRepository,
     @ApplicationContext private val context: android.content.Context,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -41,8 +44,23 @@ class PtClientDetailViewModel @Inject constructor(
     private val _allievoProfile = MutableStateFlow<AllievoPrivateProfile?>(null)
     val allievoProfile: StateFlow<AllievoPrivateProfile?> = _allievoProfile.asStateFlow()
 
+    private val _membership = MutableStateFlow<MembershipInfo?>(null)
+    val membership: StateFlow<MembershipInfo?> = _membership.asStateFlow()
+
     init {
         viewModelScope.launch { _allievoProfile.value = allievoProfileRepository.fetch(clientId) }
+        refreshMembership()
+    }
+
+    private fun refreshMembership() {
+        viewModelScope.launch { _membership.value = runCatching { membershipRepository.getCurrentMembership(clientId) }.getOrNull() }
+    }
+
+    fun recordMembership(planLabel: String?, startDate: java.time.LocalDate, endDate: java.time.LocalDate, notes: String?) {
+        viewModelScope.launch {
+            membershipRepository.recordMembership(clientId, planLabel, startDate, endDate, notes)
+            refreshMembership()
+        }
     }
 
     val plans = workoutRepository.observePlansForUser(clientId)

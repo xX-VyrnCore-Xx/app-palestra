@@ -144,6 +144,16 @@ data class ChatMessageDto(
 )
 
 @Serializable
+data class MembershipDto(
+    val id: String,
+    @SerialName("user_id") val userId: String,
+    @SerialName("plan_label") val planLabel: String? = null,
+    @SerialName("start_date") val startDate: String,
+    @SerialName("end_date") val endDate: String,
+    val notes: String? = null,
+)
+
+@Serializable
 data class PtNoteDto(
     val id: String,
     @SerialName("pt_id") val ptId: String,

@@ -69,10 +69,12 @@ fun PtClientDetailScreen(
     val injuries by viewModel.injuries.collectAsStateWithLifecycle()
     val clientName by viewModel.clientName.collectAsStateWithLifecycle()
     val allievoProfile by viewModel.allievoProfile.collectAsStateWithLifecycle()
+    val membership by viewModel.membership.collectAsStateWithLifecycle()
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.ITALY) }
 
     var noteDraft by remember(note) { mutableStateOf(note?.content.orEmpty()) }
     var injuriesDraft by remember(injuries) { mutableStateOf(injuries.orEmpty()) }
+    var showMembershipDialog by remember { mutableStateOf(false) }
 
     val completedSessions = sessions.count { it.endedAtEpochMs != null }
     val lastActive = sessions.mapNotNull { it.endedAtEpochMs }.maxOrNull()
@@ -125,6 +127,11 @@ fun PtClientDetailScreen(
             enter = fadeIn(tween(350)) + slideInVertically(tween(350)) { it / 8 },
           ) {
           Column(modifier = Modifier.padding(16.dp)) {
+            com.vyrncore.palestra.ui.components.MembershipStatusCard(
+                membership = membership,
+                onManage = { showMembershipDialog = true },
+                modifier = Modifier.padding(bottom = 12.dp),
+            )
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
@@ -355,6 +362,110 @@ fun PtClientDetailScreen(
             viewModel = viewModel,
             onDismiss = { inspectedPlan = null },
         )
+    }
+
+    if (showMembershipDialog) {
+        MembershipDialog(
+            current = membership,
+            onDismiss = { showMembershipDialog = false },
+            onSave = { planLabel, start, end, notes ->
+                viewModel.recordMembership(planLabel, start, end, notes)
+                showMembershipDialog = false
+            },
+        )
+    }
+}
+
+/** Records a fresh membership window for this client (a renewal, not an edit-in-place - see
+ * MembershipRepository.recordMembership) - plan label and notes are free text since ViBE doesn't
+ * publish a fixed price/plan list the app could offer as a picker. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun MembershipDialog(
+    current: com.vyrncore.palestra.data.repository.MembershipInfo?,
+    onDismiss: () -> Unit,
+    onSave: (planLabel: String?, start: java.time.LocalDate, end: java.time.LocalDate, notes: String?) -> Unit,
+) {
+    val today = remember { java.time.LocalDate.now() }
+    var planLabel by remember { mutableStateOf(current?.planLabel.orEmpty()) }
+    var notes by remember { mutableStateOf("") }
+    var startDate by remember { mutableStateOf(current?.let { today } ?: today) }
+    var endDate by remember { mutableStateOf(today.plusMonths(1)) }
+    var showStartPicker by remember { mutableStateOf(false) }
+    var showEndPicker by remember { mutableStateOf(false) }
+    val dialogDateFormat = remember { java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (current == null) "Imposta abbonamento" else "Rinnova abbonamento") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = planLabel,
+                    onValueChange = { planLabel = it },
+                    label = { Text("Piano (es. Annuale)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(modifier = Modifier.padding(top = 12.dp)) {
+                    AssistChip(
+                        onClick = { showStartPicker = true },
+                        label = { Text("Da: ${startDate.format(dialogDateFormat)}") },
+                        modifier = Modifier.weight(1f),
+                    )
+                    AssistChip(
+                        onClick = { showEndPicker = true },
+                        label = { Text("A: ${endDate.format(dialogDateFormat)}") },
+                        modifier = Modifier.weight(1f).padding(start = 8.dp),
+                    )
+                }
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Note (opzionale)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onSave(planLabel, startDate, endDate, notes) },
+                enabled = !endDate.isBefore(startDate),
+            ) { Text("Salva") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
+    )
+
+    if (showStartPicker) {
+        val state = androidx.compose.material3.rememberDatePickerState(
+            initialSelectedDateMillis = startDate.toEpochDay() * 86_400_000L,
+        )
+        androidx.compose.material3.DatePickerDialog(
+            onDismissRequest = { showStartPicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedDateMillis?.let { startDate = java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).toLocalDate() }
+                    showStartPicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showStartPicker = false }) { Text("Annulla") } },
+        ) { androidx.compose.material3.DatePicker(state = state) }
+    }
+    if (showEndPicker) {
+        val state = androidx.compose.material3.rememberDatePickerState(
+            initialSelectedDateMillis = endDate.toEpochDay() * 86_400_000L,
+        )
+        androidx.compose.material3.DatePickerDialog(
+            onDismissRequest = { showEndPicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedDateMillis?.let { endDate = java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).toLocalDate() }
+                    showEndPicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { showEndPicker = false }) { Text("Annulla") } },
+        ) { androidx.compose.material3.DatePicker(state = state) }
     }
 }
 
