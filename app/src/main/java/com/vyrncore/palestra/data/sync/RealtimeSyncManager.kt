@@ -16,7 +16,6 @@ import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
@@ -55,11 +54,13 @@ class RealtimeSyncManager @Inject constructor(
     /** Whenever connectivity comes back and the realtime client isn't actually connected, force a
      * fresh connect + resubscribe of the current channel instead of waiting for it to notice on
      * its own. [drop]\(1\) skips the observer's initial replayed value so this only reacts to real
-     * transitions, not the state at startup (already handled by [startListening]). */
+     * transitions, not the state at startup (already handled by [startListening]). StateFlow
+     * already conflates equal consecutive values on its own, so no extra distinctUntilChanged()
+     * is needed here (and the compiler treats it as an error - the operator is a no-op on
+     * StateFlow and deprecated for exactly that reason). */
     private fun observeConnectivity() {
         scope.launch {
             connectivityObserver.isOnline
-                .distinctUntilChanged()
                 .drop(1)
                 .filter { online -> online }
                 .collect {
