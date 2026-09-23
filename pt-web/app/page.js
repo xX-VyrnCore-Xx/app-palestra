@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Users, Copy, Check, AlertTriangle, ChevronRight, Share2, UserPlus, ArrowRight } from "lucide-react";
+import { Users, Copy, Check, AlertTriangle, ChevronRight, Share2, UserPlus, ArrowRight, MessageCircle } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuthGuard } from "../lib/useAuthGuard";
 import { useClients, daysUntil, membershipState } from "../lib/useClients";
+import { useConversations } from "../lib/useConversations";
 import AppShell from "../components/AppShell";
 import Avatar from "../components/Avatar";
 import StatCard from "../components/StatCard";
@@ -26,6 +27,7 @@ export default function DashboardPage() {
   const { clients, memberships, loading: clientsLoading } = useClients(profile?.id, () =>
     toast.error("Errore nel caricamento degli allievi.")
   );
+  const { totalUnread } = useConversations(profile?.id);
 
   async function ensureInviteCode() {
     if (!profile || profile.invite_code) return;
@@ -89,7 +91,7 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold sm:text-3xl">Ciao, {profile.full_name?.split(" ")[0] || "PT"} 👋</h1>
         <p className="mt-1 text-sm text-white/50">Ecco come vanno le cose oggi.</p>
 
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard icon={Users} label="Allievi totali" value={clients.length} />
           <StatCard
             icon={AlertTriangle}
@@ -97,10 +99,18 @@ export default function DashboardPage() {
             value={withStatus.length}
             accent={withStatus.length > 0 ? "text-amber-300" : "text-white"}
           />
-          <div className="glass-card col-span-2 flex items-center justify-between p-4 sm:col-span-1">
+          <Link href="/messages" className="block">
+            <StatCard
+              icon={MessageCircle}
+              label="Messaggi da leggere"
+              value={totalUnread}
+              accent={totalUnread > 0 ? "text-brand-orange" : "text-white"}
+            />
+          </Link>
+          <div className="glass-card flex items-center justify-between p-4">
             <div className="min-w-0">
               <p className="label-text mb-0.5">Codice invito</p>
-              <p className="text-xl font-bold tracking-widest text-brand-orange">{profile.invite_code || "…"}</p>
+              <p className="truncate text-xl font-bold tracking-widest text-brand-orange">{profile.invite_code || "…"}</p>
             </div>
             <div className="flex shrink-0 gap-1.5">
               <button
@@ -142,7 +152,7 @@ export default function DashboardPage() {
                   <Link
                     key={client.id}
                     href={`/clients/${client.id}`}
-                    className="glass-card flex items-center gap-3 p-3.5 transition hover:border-brand-orange/40 hover:bg-white/[0.06]"
+                    className="glass-card glass-card-interactive flex items-center gap-3 p-3.5"
                   >
                     <Avatar name={client.full_name} size={36} />
                     <div className="min-w-0 flex-1">
@@ -184,7 +194,7 @@ export default function DashboardPage() {
                   <Link
                     key={client.id}
                     href={`/clients/${client.id}`}
-                    className="glass-card flex items-center gap-3 p-3.5 transition hover:border-brand-orange/40 hover:bg-white/[0.06]"
+                    className="glass-card glass-card-interactive flex items-center gap-3 p-3.5"
                   >
                     <Avatar name={client.full_name} size={36} />
                     <div className="min-w-0 flex-1">
@@ -201,7 +211,7 @@ export default function DashboardPage() {
 
         <Link
           href="/clients"
-          className="glass-card mt-6 flex items-center justify-between p-4 transition hover:border-brand-orange/40 hover:bg-white/[0.06]"
+          className="glass-card glass-card-interactive mt-6 flex items-center justify-between p-4"
         >
           <span className="flex items-center gap-2 text-sm font-medium">
             <Users size={16} className="text-white/50" /> Vedi tutti gli allievi ({clients.length})

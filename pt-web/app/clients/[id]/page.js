@@ -11,6 +11,8 @@ import {
   StickyNote,
   Dumbbell,
   Trash2,
+  Activity,
+  Scale,
 } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 import { useAuthGuard } from "../../../lib/useAuthGuard";
@@ -46,6 +48,8 @@ export default function ClientDetailPage() {
   const [membership, setMembership] = useState(null);
   const [notes, setNotes] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [bodyMetrics, setBodyMetrics] = useState([]);
+  const [sessionStats, setSessionStats] = useState({ count: 0, lastAt: null });
   const [loading, setLoading] = useState(true);
   const [injuriesDraft, setInjuriesDraft] = useState("");
   const [savingInjuries, setSavingInjuries] = useState(false);
@@ -57,23 +61,37 @@ export default function ClientDetailPage() {
   const loadAll = useCallback(
     async ({ silent } = {}) => {
       if (!pt) return;
-      const [{ data: clientRow }, { data: planRows }, { data: membershipRows }, { data: noteRows }, { data: messageRows }] =
-        await Promise.all([
-          supabase.from("profiles").select("*").eq("id", id).single(),
-          supabase
-            .from("workout_plans")
-            .select("id, name, category, estimated_minutes, created_at, program_id")
-            .eq("assigned_to_user_id", id)
-            .order("created_at", { ascending: false }),
-          supabase.from("memberships").select("*").eq("user_id", id).order("end_date", { ascending: false }).limit(1),
-          supabase.from("pt_notes").select("*").eq("pt_id", pt.id).eq("client_id", id).order("created_at", { ascending: false }),
-          supabase
-            .from("messages")
-            .select("*")
-            .or(`and(sender_id.eq.${pt.id},recipient_id.eq.${id}),and(sender_id.eq.${id},recipient_id.eq.${pt.id})`)
-            .order("created_at", { ascending: true })
-            .limit(100),
-        ]);
+      const [
+        { data: clientRow },
+        { data: planRows },
+        { data: membershipRows },
+        { data: noteRows },
+        { data: messageRows },
+        { data: metricRows },
+        { count: sessionCount, data: lastSessionRows },
+      ] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", id).single(),
+        supabase
+          .from("workout_plans")
+          .select("id, name, category, estimated_minutes, created_at, program_id")
+          .eq("assigned_to_user_id", id)
+          .order("created_at", { ascending: false }),
+        supabase.from("memberships").select("*").eq("user_id", id).order("end_date", { ascending: false }).limit(1),
+        supabase.from("pt_notes").select("*").eq("pt_id", pt.id).eq("client_id", id).order("created_at", { ascending: false }),
+        supabase
+          .from("messages")
+          .select("*")
+          .or(`and(sender_id.eq.${pt.id},recipient_id.eq.${id}),and(sender_id.eq.${id},recipient_id.eq.${pt.id})`)
+          .order("created_at", { ascending: true })
+          .limit(100),
+        supabase.from("body_metrics").select("*").eq("user_id", id).order("date", { ascending: false }).limit(5),
+        supabase
+          .from("workout_sessions")
+          .select("started_at", { count: "exact" })
+          .eq("user_id", id)
+          .order("started_at", { ascending: false })
+          .limit(1),
+      ]);
 
       setClient(clientRow || null);
       if (!silent) setInjuriesDraft(clientRow?.injuries || "");
@@ -81,7 +99,21 @@ export default function ClientDetailPage() {
       setMembership((membershipRows && membershipRows[0]) || null);
       setNotes(noteRows || []);
       setMessages(messageRows || []);
+      setBodyMetrics(metricRows || []);
+      setSessionStats({ count: sessionCount || 0, lastAt: lastSessionRows?.[0]?.started_at || null });
       setLoading(false);
+
+      // Anything the client sent us that we haven't opened yet - opening this page is the read.
+      const unreadIds = (messageRows || [])
+        .filter((m) => m.recipient_id === pt.id && !m.read_at)
+        .map((m) => m.id);
+      if (unreadIds.length) {
+        supabase
+          .from("messages")
+          .update({ read_at: new Date().toISOString() })
+          .in("id", unreadIds)
+          .then(() => {});
+      }
     },
     [pt, id]
   );
@@ -90,13 +122,30 @@ export default function ClientDetailPage() {
     loadAll();
   }, [loadAll]);
 
-  // Lightweight polling instead of a realtime subscription - keeps this page simple and still
-  // gets new messages/plan changes within a few seconds. `silent` avoids clobbering an
-  // in-progress injuries edit with the just-fetched value on every tick.
+  // Realtime instead of polling: new messages and plan/membership edits made from the app show up
+  // the moment they happen, matching how the app itself talks to Supabase.
   useEffect(() => {
-    const interval = setInterval(() => loadAll({ silent: true }), 6000);
-    return () => clearInterval(interval);
-  }, [loadAll]);
+    if (!pt) return;
+    const channel = supabase
+      .channel(`client-${id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages", filter: `sender_id=eq.${id}` },
+        () => loadAll({ silent: true })
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "workout_plans", filter: `assigned_to_user_id=eq.${id}` },
+        () => loadAll({ silent: true })
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "body_metrics", filter: `user_id=eq.${id}` },
+        () => loadAll({ silent: true })
+      )
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [pt, id, loadAll]);
 
   async function saveInjuries() {
     setSavingInjuries(true);
@@ -303,6 +352,42 @@ export default function ClientDetailPage() {
                     </p>
                   </div>
                   <span className="text-xs text-white/30">{new Date(p.created_at).toLocaleDateString("it-IT")}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="glass-card mt-4 p-5">
+          <h2 className="mb-3 flex items-center gap-2 font-semibold">
+            <Activity size={16} className="text-white/50" /> Andamento
+          </h2>
+          <div className="mb-4 flex gap-4 text-sm">
+            <div>
+              <p className="text-lg font-bold">{sessionStats.count}</p>
+              <p className="text-xs text-white/50">Allenamenti completati</p>
+            </div>
+            {sessionStats.lastAt && (
+              <div>
+                <p className="text-lg font-bold">{new Date(sessionStats.lastAt).toLocaleDateString("it-IT")}</p>
+                <p className="text-xs text-white/50">Ultimo allenamento</p>
+              </div>
+            )}
+          </div>
+          {bodyMetrics.length === 0 ? (
+            <p className="text-sm text-white/50">Nessuna misurazione registrata dall&apos;allievo.</p>
+          ) : (
+            <div className="space-y-2">
+              {bodyMetrics.map((m) => (
+                <div key={m.id} className="flex items-center justify-between rounded-xl border border-white/10 px-4 py-2.5 text-sm">
+                  <span className="flex items-center gap-2 text-white/70">
+                    <Scale size={14} className="text-white/40" />
+                    {new Date(m.date).toLocaleDateString("it-IT")}
+                  </span>
+                  <span className="font-medium">
+                    {m.weight_kg ? `${m.weight_kg} kg` : "—"}
+                    {m.body_fat_percent ? ` · ${m.body_fat_percent}% BF` : ""}
+                  </span>
                 </div>
               ))}
             </div>
