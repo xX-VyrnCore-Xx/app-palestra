@@ -15,11 +15,15 @@ enum SupabaseService {
 struct Profile: Codable {
     let id: String
     let fullName: String
+    let email: String
     let role: String
+    let inviteCode: String?
 
     enum CodingKeys: String, CodingKey {
         case id
         case fullName = "full_name"
+        case email
         case role
+        case inviteCode = "invite_code"
     }
 }
