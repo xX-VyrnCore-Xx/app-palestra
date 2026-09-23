@@ -168,7 +168,7 @@ export default function ClientDetailPage() {
 
   if (authLoading || loading) {
     return (
-      <AppShell profile={pt} back={{ href: "/", label: "Torna agli allievi" }}>
+      <AppShell profile={pt} back={{ href: "/clients", label: "Torna agli allievi" }}>
         <div className="space-y-4">
           <SkeletonCard />
           <SkeletonCard />
@@ -179,7 +179,7 @@ export default function ClientDetailPage() {
 
   if (!client) {
     return (
-      <AppShell profile={pt} back={{ href: "/", label: "Torna agli allievi" }}>
+      <AppShell profile={pt} back={{ href: "/clients", label: "Torna agli allievi" }}>
         <p className="text-white/50">Allievo non trovato.</p>
       </AppShell>
     );
@@ -189,7 +189,7 @@ export default function ClientDetailPage() {
   const statusMeta = MEMBERSHIP_STATUS[status];
 
   return (
-    <AppShell profile={pt} back={{ href: "/", label: "Torna agli allievi" }}>
+    <AppShell profile={pt} back={{ href: "/clients", label: "Torna agli allievi" }}>
       <div className="animate-fade-in">
         <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
