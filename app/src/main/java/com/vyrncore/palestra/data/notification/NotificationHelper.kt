@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
@@ -39,7 +40,10 @@ class NotificationHelper @Inject constructor(
                     CHAT_CHANNEL_ID,
                     "Messaggi chat",
                     NotificationManager.IMPORTANCE_HIGH,
-                )
+                ).apply {
+                    enableLights(true)
+                    lightColor = BRAND_COLOR
+                }
             )
             manager?.createNotificationChannel(
                 NotificationChannel(
@@ -53,7 +57,10 @@ class NotificationHelper @Inject constructor(
                     ACHIEVEMENT_CHANNEL_ID,
                     "Record e traguardi",
                     NotificationManager.IMPORTANCE_HIGH,
-                )
+                ).apply {
+                    enableLights(true)
+                    lightColor = BRAND_COLOR
+                }
             )
             manager?.createNotificationChannel(
                 NotificationChannel(
@@ -94,14 +101,26 @@ class NotificationHelper @Inject constructor(
         return PendingIntent.getActivity(context, requestCode, intent, flags)
     }
 
+    /** Shared defaults every notification this app posts should carry: the real small icon (see
+     * [R.drawable.ic_notification] - the previous [R.drawable.ic_launcher_foreground] is a thin,
+     * mostly-transparent wordmark meant for an adaptive-icon mask and rendered as an illegible
+     * blob in the status bar), the brand color tint Android applies behind it on 5.0+, and
+     * [NotificationCompat.Builder.setWhen] left at post time so notifications sort correctly
+     * alongside the rest of the shade. */
+    private fun baseBuilder(channelId: String, category: String): NotificationCompat.Builder =
+        NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(BRAND_COLOR)
+            .setCategory(category)
+            .setAutoCancel(true)
+
     fun showWorkoutReminder(title: String, message: String) {
         if (!hasNotificationPermission()) return
 
-        val notification = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+        val notification = baseBuilder(REMINDER_CHANNEL_ID, NotificationCompat.CATEGORY_REMINDER)
             .setContentTitle(title)
             .setContentText(message)
-            .setAutoCancel(true)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setContentIntent(openAppPendingIntent(REMINDER_NOTIFICATION_ID))
             .build()
         NotificationManagerCompat.from(context).notify(REMINDER_NOTIFICATION_ID, notification)
@@ -110,11 +129,10 @@ class NotificationHelper @Inject constructor(
     suspend fun showChatMessageNotification(conversationId: String, senderName: String, message: String) {
         if (!hasNotificationPermission() || !themeRepository.chatNotificationsEnabled.first()) return
 
-        val notification = NotificationCompat.Builder(context, CHAT_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+        val notification = baseBuilder(CHAT_CHANNEL_ID, NotificationCompat.CATEGORY_MESSAGE)
             .setContentTitle(senderName)
             .setContentText(message)
-            .setAutoCancel(true)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(openAppPendingIntent(conversationId.hashCode(), chatPeerId = conversationId))
             .build()
@@ -124,11 +142,10 @@ class NotificationHelper @Inject constructor(
     suspend fun showPlanUpdateNotification(title: String, message: String) {
         if (!hasNotificationPermission() || !themeRepository.planNotificationsEnabled.first()) return
 
-        val notification = NotificationCompat.Builder(context, PLAN_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+        val notification = baseBuilder(PLAN_CHANNEL_ID, NotificationCompat.CATEGORY_EVENT)
             .setContentTitle(title)
             .setContentText(message)
-            .setAutoCancel(true)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setContentIntent(openAppPendingIntent(PLAN_NOTIFICATION_ID))
             .build()
         NotificationManagerCompat.from(context).notify(PLAN_NOTIFICATION_ID, notification)
@@ -137,11 +154,9 @@ class NotificationHelper @Inject constructor(
     suspend fun showPersonalRecordNotification(exerciseName: String, estimatedOneRepMaxKg: Double) {
         if (!hasNotificationPermission() || !themeRepository.achievementNotificationsEnabled.first()) return
 
-        val notification = NotificationCompat.Builder(context, ACHIEVEMENT_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+        val notification = baseBuilder(ACHIEVEMENT_CHANNEL_ID, NotificationCompat.CATEGORY_STATUS)
             .setContentTitle("🎖️ Nuovo record personale!")
             .setContentText("$exerciseName · 1RM stimato ${"%.1f".format(estimatedOneRepMaxKg)} kg")
-            .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(openAppPendingIntent(exerciseName.hashCode()))
             .build()
@@ -154,11 +169,9 @@ class NotificationHelper @Inject constructor(
     fun showRestTimerFinished(exerciseName: String?) {
         if (!hasNotificationPermission()) return
 
-        val notification = NotificationCompat.Builder(context, REST_TIMER_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+        val notification = baseBuilder(REST_TIMER_CHANNEL_ID, NotificationCompat.CATEGORY_ALARM)
             .setContentTitle("Recupero terminato ⏱️")
             .setContentText(if (exerciseName != null) "Pronto per: $exerciseName" else "Si riparte!")
-            .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(openAppPendingIntent(REST_TIMER_NOTIFICATION_ID))
             .build()
@@ -168,18 +181,20 @@ class NotificationHelper @Inject constructor(
     fun showWeeklyDigest(title: String, message: String) {
         if (!hasNotificationPermission()) return
 
-        val notification = NotificationCompat.Builder(context, DIGEST_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+        val notification = baseBuilder(DIGEST_CHANNEL_ID, NotificationCompat.CATEGORY_SOCIAL)
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-            .setAutoCancel(true)
             .setContentIntent(openAppPendingIntent(DIGEST_NOTIFICATION_ID))
             .build()
         NotificationManagerCompat.from(context).notify(DIGEST_NOTIFICATION_ID, notification)
     }
 
     private companion object {
+        // Same brand orange as the app's Material color scheme (ui/theme/Color.kt Orange50) -
+        // Android tints the small icon's background circle with this on 5.0+.
+        val BRAND_COLOR = Color.parseColor("#F76B15")
+
         const val REMINDER_CHANNEL_ID = "workout_reminders"
         const val REMINDER_NOTIFICATION_ID = 1001
         const val CHAT_CHANNEL_ID = "chat_messages"

@@ -21,7 +21,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -49,9 +49,40 @@ fun BodyMetricsScreen(viewModel: BodyMetricsViewModel = hiltViewModel()) {
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.ITALY) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Dati corporei") }) },
+        topBar = {
+            Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 1.dp) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(
+                                androidx.compose.ui.graphics.Brush.linearGradient(
+                                    listOf(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.tertiary)
+                                )
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(Icons.Filled.MonitorWeight, contentDescription = null, tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(20.dp))
+                    }
+                    Text(
+                        "Dati corporei",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        modifier = Modifier.padding(start = 12.dp),
+                    )
+                }
+            }
+        },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showDialog = true }) {
+            FloatingActionButton(
+                onClick = { showDialog = true },
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = androidx.compose.ui.graphics.Color.White,
+            ) {
                 Icon(Icons.Filled.Add, contentDescription = "Aggiungi misurazione")
             }
         },
@@ -146,31 +177,55 @@ private fun LogMetricDialog(
     var weight by remember { mutableStateOf("") }
     var fat by remember { mutableStateOf("") }
     var waist by remember { mutableStateOf("") }
+    val weightValue = weight.replace(',', '.').toDoubleOrNull()
+    // Blank/non-numeric weight used to silently save as 0.0 kg instead of stopping the user -
+    // now Salva is disabled until a real, plausible weight is entered.
+    val weightError = weight.isNotBlank() && (weightValue == null || weightValue <= 0.0 || weightValue > 400.0)
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Nuova misurazione") },
         text = {
             Column {
-                OutlinedTextField(value = weight, onValueChange = { weight = it }, label = { Text("Peso (kg)") })
+                OutlinedTextField(
+                    value = weight,
+                    onValueChange = { weight = it },
+                    label = { Text("Peso (kg)") },
+                    isError = weightError,
+                    supportingText = if (weightError) {
+                        { Text("Inserisci un peso valido") }
+                    } else null,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal,
+                    ),
+                )
                 OutlinedTextField(
                     value = fat,
                     onValueChange = { fat = it },
                     label = { Text("Massa grassa % (opzionale)") },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal,
+                    ),
                     modifier = Modifier.padding(top = 8.dp),
                 )
                 OutlinedTextField(
                     value = waist,
                     onValueChange = { waist = it },
                     label = { Text("Vita cm (opzionale)") },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal,
+                    ),
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                onConfirm(weight.toDoubleOrNull() ?: 0.0, fat.toDoubleOrNull(), waist.toDoubleOrNull())
-            }) { Text("Salva") }
+            TextButton(
+                onClick = {
+                    onConfirm(weightValue!!, fat.replace(',', '.').toDoubleOrNull(), waist.replace(',', '.').toDoubleOrNull())
+                },
+                enabled = weightValue != null && !weightError,
+            ) { Text("Salva") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
     )

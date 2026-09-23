@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Status-bar/notification icon: Android always renders this as a flat white silhouette on
+         API 21+ (only the alpha channel of non-transparent pixels matters), so it needs to be a
+         bold shape that reads at 24dp - unlike ic_launcher_foreground, which is a thin, colored
+         wordmark meant to sit inside an adaptive-icon mask with lots of surrounding padding and
+         came out as an illegible blob when reused here (the previous small icon on every
+         notification this app posts). A simple filled dumbbell keeps the brand without needing
+         legible letterforms at this size. -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M2,10.5 L2,13.5 L4,13.5 L4,10.5 Z M5,8.5 L5,15.5 L7,15.5 L7,8.5 Z M8,10 L8,14 L16,14 L16,10 Z M17,8.5 L17,15.5 L19,15.5 L19,8.5 Z M20,10.5 L20,13.5 L22,13.5 L22,10.5 Z" />
+</vector>
