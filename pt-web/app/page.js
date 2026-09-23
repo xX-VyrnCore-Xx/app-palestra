@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Users, Copy, Check, Search, AlertTriangle, ChevronRight, Share2 } from "lucide-react";
+import { Users, Copy, Check, AlertTriangle, ChevronRight, Share2, UserPlus, ArrowRight } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuthGuard } from "../lib/useAuthGuard";
+import { useClients, daysUntil, membershipState } from "../lib/useClients";
 import AppShell from "../components/AppShell";
 import Avatar from "../components/Avatar";
 import StatCard from "../components/StatCard";
@@ -17,65 +18,20 @@ function randomInviteCode() {
   return Array.from({ length: 6 }, () => INVITE_ALPHABET[Math.floor(Math.random() * INVITE_ALPHABET.length)]).join("");
 }
 
-function daysUntil(dateStr) {
-  return Math.ceil((new Date(dateStr) - new Date()) / 86400000);
-}
-
 export default function DashboardPage() {
   const { profile, loading, setProfile } = useAuthGuard();
   const toast = useToast();
-  const [clients, setClients] = useState([]);
-  const [memberships, setMemberships] = useState({}); // userId -> latest membership row
-  const [clientsLoading, setClientsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    if (!profile) return;
-    loadClients(profile.id);
-    if (!profile.invite_code) ensureInviteCode(profile.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile]);
+  const { clients, memberships, loading: clientsLoading } = useClients(profile?.id, () =>
+    toast.error("Errore nel caricamento degli allievi.")
+  );
 
-  async function loadClients(ptId) {
-    setClientsLoading(true);
-    const { data: clientRows, error } = await supabase
-      .from("profiles")
-      .select("id, full_name, email, injuries")
-      .eq("pt_id", ptId)
-      .order("full_name");
-
-    if (error) {
-      toast.error("Errore nel caricamento degli allievi.");
-      setClientsLoading(false);
-      return;
-    }
-
-    setClients(clientRows || []);
-
-    if (clientRows?.length) {
-      const { data: membershipRows } = await supabase
-        .from("memberships")
-        .select("user_id, end_date")
-        .in(
-          "user_id",
-          clientRows.map((c) => c.id)
-        )
-        .order("end_date", { ascending: false });
-
-      const latest = {};
-      for (const m of membershipRows || []) {
-        if (!latest[m.user_id]) latest[m.user_id] = m; // first hit per user is the latest (sorted desc)
-      }
-      setMemberships(latest);
-    }
-    setClientsLoading(false);
-  }
-
-  async function ensureInviteCode(ptId) {
+  async function ensureInviteCode() {
+    if (!profile || profile.invite_code) return;
     for (let i = 0; i < 5; i++) {
       const candidate = randomInviteCode();
-      const { error } = await supabase.from("profiles").update({ invite_code: candidate }).eq("id", ptId);
+      const { error } = await supabase.from("profiles").update({ invite_code: candidate }).eq("id", profile.id);
       if (!error) {
         setProfile((p) => ({ ...p, invite_code: candidate }));
         return;
@@ -83,6 +39,11 @@ export default function DashboardPage() {
     }
     toast.error("Non sono riuscito a generare un codice invito. Riprova più tardi.");
   }
+
+  useEffect(() => {
+    if (profile && !profile.invite_code) ensureInviteCode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id, profile?.invite_code]);
 
   function copyInviteCode() {
     if (!profile?.invite_code) return;
@@ -104,18 +65,15 @@ export default function DashboardPage() {
     }
   }
 
-  const filteredClients = clients.filter((c) => {
-    const q = search.trim().toLowerCase();
-    if (!q) return true;
-    return c.full_name?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q);
-  });
+  const withStatus = clients
+    .map((c) => ({ client: c, membership: memberships[c.id], status: membershipState(memberships[c.id]) }))
+    .filter((c) => c.status === "expiring" || c.status === "expired")
+    .sort((a, b) => daysUntil(a.membership.end_date) - daysUntil(b.membership.end_date))
+    .slice(0, 5);
 
-  const expiringSoonCount = clients.filter((c) => {
-    const m = memberships[c.id];
-    if (!m) return false;
-    const d = daysUntil(m.end_date);
-    return d <= 7;
-  }).length;
+  const recentClients = [...clients]
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    .slice(0, 5);
 
   if (loading) {
     return (
@@ -128,16 +86,16 @@ export default function DashboardPage() {
   return (
     <AppShell profile={profile}>
       <div className="animate-fade-in">
-        <h1 className="text-2xl font-bold">Ciao, {profile.full_name?.split(" ")[0] || "PT"} 👋</h1>
-        <p className="mt-1 text-sm text-white/50">Ecco un riepilogo dei tuoi allievi.</p>
+        <h1 className="text-2xl font-bold sm:text-3xl">Ciao, {profile.full_name?.split(" ")[0] || "PT"} 👋</h1>
+        <p className="mt-1 text-sm text-white/50">Ecco come vanno le cose oggi.</p>
 
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <StatCard icon={Users} label="Allievi totali" value={clients.length} />
           <StatCard
             icon={AlertTriangle}
-            label="Abbonamenti in scadenza"
-            value={expiringSoonCount}
-            accent={expiringSoonCount > 0 ? "text-amber-300" : "text-white"}
+            label="Abbonamenti da seguire"
+            value={withStatus.length}
+            accent={withStatus.length > 0 ? "text-amber-300" : "text-white"}
           />
           <div className="glass-card col-span-2 flex items-center justify-between p-4 sm:col-span-1">
             <div className="min-w-0">
@@ -165,76 +123,91 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="mb-3 mt-8 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">I tuoi allievi</h2>
-          <div className="relative">
-            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
-            <input
-              type="search"
-              placeholder="Cerca…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="input-field w-44 py-2 pl-9"
-            />
-          </div>
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                <AlertTriangle size={17} className="text-amber-300" /> Da seguire
+              </h2>
+            </div>
+            {clientsLoading ? (
+              <SkeletonList count={2} />
+            ) : withStatus.length === 0 ? (
+              <div className="glass-card p-6 text-center text-sm text-white/50">
+                Nessun abbonamento in scadenza. Tutto in ordine.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {withStatus.map(({ client, membership, status }) => (
+                  <Link
+                    key={client.id}
+                    href={`/clients/${client.id}`}
+                    className="glass-card flex items-center gap-3 p-3.5 transition hover:border-brand-orange/40 hover:bg-white/[0.06]"
+                  >
+                    <Avatar name={client.full_name} size={36} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{client.full_name}</p>
+                      <p className="truncate text-xs text-white/50">
+                        {status === "expired"
+                          ? `Scaduto il ${membership.end_date}`
+                          : `Scade tra ${daysUntil(membership.end_date)} giorni`}
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                        status === "expired" ? "bg-red-500/15 text-red-300" : "bg-amber-500/15 text-amber-300"
+                      }`}
+                    >
+                      {status === "expired" ? "Scaduto" : "In scadenza"}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                <UserPlus size={17} className="text-white/50" /> Ultimi collegati
+              </h2>
+            </div>
+            {clientsLoading ? (
+              <SkeletonList count={2} />
+            ) : recentClients.length === 0 ? (
+              <div className="glass-card p-6 text-center text-sm text-white/50">
+                Nessun allievo ancora collegato. Condividi il codice invito qui sopra.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {recentClients.map((client) => (
+                  <Link
+                    key={client.id}
+                    href={`/clients/${client.id}`}
+                    className="glass-card flex items-center gap-3 p-3.5 transition hover:border-brand-orange/40 hover:bg-white/[0.06]"
+                  >
+                    <Avatar name={client.full_name} size={36} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{client.full_name}</p>
+                      <p className="truncate text-xs text-white/50">{client.email}</p>
+                    </div>
+                    <ChevronRight size={16} className="text-white/25" />
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
 
-        {clientsLoading ? (
-          <SkeletonList />
-        ) : filteredClients.length === 0 ? (
-          <div className="glass-card p-10 text-center">
-            <Users size={28} className="mx-auto mb-3 text-white/25" />
-            <p className="text-white/60">
-              {clients.length === 0
-                ? "Nessun allievo ancora collegato."
-                : "Nessun risultato per questa ricerca."}
-            </p>
-            {clients.length === 0 && (
-              <p className="mt-1 text-sm text-white/40">
-                Condividi il tuo codice invito qui sopra per far collegare i primi allievi.
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filteredClients.map((client) => {
-              const membership = memberships[client.id];
-              const expiring = membership && daysUntil(membership.end_date) <= 7;
-              const expired = membership && daysUntil(membership.end_date) < 0;
-              return (
-                <Link
-                  key={client.id}
-                  href={`/clients/${client.id}`}
-                  className="glass-card flex items-center gap-3 p-3.5 transition hover:border-brand-orange/40 hover:bg-white/[0.06]"
-                >
-                  <Avatar name={client.full_name} size={40} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{client.full_name}</p>
-                    <p className="truncate text-sm text-white/50">{client.email}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    {client.injuries && (
-                      <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
-                        Infortuni
-                      </span>
-                    )}
-                    {expired && (
-                      <span className="rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-medium text-red-300">
-                        Scaduto
-                      </span>
-                    )}
-                    {!expired && expiring && (
-                      <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
-                        In scadenza
-                      </span>
-                    )}
-                    <ChevronRight size={18} className="text-white/25" />
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+        <Link
+          href="/clients"
+          className="glass-card mt-6 flex items-center justify-between p-4 transition hover:border-brand-orange/40 hover:bg-white/[0.06]"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium">
+            <Users size={16} className="text-white/50" /> Vedi tutti gli allievi ({clients.length})
+          </span>
+          <ArrowRight size={16} className="text-white/40" />
+        </Link>
       </div>
     </AppShell>
   );
