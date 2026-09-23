@@ -15,7 +15,19 @@ body {
 
 @layer components {
   .glass-card {
-    @apply rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-2xl shadow-black/40;
+    @apply relative rounded-3xl border border-white/[0.09] bg-[#181125]/80 shadow-2xl shadow-black/50 backdrop-blur-xl;
+  }
+
+  /* A hairline top highlight reads as "this is a raised surface" even where the blur behind it
+     is flat (no gradient/orb nearby) - the plain opacity card had nothing to separate it from
+     the page background in those spots. */
+  .glass-card::before {
+    content: "";
+    @apply pointer-events-none absolute inset-x-0 top-0 h-px rounded-t-3xl bg-gradient-to-r from-transparent via-white/20 to-transparent;
+  }
+
+  .glass-card-interactive {
+    @apply transition hover:border-brand-orange/30 hover:bg-[#1d1629]/85;
   }
 
   .input-field {

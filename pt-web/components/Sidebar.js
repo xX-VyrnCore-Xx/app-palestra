@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { LayoutDashboard, Users, Settings, LogOut, Menu, X, ChevronLeft } from "lucide-react";
+import { LayoutDashboard, Users, MessageCircle, Settings, LogOut, Menu, X, ChevronLeft } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
+import { useConversations } from "../lib/useConversations";
 import Avatar from "./Avatar";
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/clients", label: "Allievi", icon: Users, exact: false },
+  { href: "/messages", label: "Messaggi", icon: MessageCircle, exact: false, badge: "unread" },
   { href: "/settings", label: "Impostazioni", icon: Settings, exact: true },
 ];
 
@@ -29,6 +31,7 @@ export default function Sidebar({ profile, back }) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const { totalUnread } = useConversations(profile?.id);
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -64,7 +67,12 @@ export default function Sidebar({ profile, back }) {
               }`}
             >
               <Icon size={18} strokeWidth={active ? 2.4 : 2} />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.badge === "unread" && totalUnread > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-orange px-1.5 text-[11px] font-bold text-white">
+                  {totalUnread > 9 ? "9+" : totalUnread}
+                </span>
+              )}
             </Link>
           );
         })}

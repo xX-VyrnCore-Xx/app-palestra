@@ -76,7 +76,7 @@ export default function ClientsPage() {
                 <Link
                   key={client.id}
                   href={`/clients/${client.id}`}
-                  className="glass-card flex items-center gap-3 p-3.5 transition hover:border-brand-orange/40 hover:bg-white/[0.06]"
+                  className="glass-card glass-card-interactive flex items-center gap-3 p-3.5"
                 >
                   <Avatar name={client.full_name} size={40} />
                   <div className="min-w-0 flex-1">
