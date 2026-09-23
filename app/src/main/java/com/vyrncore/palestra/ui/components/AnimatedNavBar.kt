@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,11 +31,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,9 +47,10 @@ data class NavBarItem(
 )
 
 /**
- * A softer, more "alive" replacement for the plain Material3 NavigationBar: the selected item
- * grows a pill-shaped highlight and its icon springs up slightly, instead of the flat instant
- * color swap Material gives you by default.
+ * A floating, glass-like pill bar instead of a bar glued flush to the screen edge: inset from
+ * both sides and the bottom, rounded on every corner, with a soft gradient border so it reads as
+ * a raised island rather than a flat strip. The selected item still grows a pill-shaped
+ * highlight and its icon springs up slightly.
  */
 @Composable
 fun AnimatedNavBar(
@@ -58,34 +60,35 @@ fun AnimatedNavBar(
     modifier: Modifier = Modifier,
     emphasizedIndex: Int? = null,
 ) {
-    val hairline = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 12.dp,
-        tonalElevation = 2.dp,
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
     ) {
-        Box(
+        Surface(
             modifier = Modifier
-                // A real 1dp hairline on the top edge only - the previous padding+background
-                // combo tinted the whole bar with the outline color instead of drawing a border.
-                .drawBehind {
-                    drawLine(
-                        color = hairline,
-                        start = Offset(0f, 0f),
-                        end = Offset(size.width, 0f),
-                        strokeWidth = 1.dp.toPx(),
-                    )
-                }
-                // Reserves space for Android's own gesture pill / 3-button bar below the tab
-                // labels, on the outer layer so the surface color extends behind it too.
-                .navigationBarsPadding()
+                .fillMaxWidth()
+                .border(
+                    width = 1.dp,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f),
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f),
+                        ),
+                    ),
+                    shape = RoundedCornerShape(32.dp),
+                ),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+            shape = RoundedCornerShape(32.dp),
+            shadowElevation = 16.dp,
+            tonalElevation = 3.dp,
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 68.dp)
-                    .padding(horizontal = 4.dp, vertical = 6.dp),
+                    .heightIn(min = 64.dp)
+                    .padding(horizontal = 6.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -129,6 +132,11 @@ private fun EmphasizedNavBarTab(
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
         label = "navHubScale",
     )
+    val lift by animateDpAsState(
+        targetValue = if (selected) (-6).dp else 0.dp,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "navHubLift",
+    )
 
     Column(
         modifier = modifier.clickable(
@@ -141,7 +149,9 @@ private fun EmphasizedNavBarTab(
     ) {
         Box(
             modifier = Modifier
+                .offset(y = lift)
                 .size(44.dp * scale)
+                .then(if (selected) Modifier.shadow(10.dp, RoundedCornerShape(50)) else Modifier)
                 .clip(RoundedCornerShape(50))
                 .background(bubbleColor),
             contentAlignment = Alignment.Center,

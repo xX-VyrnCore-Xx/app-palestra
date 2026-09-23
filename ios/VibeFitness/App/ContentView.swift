@@ -7,7 +7,7 @@ struct ContentView: View {
     var body: some View {
         Group {
             if auth.userId != nil {
-                HomeView()
+                RootTabView()
             } else if showRegister {
                 RegisterView(onNavigateToLogin: { showRegister = false })
             } else {
