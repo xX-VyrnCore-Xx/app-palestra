@@ -39,7 +39,7 @@ const val WEEKLY_GOAL = 3
 /** XP awarded per completed workout and per badge unlocked; levels are 100 XP apart. */
 private const val XP_PER_SESSION = 30
 private const val XP_PER_BADGE = 20
-private const val XP_PER_LEVEL = 100
+const val XP_PER_LEVEL = 100
 
 /** Total kg lifted (sum of weight*reps across every set) that unlock a badge. */
 val VOLUME_MILESTONES_KG = listOf(1_000, 5_000, 10_000, 25_000, 50_000, 100_000)

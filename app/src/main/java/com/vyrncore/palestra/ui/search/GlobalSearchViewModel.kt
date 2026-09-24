@@ -46,6 +46,19 @@ class GlobalSearchViewModel @Inject constructor(
         _query.value = value.trimStart()
     }
 
+    /** Selected muscle-group chip, or null for "all groups" - lets an allievo browse the exercise
+     * list by body part even with an empty search box, not just refine an existing text query. */
+    private val _muscleGroupFilter = MutableStateFlow<String?>(null)
+    val muscleGroupFilter: StateFlow<String?> = _muscleGroupFilter.asStateFlow()
+
+    fun setMuscleGroupFilter(group: String?) {
+        _muscleGroupFilter.value = if (_muscleGroupFilter.value == group) null else group
+    }
+
+    val availableMuscleGroups: StateFlow<List<String>> = workoutRepository.observeExercises()
+        .map { exercises -> exercises.map { it.muscleGroup }.distinct().sorted() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     private val role = authRepository.observeProfile(userId).map { it?.role }
 
     private val plans = role.flatMapLatest { r ->
@@ -67,10 +80,17 @@ class GlobalSearchViewModel @Inject constructor(
     }
 
     val results: StateFlow<List<SearchResult>> = combine(
-        _query, plans, workoutRepository.observeExercises(), ptContact,
-    ) { query, plans, exercises, pt ->
+        _query, plans, workoutRepository.observeExercises(), ptContact, _muscleGroupFilter,
+    ) { query, plans, exercises, pt, muscleGroupFilter ->
+        val groupFiltered = if (muscleGroupFilter == null) exercises else exercises.filter { it.muscleGroup == muscleGroupFilter }
         if (query.isBlank()) {
-            emptyList()
+            // No text typed: a muscle-group chip alone puts the screen in "browse" mode instead
+            // of staying empty until something is typed.
+            if (muscleGroupFilter == null) {
+                emptyList()
+            } else {
+                groupFiltered.sortedBy { it.name }.map { SearchResult.Exercise(it) }
+            }
         } else {
             val trimmed = query.trim()
             buildList {
@@ -83,7 +103,7 @@ class GlobalSearchViewModel @Inject constructor(
                     relevance(pt.fullName, trimmed)?.let { add(SearchResult.Contact(pt.id, pt.fullName)) }
                 }
                 addAll(
-                    exercises.mapNotNull { ex ->
+                    groupFiltered.mapNotNull { ex ->
                         val score = relevance(ex.name, trimmed) ?: relevance(ex.muscleGroup, trimmed)?.plus(1)
                         score?.let { it to SearchResult.Exercise(ex) }
                     }.sortedBy { it.first }.take(30).map { it.second },
