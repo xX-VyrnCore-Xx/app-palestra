@@ -3,7 +3,9 @@ package com.vyrncore.palestra.ui.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vyrncore.palestra.data.local.entity.ExerciseEntity
+import com.vyrncore.palestra.data.local.entity.UserProfileEntity
 import com.vyrncore.palestra.data.local.entity.UserRole
+import com.vyrncore.palestra.data.local.entity.WorkoutPlanEntity
 import com.vyrncore.palestra.data.repository.AuthRepository
 import com.vyrncore.palestra.data.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -46,6 +48,19 @@ class GlobalSearchViewModel @Inject constructor(
         _query.value = value.trimStart()
     }
 
+    /** Selected muscle-group chip, or null for "all groups" - lets an allievo browse the exercise
+     * list by body part even with an empty search box, not just refine an existing text query. */
+    private val _muscleGroupFilter = MutableStateFlow<String?>(null)
+    val muscleGroupFilter: StateFlow<String?> = _muscleGroupFilter.asStateFlow()
+
+    fun setMuscleGroupFilter(group: String?) {
+        _muscleGroupFilter.value = if (_muscleGroupFilter.value == group) null else group
+    }
+
+    val availableMuscleGroups: StateFlow<List<String>> = workoutRepository.observeExercises()
+        .map { exercises -> exercises.map { it.muscleGroup }.distinct().sorted() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     private val role = authRepository.observeProfile(userId).map { it?.role }
 
     private val plans = role.flatMapLatest { r ->
@@ -67,30 +82,50 @@ class GlobalSearchViewModel @Inject constructor(
     }
 
     val results: StateFlow<List<SearchResult>> = combine(
-        _query, plans, workoutRepository.observeExercises(), ptContact,
-    ) { query, plans, exercises, pt ->
+        _query, plans, workoutRepository.observeExercises(), ptContact, _muscleGroupFilter,
+    ) { query, plans, exercises, pt, muscleGroupFilter ->
+        computeResults(query, plans, exercises, pt, muscleGroupFilter)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Pulled out of the `combine` lambda with an explicit return type: Kotlin was inferring the
+     * lambda's result from the narrowest branch (the muscle-group "browse" list, typed
+     * `List<SearchResult.Exercise>`) and applying that to every other branch too, which then
+     * failed to compile wherever a `SearchResult.Plan`/`Contact` was added. */
+    private fun computeResults(
+        query: String,
+        plans: List<WorkoutPlanEntity>,
+        exercises: List<ExerciseEntity>,
+        pt: UserProfileEntity?,
+        muscleGroupFilter: String?,
+    ): List<SearchResult> {
+        val groupFiltered = if (muscleGroupFilter == null) exercises else exercises.filter { it.muscleGroup == muscleGroupFilter }
         if (query.isBlank()) {
-            emptyList()
-        } else {
-            val trimmed = query.trim()
-            buildList {
-                addAll(
-                    plans.mapNotNull { plan -> relevance(plan.name, trimmed)?.let { it to SearchResult.Plan(plan.id, plan.name, plan.category ?: "Scheda") } }
-                        .sortedBy { it.first }
-                        .map { it.second },
-                )
-                if (pt != null) {
-                    relevance(pt.fullName, trimmed)?.let { add(SearchResult.Contact(pt.id, pt.fullName)) }
-                }
-                addAll(
-                    exercises.mapNotNull { ex ->
-                        val score = relevance(ex.name, trimmed) ?: relevance(ex.muscleGroup, trimmed)?.plus(1)
-                        score?.let { it to SearchResult.Exercise(ex) }
-                    }.sortedBy { it.first }.take(30).map { it.second },
-                )
+            // No text typed: a muscle-group chip alone puts the screen in "browse" mode instead
+            // of staying empty until something is typed.
+            return if (muscleGroupFilter == null) {
+                emptyList()
+            } else {
+                groupFiltered.sortedBy { it.name }.map { SearchResult.Exercise(it) }
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        val trimmed = query.trim()
+        return buildList {
+            addAll(
+                plans.mapNotNull { plan -> relevance(plan.name, trimmed)?.let { it to SearchResult.Plan(plan.id, plan.name, plan.category ?: "Scheda") } }
+                    .sortedBy { it.first }
+                    .map { it.second },
+            )
+            if (pt != null) {
+                relevance(pt.fullName, trimmed)?.let { add(SearchResult.Contact(pt.id, pt.fullName)) }
+            }
+            addAll(
+                groupFiltered.mapNotNull { ex ->
+                    val score = relevance(ex.name, trimmed) ?: relevance(ex.muscleGroup, trimmed)?.plus(1)
+                    score?.let { it to SearchResult.Exercise(ex) }
+                }.sortedBy { it.first }.take(30).map { it.second },
+            )
+        }
+    }
 
     /** Lower is more relevant: 0 = starts with the query, 1 = a word inside it starts with the
      * query, 2 = the query just appears somewhere. Null = no match at all. */

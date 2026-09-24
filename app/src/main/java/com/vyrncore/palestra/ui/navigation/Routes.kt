@@ -15,6 +15,7 @@ object Routes {
     const val CALENDAR = "calendar"
     const val LOCATIONS = "locations"
     const val SEARCH = "search"
+    const val ACHIEVEMENTS = "achievements"
     const val RESET_PASSWORD = "reset_password/{accessToken}"
     const val WORKOUT_SUMMARY = "workout_summary/{sessionId}/{planId}"
 

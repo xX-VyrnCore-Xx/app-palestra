@@ -22,6 +22,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.vyrncore.palestra.data.local.entity.UserRole
 import com.vyrncore.palestra.ui.RootViewModel
+import com.vyrncore.palestra.ui.achievements.AchievementsScreen
 import com.vyrncore.palestra.ui.auth.LoginScreen
 import com.vyrncore.palestra.ui.auth.PtWebAppScreen
 import com.vyrncore.palestra.ui.auth.RegisterScreen
@@ -126,6 +127,7 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
                         onOpenCalendar = { navController.navigate(Routes.CALENDAR) },
                         onOpenSearch = { navController.navigate(Routes.SEARCH) },
                         onOpenLocations = { navController.navigate(Routes.LOCATIONS) },
+                        onOpenAchievements = { navController.navigate(Routes.ACHIEVEMENTS) },
                         onSignedOut = {
                             navController.navigate(Routes.LOGIN) { popUpTo(0) }
                         },
@@ -188,6 +190,9 @@ fun PalestraNavGraph(rootViewModel: RootViewModel) {
         }
         composable(Routes.LOCATIONS) {
             LocationsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.ACHIEVEMENTS) {
+            AchievementsScreen(onBack = { navController.popBackStack() })
         }
         composable(
             Routes.RESET_PASSWORD,

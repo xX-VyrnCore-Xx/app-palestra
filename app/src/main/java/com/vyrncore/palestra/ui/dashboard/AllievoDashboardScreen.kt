@@ -56,6 +56,7 @@ fun AllievoDashboardScreen(
     onOpenCalendar: () -> Unit,
     onOpenSearch: () -> Unit,
     onOpenLocations: () -> Unit,
+    onOpenAchievements: () -> Unit,
     onSignedOut: () -> Unit,
     viewModel: AllievoDashboardViewModel = hiltViewModel(),
 ) {
@@ -98,6 +99,7 @@ fun AllievoDashboardScreen(
                     onOpenCalendar = onOpenCalendar,
                     onOpenSearch = onOpenSearch,
                     onOpenLocations = onOpenLocations,
+                    onOpenAchievements = onOpenAchievements,
                     // Home's tappable suggestions deep-link into the matching dashboard tab
                     // (assistant nudges -> Assistente, "chiedi al PT" -> Chat) instead of dead-ending.
                     onOpenAssistant = { selectedTab = 3 },

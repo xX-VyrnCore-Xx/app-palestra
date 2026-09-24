@@ -1,6 +1,7 @@
 package com.vyrncore.palestra.ui.search
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Description
@@ -21,6 +23,8 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -58,6 +62,8 @@ fun GlobalSearchScreen(
 ) {
     val query by viewModel.query.collectAsStateWithLifecycle()
     val results by viewModel.results.collectAsStateWithLifecycle()
+    val muscleGroupFilter by viewModel.muscleGroupFilter.collectAsStateWithLifecycle()
+    val availableMuscleGroups by viewModel.availableMuscleGroups.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
     var detailExercise by remember { mutableStateOf<com.vyrncore.palestra.data.local.entity.ExerciseEntity?>(null) }
 
@@ -83,21 +89,45 @@ fun GlobalSearchScreen(
             )
         },
     ) { padding ->
-        if (query.isBlank()) {
-            com.vyrncore.palestra.ui.components.EmptyState(
-                icon = Icons.Filled.Search,
-                message = "Cerca tra le tue schede, esercizi e persone.",
-                modifier = Modifier.padding(padding).fillMaxSize(),
-            )
-        } else if (results.isEmpty()) {
-            com.vyrncore.palestra.ui.components.EmptyState(
-                icon = Icons.Filled.Search,
-                message = "Nessun risultato per \"$query\".",
-                modifier = Modifier.padding(padding).fillMaxSize(),
-            )
-        } else {
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            if (availableMuscleGroups.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    availableMuscleGroups.forEach { group ->
+                        FilterChip(
+                            selected = muscleGroupFilter == group,
+                            onClick = { viewModel.setMuscleGroupFilter(group) },
+                            label = { Text(group) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                            ),
+                        )
+                    }
+                }
+            }
+
+            if (results.isEmpty()) {
+                val message = if (query.isBlank() && muscleGroupFilter == null) {
+                    "Cerca tra le tue schede, esercizi e persone, o sfoglia per gruppo muscolare qui sopra."
+                } else if (query.isBlank()) {
+                    "Nessun esercizio in questo gruppo muscolare."
+                } else {
+                    "Nessun risultato per \"$query\"."
+                }
+                com.vyrncore.palestra.ui.components.EmptyState(
+                    icon = Icons.Filled.Search,
+                    message = message,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
             val grouped = results.groupBy { it.sectionTitle() }
-            LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
                 grouped.forEach { (section, sectionResults) ->
                     item(key = "header_$section") {
                         Text(
@@ -123,6 +153,7 @@ fun GlobalSearchScreen(
                         )
                     }
                 }
+            }
             }
         }
     }
