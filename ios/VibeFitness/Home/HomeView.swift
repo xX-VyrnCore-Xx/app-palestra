@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// The real Home dashboard: greeting, membership status, completed-workouts count and the next
-/// assigned plan - the iOS equivalent of the Android app's `HomeScreen` core cards (streak/chat/
-/// AI nudges are still Android-only, ported in a later round).
+/// The real Home dashboard: greeting, streak, membership status, completed-workouts count and the
+/// next assigned plan - the iOS equivalent of the Android app's `HomeScreen` core cards (the full
+/// medal collection screen and volume-based badges are still Android-only, ported in a later round).
 struct HomeView: View {
     @EnvironmentObject private var auth: AuthViewModel
     @StateObject private var viewModel = DashboardViewModel()
@@ -25,9 +25,20 @@ struct HomeView: View {
                             StatTile(value: "\(viewModel.plans.count)", label: "Schede attive")
                         }
 
+                        if viewModel.streakDays > 0 {
+                            StreakCard(streakDays: viewModel.streakDays)
+                        }
+
                         if let membership = viewModel.membership {
                             MembershipCard(membership: membership)
                         }
+
+                        Text("Medagliere")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .padding(.top, 8)
+                        BadgeRow(icon: "flame.fill", milestones: Milestones.streakDays, currentValue: viewModel.longestStreakDays, unit: "gg")
+                        BadgeRow(icon: "medal.fill", milestones: Milestones.workoutCount, currentValue: viewModel.completedSessions, unit: "")
 
                         Text("Prossima scheda")
                             .font(.headline)
@@ -126,6 +137,69 @@ private struct MembershipCard: View {
                 Spacer()
             }
             .padding(16)
+        }
+    }
+}
+
+private struct StreakCard: View {
+    let streakDays: Int
+
+    var body: some View {
+        GlassCard {
+            HStack(spacing: 12) {
+                Circle()
+                    .fill(LinearGradient(colors: [.vibeOrange, .vibeOrangeDeep], startPoint: .top, endPoint: .bottom))
+                    .frame(width: 40, height: 40)
+                    .overlay(Image(systemName: "flame.fill").font(.subheadline).foregroundStyle(.white))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(streakDays) \(streakDays == 1 ? "giorno" : "giorni") di fila")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.white)
+                    Text("Continua così per non perdere la streak")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.55))
+                }
+                Spacer()
+            }
+            .padding(16)
+        }
+    }
+}
+
+/// Every badge in one track (streak length or workout count), locked or unlocked - the compact
+/// iOS counterpart of the Android app's dedicated Traguardi screen: a single row per track here
+/// instead of a whole extra screen, since only two of the three tracks are ported yet.
+private struct BadgeRow: View {
+    let icon: String
+    let milestones: [Int]
+    let currentValue: Int
+    let unit: String
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 14) {
+                ForEach(milestones, id: \.self) { milestone in
+                    let unlocked = currentValue >= milestone
+                    VStack(spacing: 6) {
+                        Circle()
+                            .fill(
+                                unlocked
+                                    ? AnyShapeStyle(LinearGradient(colors: [.vibeOrange, .vibeOrangeDeep], startPoint: .top, endPoint: .bottom))
+                                    : AnyShapeStyle(Color.white.opacity(0.08))
+                            )
+                            .frame(width: 48, height: 48)
+                            .overlay(
+                                Image(systemName: icon)
+                                    .font(.subheadline)
+                                    .foregroundStyle(unlocked ? .white : .white.opacity(0.3))
+                            )
+                        Text("\(milestone)\(unit)")
+                            .font(.caption2.bold())
+                            .foregroundStyle(unlocked ? .white.opacity(0.85) : .white.opacity(0.35))
+                    }
+                }
+            }
+            .padding(.vertical, 4)
         }
     }
 }

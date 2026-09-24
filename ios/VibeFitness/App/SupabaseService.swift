@@ -18,6 +18,7 @@ struct Profile: Codable {
     let email: String
     let role: String
     let inviteCode: String?
+    let ptId: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -25,5 +26,6 @@ struct Profile: Codable {
         case email
         case role
         case inviteCode = "invite_code"
+        case ptId = "pt_id"
     }
 }

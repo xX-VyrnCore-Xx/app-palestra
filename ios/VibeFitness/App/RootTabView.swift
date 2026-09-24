@@ -33,6 +33,12 @@ struct RootTabView: View {
             WorkoutPlansView()
                 .tabItem { Label("Schede", systemImage: "dumbbell.fill") }
 
+            ChatView()
+                .tabItem { Label("Chat", systemImage: "bubble.left.and.bubble.right.fill") }
+
+            AssistantView()
+                .tabItem { Label("Assistente", systemImage: "sparkles") }
+
             ProfileView()
                 .tabItem { Label("Profilo", systemImage: "person.crop.circle.fill") }
         }
