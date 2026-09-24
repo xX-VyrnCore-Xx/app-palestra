@@ -57,11 +57,23 @@ struct Membership: Codable {
     }
 }
 
-/// One `workout_sessions` row - just enough to count completed workouts and show the last date.
+/// One `workout_sessions` row - just enough to count completed workouts, show the last date, and
+/// compute the streak (a session only counts once it's finished, matching the Android app).
 struct WorkoutSession: Codable {
     let startedAt: String
+    let endedAt: String?
 
     enum CodingKeys: String, CodingKey {
         case startedAt = "started_at"
+        case endedAt = "ended_at"
     }
+}
+
+/// Same streak-length milestones as the Android app's `BADGE_MILESTONES`/`WORKOUT_COUNT_MILESTONES`
+/// (`HomeViewModel.kt`) - kept in sync by hand since this is a separate codebase, so a badge that
+/// unlocks in the app unlocks here too. Volume-based badges aren't ported yet (need per-set weight
+/// data this app doesn't fetch).
+enum Milestones {
+    static let streakDays = [3, 7, 14, 30, 60, 100]
+    static let workoutCount = [5, 10, 25, 50, 100, 250]
 }

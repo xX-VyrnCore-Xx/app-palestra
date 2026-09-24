@@ -1,14 +1,16 @@
 import Foundation
 
 /// Fetches the allievo's own dashboard data - assigned plans, current membership, completed
-/// session count - the same three queries the Android `HomeScreen`/`WorkoutPlansScreen` make,
-/// scoped by the same RLS policies (a user only ever sees rows where `user_id`/`assigned_to_user_id`
-/// is their own auth uid).
+/// sessions, streak - the same queries the Android `HomeScreen`/`WorkoutPlansScreen` make, scoped
+/// by the same RLS policies (a user only ever sees rows where `user_id`/`assigned_to_user_id` is
+/// their own auth uid).
 @MainActor
 final class DashboardViewModel: ObservableObject {
     @Published var plans: [WorkoutPlan] = []
     @Published var membership: Membership?
     @Published var completedSessions = 0
+    @Published var streakDays = 0
+    @Published var longestStreakDays = 0
     @Published var isLoading = true
 
     private let client = SupabaseService.client
@@ -42,6 +44,56 @@ final class DashboardViewModel: ObservableObject {
 
         plans = await plansTask
         membership = await membershipTask.first
-        completedSessions = await sessionsTask.count
+        let sessions = await sessionsTask
+        let doneDates = completedDates(from: sessions)
+        completedSessions = doneDates.count
+        streakDays = currentStreak(doneDates)
+        longestStreakDays = longestStreak(doneDates)
+    }
+
+    /// One calendar day per finished session (matches the Android `HomeViewModel`: a session only
+    /// counts once `ended_at` is set, and multiple sessions the same day collapse to one date).
+    private func completedDates(from sessions: [WorkoutSession]) -> Set<DateComponents> {
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let isoFormatterNoFraction = ISO8601DateFormatter()
+
+        var dates = Set<DateComponents>()
+        for session in sessions {
+            guard let endedAt = session.endedAt else { continue }
+            let date = isoFormatter.date(from: endedAt) ?? isoFormatterNoFraction.date(from: endedAt)
+            guard let date else { continue }
+            dates.insert(Calendar.current.dateComponents([.year, .month, .day], from: date))
+        }
+        return dates
+    }
+
+    private func currentStreak(_ doneDates: Set<DateComponents>) -> Int {
+        var streak = 0
+        var day = Calendar.current.startOfDay(for: Date())
+        while doneDates.contains(Calendar.current.dateComponents([.year, .month, .day], from: day)) {
+            streak += 1
+            guard let previous = Calendar.current.date(byAdding: .day, value: -1, to: day) else { break }
+            day = previous
+        }
+        return streak
+    }
+
+    private func longestStreak(_ doneDates: Set<DateComponents>) -> Int {
+        let calendar = Calendar.current
+        let sortedDays = doneDates.compactMap { calendar.date(from: $0) }.sorted()
+        var longest = 0
+        var current = 0
+        var previousDay: Date?
+        for day in sortedDays {
+            if let previousDay, let expected = calendar.date(byAdding: .day, value: 1, to: previousDay), calendar.isDate(expected, inSameDayAs: day) {
+                current += 1
+            } else {
+                current = 1
+            }
+            longest = max(longest, current)
+            previousDay = day
+        }
+        return longest
     }
 }
