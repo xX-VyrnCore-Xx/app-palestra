@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { LayoutDashboard, Users, MessageCircle, Settings, LogOut, Menu, X, ChevronLeft } from "lucide-react";
+import { LayoutDashboard, Users, MessageCircle, Dumbbell, Settings, LogOut, Menu, X, ChevronLeft } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { useConversations } from "../lib/useConversations";
 import Avatar from "./Avatar";
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/clients", label: "Allievi", icon: Users, exact: false },
   { href: "/messages", label: "Messaggi", icon: MessageCircle, exact: false, badge: "unread" },
+  { href: "/exercises", label: "Esercizi", icon: Dumbbell, exact: false },
   { href: "/settings", label: "Impostazioni", icon: Settings, exact: true },
 ];
 
