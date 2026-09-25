@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   Plus,
   Send,
@@ -13,6 +13,9 @@ import {
   Trash2,
   Activity,
   Scale,
+  Pencil,
+  UserMinus,
+  Layers,
 } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 import { useAuthGuard } from "../../../lib/useAuthGuard";
@@ -40,11 +43,15 @@ function membershipStatus(m) {
 
 export default function ClientDetailPage() {
   const { id } = useParams();
+  const router = useRouter();
   const { profile: pt, loading: authLoading } = useAuthGuard();
   const toast = useToast();
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [removing, setRemoving] = useState(false);
 
   const [client, setClient] = useState(null);
   const [plans, setPlans] = useState([]);
+  const [programs, setPrograms] = useState([]);
   const [membership, setMembership] = useState(null);
   const [notes, setNotes] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -64,6 +71,7 @@ export default function ClientDetailPage() {
       const [
         { data: clientRow },
         { data: planRows },
+        { data: programRows },
         { data: membershipRows },
         { data: noteRows },
         { data: messageRows },
@@ -73,9 +81,15 @@ export default function ClientDetailPage() {
         supabase.from("profiles").select("*").eq("id", id).single(),
         supabase
           .from("workout_plans")
-          .select("id, name, category, estimated_minutes, created_at, program_id")
+          .select("id, name, category, estimated_minutes, created_at, program_id, week_index")
           .eq("assigned_to_user_id", id)
           .order("created_at", { ascending: false }),
+        supabase
+          .from("programs")
+          .select("*")
+          .eq("assigned_to_user_id", id)
+          .eq("created_by_pt_id", pt.id)
+          .order("start_at", { ascending: false }),
         supabase.from("memberships").select("*").eq("user_id", id).order("end_date", { ascending: false }).limit(1),
         supabase.from("pt_notes").select("*").eq("pt_id", pt.id).eq("client_id", id).order("created_at", { ascending: false }),
         supabase
@@ -96,6 +110,7 @@ export default function ClientDetailPage() {
       setClient(clientRow || null);
       if (!silent) setInjuriesDraft(clientRow?.injuries || "");
       setPlans(planRows || []);
+      setPrograms(programRows || []);
       setMembership((membershipRows && membershipRows[0]) || null);
       setNotes(noteRows || []);
       setMessages(messageRows || []);
@@ -215,6 +230,20 @@ export default function ClientDetailPage() {
     toast.success("Abbonamento registrato");
   }
 
+  async function removeClient() {
+    setRemoving(true);
+    // Unlink, don't delete: the allievo keeps their account and history, they just stop showing
+    // up in this PT's roster. They can reconnect any time with an invite code.
+    const { error } = await supabase.from("profiles").update({ pt_id: null }).eq("id", id);
+    setRemoving(false);
+    if (error) {
+      toast.error("Impossibile rimuovere l'allievo.");
+      return;
+    }
+    toast.success("Allievo rimosso dal tuo roster");
+    router.push("/clients");
+  }
+
   if (authLoading || loading) {
     return (
       <AppShell profile={pt} back={{ href: "/clients", label: "Torna agli allievi" }}>
@@ -248,10 +277,45 @@ export default function ClientDetailPage() {
               <p className="text-sm text-white/50">{client.email}</p>
             </div>
           </div>
-          <Link href={`/clients/${id}/plan/new`} className="btn-primary w-auto px-5">
-            <Plus size={16} /> Nuova scheda
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href={`/clients/${id}/program/new`} className="btn-secondary">
+              <Layers size={16} /> Nuovo programma
+            </Link>
+            <Link href={`/clients/${id}/plan/new`} className="btn-primary w-auto px-5">
+              <Plus size={16} /> Nuova scheda
+            </Link>
+            <button
+              type="button"
+              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/5 text-white/50 transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-300"
+              onClick={() => setConfirmRemove(true)}
+              aria-label="Rimuovi allievo"
+            >
+              <UserMinus size={17} />
+            </button>
+          </div>
         </header>
+
+        {confirmRemove && (
+          <div className="glass-card mb-4 flex flex-wrap items-center justify-between gap-3 border-red-500/30 p-4">
+            <p className="text-sm text-white/80">
+              Rimuovere {client.full_name} dal tuo roster? L&apos;allievo mantiene account e storico, ma non lo vedrai più qui —
+              potrà ricollegarsi con un codice invito.
+            </p>
+            <div className="flex shrink-0 gap-2">
+              <button type="button" className="btn-secondary" onClick={() => setConfirmRemove(false)} disabled={removing}>
+                Annulla
+              </button>
+              <button
+                type="button"
+                className="rounded-2xl bg-red-500/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-500 disabled:opacity-50"
+                onClick={removeClient}
+                disabled={removing}
+              >
+                {removing ? "Rimozione…" : "Sì, rimuovi"}
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-4 md:grid-cols-2">
           <section className="glass-card p-5">
@@ -335,6 +399,59 @@ export default function ClientDetailPage() {
           </section>
         </div>
 
+        {programs.length > 0 && (
+          <section className="glass-card mt-4 p-5">
+            <h2 className="mb-3 flex items-center gap-2 font-semibold">
+              <Layers size={16} className="text-white/50" /> Programmi
+            </h2>
+            <div className="space-y-3">
+              {programs.map((program) => {
+                const weeksBuilt = plans.filter((p) => p.program_id === program.id);
+                const builtIndexes = new Set(weeksBuilt.map((p) => p.week_index));
+                const nextWeek = Array.from({ length: program.total_weeks }, (_, i) => i + 1).find(
+                  (w) => !builtIndexes.has(w)
+                );
+                return (
+                  <div key={program.id} className="rounded-xl border border-white/10 p-4">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="font-medium">{program.name}</p>
+                        <p className="text-xs text-white/50">
+                          {weeksBuilt.length}/{program.total_weeks} settimane
+                          {program.weekly_increment_percent > 0 ? ` · +${program.weekly_increment_percent}%/sett.` : ""}
+                        </p>
+                      </div>
+                      {nextWeek && (
+                        <Link
+                          href={`/clients/${id}/plan/new?programId=${program.id}&week=${nextWeek}`}
+                          className="btn-secondary px-3 py-1.5 text-xs"
+                        >
+                          <Plus size={13} /> Settimana {nextWeek}
+                        </Link>
+                      )}
+                    </div>
+                    {weeksBuilt.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {weeksBuilt
+                          .sort((a, b) => a.week_index - b.week_index)
+                          .map((p) => (
+                            <Link
+                              key={p.id}
+                              href={`/clients/${id}/plan/${p.id}/edit`}
+                              className="rounded-lg bg-white/5 px-2.5 py-1 text-xs text-white/70 transition hover:bg-white/10"
+                            >
+                              Sett. {p.week_index}: {p.name}
+                            </Link>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         <section className="glass-card mt-4 p-5">
           <h2 className="mb-3 flex items-center gap-2 font-semibold">
             <Dumbbell size={16} className="text-white/50" /> Schede assegnate ({plans.length})
@@ -344,14 +461,26 @@ export default function ClientDetailPage() {
           ) : (
             <div className="space-y-2">
               {plans.map((p) => (
-                <div key={p.id} className="flex items-center justify-between rounded-xl border border-white/10 px-4 py-3">
-                  <div>
-                    <p className="font-medium">{p.name}</p>
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-white/10 px-4 py-3 transition hover:border-white/20"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{p.name}</p>
                     <p className="text-xs text-white/50">
                       {p.category || "Scheda"} {p.estimated_minutes ? `· ~${p.estimated_minutes} min` : ""}
                     </p>
                   </div>
-                  <span className="text-xs text-white/30">{new Date(p.created_at).toLocaleDateString("it-IT")}</span>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <span className="text-xs text-white/30">{new Date(p.created_at).toLocaleDateString("it-IT")}</span>
+                    <Link
+                      href={`/clients/${id}/plan/${p.id}/edit`}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition hover:bg-white/5 hover:text-white"
+                      aria-label="Modifica scheda"
+                    >
+                      <Pencil size={14} />
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>
