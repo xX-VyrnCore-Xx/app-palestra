@@ -21,6 +21,7 @@ import { supabase } from "../../../lib/supabaseClient";
 import { useAuthGuard } from "../../../lib/useAuthGuard";
 import AppShell from "../../../components/AppShell";
 import Avatar from "../../../components/Avatar";
+import SectionHeader from "../../../components/SectionHeader";
 import { SkeletonCard } from "../../../components/Skeleton";
 import { useToast } from "../../../components/Toast";
 
@@ -319,14 +320,16 @@ export default function ClientDetailPage() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <section className="glass-card p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 font-semibold">
-                <CreditCard size={16} className="text-white/50" /> Abbonamento
-              </h2>
-              <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.classes}`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${statusMeta.dot}`} /> {statusMeta.label}
-              </span>
-            </div>
+            <SectionHeader
+              icon={CreditCard}
+              action={
+                <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusMeta.classes}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${statusMeta.dot}`} /> {statusMeta.label}
+                </span>
+              }
+            >
+              Abbonamento
+            </SectionHeader>
             {membership ? (
               <div className="text-sm text-white/70">
                 <p className="font-medium text-white">{membership.plan_label || "Piano generico"}</p>
@@ -380,9 +383,7 @@ export default function ClientDetailPage() {
           </section>
 
           <section className="glass-card p-5">
-            <h2 className="mb-3 flex items-center gap-2 font-semibold">
-              <ShieldAlert size={16} className="text-white/50" /> Infortuni / limitazioni
-            </h2>
+            <SectionHeader icon={ShieldAlert}>Infortuni / limitazioni</SectionHeader>
             <textarea
               className="input-field min-h-[80px] resize-none"
               placeholder="Nessuna nota"
@@ -401,9 +402,7 @@ export default function ClientDetailPage() {
 
         {programs.length > 0 && (
           <section className="glass-card mt-4 p-5">
-            <h2 className="mb-3 flex items-center gap-2 font-semibold">
-              <Layers size={16} className="text-white/50" /> Programmi
-            </h2>
+            <SectionHeader icon={Layers}>Programmi</SectionHeader>
             <div className="space-y-3">
               {programs.map((program) => {
                 const weeksBuilt = plans.filter((p) => p.program_id === program.id);
@@ -453,9 +452,7 @@ export default function ClientDetailPage() {
         )}
 
         <section className="glass-card mt-4 p-5">
-          <h2 className="mb-3 flex items-center gap-2 font-semibold">
-            <Dumbbell size={16} className="text-white/50" /> Schede assegnate ({plans.length})
-          </h2>
+          <SectionHeader icon={Dumbbell}>Schede assegnate ({plans.length})</SectionHeader>
           {plans.length === 0 ? (
             <p className="text-sm text-white/50">Nessuna scheda assegnata ancora.</p>
           ) : (
@@ -488,9 +485,7 @@ export default function ClientDetailPage() {
         </section>
 
         <section className="glass-card mt-4 p-5">
-          <h2 className="mb-3 flex items-center gap-2 font-semibold">
-            <Activity size={16} className="text-white/50" /> Andamento
-          </h2>
+          <SectionHeader icon={Activity}>Andamento</SectionHeader>
           <div className="mb-4 flex gap-4 text-sm">
             <div>
               <p className="text-lg font-bold">{sessionStats.count}</p>
@@ -525,9 +520,7 @@ export default function ClientDetailPage() {
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <section className="glass-card p-5">
-            <h2 className="mb-3 flex items-center gap-2 font-semibold">
-              <StickyNote size={16} className="text-white/50" /> Note private
-            </h2>
+            <SectionHeader icon={StickyNote}>Note private</SectionHeader>
             <div className="mb-3 flex gap-2">
               <input
                 className="input-field"
@@ -561,9 +554,7 @@ export default function ClientDetailPage() {
           </section>
 
           <section className="glass-card flex flex-col p-5">
-            <h2 className="mb-3 flex items-center gap-2 font-semibold">
-              <Send size={16} className="text-white/50" /> Chat
-            </h2>
+            <SectionHeader icon={Send}>Chat</SectionHeader>
             <div className="thin-scroll mb-3 flex-1 space-y-2 overflow-y-auto" style={{ maxHeight: "13rem" }}>
               {messages.length === 0 && <p className="text-sm text-white/40">Nessun messaggio.</p>}
               {messages.map((m) => (

@@ -5,6 +5,7 @@ import { Dumbbell, Plus, Search, Pencil, Trash2, X, Lock } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import { useAuthGuard } from "../../lib/useAuthGuard";
 import AppShell from "../../components/AppShell";
+import SectionHeader from "../../components/SectionHeader";
 import { SkeletonList } from "../../components/Skeleton";
 import { useToast } from "../../components/Toast";
 
@@ -157,7 +158,10 @@ export default function ExercisesPage() {
             {filtered.map((ex) => {
               const isMine = ex.is_custom && ex.created_by_user_id === pt.id;
               return (
-                <div key={ex.id} className="glass-card flex items-center gap-3 p-3.5">
+                <div key={ex.id} className="glass-card glass-card-interactive flex items-center gap-3 p-3.5">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-white/[0.09] to-white/[0.02] ring-1 ring-white/10">
+                    <Dumbbell size={16} className="text-white/60" />
+                  </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="truncate font-medium">{ex.name}</p>
@@ -193,8 +197,14 @@ export default function ExercisesPage() {
       </div>
 
       {editing !== null && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
-          <div className="glass-card w-full max-w-md rounded-b-none p-5 sm:rounded-b-3xl">
+        <div
+          className="animate-scrim-in fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          onClick={() => setEditing(null)}
+        >
+          <div
+            className="glass-card animate-modal-in w-full max-w-md rounded-b-none p-5 sm:rounded-b-3xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-semibold">{editing?.id ? "Modifica esercizio" : "Nuovo esercizio"}</h2>
               <button
